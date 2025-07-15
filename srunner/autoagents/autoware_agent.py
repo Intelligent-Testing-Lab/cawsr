@@ -56,7 +56,7 @@ class AutowareAgent():
         }
     ]
    
-    def setup(self, path_to_conf_file: dict = None):
+    def setup(self, path_to_conf_file: dict | None = None):
         """Setup the Autoware Agent
 
         Args:
