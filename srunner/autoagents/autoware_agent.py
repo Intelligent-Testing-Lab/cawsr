@@ -23,28 +23,31 @@ class AutowareAgent():
             _path_to_conf (dict | None): path to config, passed from AutonomousAgent
         """
         
-        # define nodes
         self.route_node = None
-        self.autoware_node = None
         self.state_node = None
+        self.autoware_node = None
 
-        self.nodes = [self.route_node, self.autoware_node, self.state_node]
+        self._nodes = [self.route_node, self.autoware_node, self.state_node]
         self._node_threads = []
         
         
         return
+
+    def set_route() -> None:
+        return
     
     def destroy(self) -> None:
-        for thread in self._node_threads:
-            thread.join()
+        """ Cleanup
+        """
+        for thread in len(self._node_threads):
+            self._node_threads[thread].join()
+            self._nodes[thread].destroy_node()
             
-        for node in self.nodes:
-            node.destroy_node()
-        
         rclpy.shutdown()
     
-    
     def run_step(self) -> None:
+        """ Tick method containing all logic based on autoware state
+        """
         return
     
     
@@ -54,4 +57,4 @@ if __name__ == '__main__':
     agent.setup()
     
     if DEBUG_ENV:
-        
+        pass
