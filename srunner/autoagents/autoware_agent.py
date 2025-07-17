@@ -28,10 +28,7 @@ class AutowareAgent():
         self.autoware_node = None
 
         self._nodes = [self.route_node, self.autoware_node, self.state_node]
-        self._node_threads = []
-        
-        
-        return
+        self._node_threads = []        
 
     def set_route() -> None:
         return
