@@ -21,7 +21,7 @@ class AgentState(object):
     def __repr__(self):
         """Calls __str__, returning the same representation of the state
         """
-        return self.__str__
+        return self.__str__()
             
     def __str__(self):
         """Return name of state and list of attributes

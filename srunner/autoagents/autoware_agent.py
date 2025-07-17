@@ -14,7 +14,7 @@ class AutowareAgent():
     timestamp = None
     current_map = None
     
-    def setup(self, _path_to_conf: dict | None) -> None:
+    def setup(self, _path_to_conf: dict | None = None) -> None:
         """Setup the Autoware Agent.
             - Initialise the state
             - Setup nodes
@@ -36,7 +36,7 @@ class AutowareAgent():
     def destroy(self) -> None:
         """ Cleanup
         """
-        for thread in len(self._node_threads):
+        for thread in range(len(self._node_threads)):
             self._node_threads[thread].join()
             self._nodes[thread].destroy_node()
             
