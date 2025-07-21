@@ -5,16 +5,19 @@ from autoware_vehicle_msgs.msg import Engage
 from autoware_adapi_v1_msgs.srv import InitializeLocalization
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
+from srunner.autoagents.agent_state import autoware_state
+
 
 class AutowareNode(Node):
     engage = "/autoware/engage"
     localize = "/api/localization/initialize"
 
-    def __init__(self):
+    def __init__(self, autoware_state: autoware_state.AutowareState):
         self.engage_publisher = self.create_publisher(Engage, self.engage, 10)
         self.localize_publisher = self.create_publisher(
             InitializeLocalization, self.localize, 10
         )
+        self.autoware_state = autoware_state
 
     def publish_engage(self, engage_state: bool) -> None:
         """publish inputted engage boolean to the /autoware/engage topic
@@ -24,6 +27,7 @@ class AutowareNode(Node):
         """
         engage_msg = Engage()
         engage_msg.engage = engage_state
+        self.autoware_state.sent_engage = engage_state
         self.engage_publisher.publish(engage_msg)
 
     def publish_localize(

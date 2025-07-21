@@ -17,7 +17,7 @@ class Definitions(Enum):
 class XMLToFiles:
     """Class to create appropriate scenario runner compatible xml files from a json file"""
 
-    def __init__(self, json_path: str) -> None:
+    def parse_scenario(self, json_path: str, output_dir: str = ".") -> None:
         with open(json_path, "r", encoding="UTF-8") as raw_json:
             self.parsed_json = json.loads(raw_json.read())
 
@@ -32,8 +32,9 @@ class XMLToFiles:
             Definitions.SCENARIOS.value,
         )
         self.scenario_xml = self.node_to_xml_string(self.scenario_node)
+        self.create_files(output_dir)
 
-    def create_files(self, output_dir: str = ".") -> None:
+    def create_files(self, output_dir: str) -> None:
         """create xml output files for the route and scenario from json
 
         Args:
