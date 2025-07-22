@@ -64,7 +64,6 @@
                     {
                         "weather": {
                             "route_percentage": 0.0,
-                            "cloudiness": 50.0,
                             "preciptation": 100.0,
                             "precipitation_deposits": 100.0,
                             "wetness": 100.0,
@@ -77,7 +76,6 @@
                     {
                         "weather": {
                             "route_percentage": 50.0,
-                            "cloudiness": 0.0,
                             "preciptation": 0.0,
                             "precipitation_deposits": 0.0,
                             "wetness": 0.0,
