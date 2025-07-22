@@ -81,7 +81,7 @@ class RouteNode(Node):
         request.waypoints = waypoints
 
         # Call the service asynchronously. This returns a Future object.
-        future = self.set_route_client.call_async(request)
+        future = self.set_route_client.call(request)
 
         # Add a callback to process the response when it arrives.
         future.add_done_callback(self.set_route_response_callback)
@@ -109,7 +109,7 @@ class RouteNode(Node):
         request = ClearRoute_Request()  # Or ClearRoute()
 
         # Call the service asynchronously
-        future = self.clear_route_client.call_async(request)
+        future = self.clear_route_client.call(request)
         future.add_done_callback(self.clear_route_response_callback)
 
     def clear_route_response_callback(self, future):
