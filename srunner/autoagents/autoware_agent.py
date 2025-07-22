@@ -49,6 +49,7 @@ class AutowareAgent(AutonomousAgent):
         # convert to waypoint
         # get the autoware pose
         # publish
+        self.agent_set_route = True
 
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
@@ -58,8 +59,6 @@ class AutowareAgent(AutonomousAgent):
 
         # clear route
         self.route_node.request_clear_route()
-
-        self.agent_set_route = True
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -90,7 +89,7 @@ class AutowareAgent(AutonomousAgent):
         if not self.agent_set_route:
             self.set_route()
 
-        if self.autoware_state.is_ready_publish_route():
+        if self.autoware_state.is_ready_publish_route() and self.agent_set_route:
             waypoints = []
             goal_pose = self._convert_to_waypoint(
                 self.goal_pose_world
