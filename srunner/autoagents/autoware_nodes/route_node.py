@@ -109,7 +109,7 @@ class RouteNode(Node):
         request = ClearRoute_Request()  # Or ClearRoute()
 
         # Call the service asynchronously
-        future = self.clear_route_client.call(request)
+        future = self.clear_route_client.call_async(request)
         future.add_done_callback(self.clear_route_response_callback)
 
     def clear_route_response_callback(self, future):
