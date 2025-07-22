@@ -50,12 +50,11 @@ class AutowareAgent(AutonomousAgent):
         # get the autoware pose
         # publish
 
-        print(self._global_plan_world_coord)
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
         # reinitialise localization
-        self.autoware_node.publish_localize(None)  # None uses GNSS
+        self.autoware_node.request_localize()  # None uses GNSS
 
         # clear route
         self.route_node.publish_clear()
