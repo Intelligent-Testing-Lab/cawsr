@@ -180,7 +180,7 @@ class ScenarioManager(object):
                 self._running = False
 
         if self._sync_mode and self._running and self._watchdog.get_status():
-            CarlaDataProvider.get_world().tick()
+            CarlaDataProvider.get_world().wait_for_tick()
 
     def get_running_status(self):
         """
