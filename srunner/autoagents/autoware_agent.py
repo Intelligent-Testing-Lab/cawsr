@@ -1,6 +1,8 @@
 from srunner.autoagents.autonomous_agent import AutonomousAgent
 
 from srunner.autoagents.autoware_nodes.autoware_types import waypoint
+from srunner.autoagents.autoware_nodes import autoware_node
+from srunner.autoagents.autoware_nodes import route_node
 from srunner.autoagents.autoware_nodes import state_node
 
 from srunner.autoagents.agent_state import autoware_state
@@ -31,15 +33,14 @@ class AutowareAgent(AutonomousAgent):
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
-        # self.route_node = route_node.RouteNode()
+        self.route_node = route_node.RouteNode()
         self.state_node = state_node.StateNode(self.autoware_state)
-        # self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
+        self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
 
-        # self._nodes = [self.route_node, self.autoware_node, self.state_node]
-        self._nodes = [self.state_node]
+        self._nodes = [self.route_node, self.autoware_node, self.state_node]
         self._node_threads = [
-            # threading.Thread(target=rclpy.spin, args=(self.route_node)),
-            # threading.Thread(target=rclpy.spin, args=(self.autoware_node)),
+            threading.Thread(target=rclpy.spin, args=(self.route_node)),
+            threading.Thread(target=rclpy.spin, args=(self.autoware_node)),
             threading.Thread(target=rclpy.spin, args=(self.state_node)),
         ]
 

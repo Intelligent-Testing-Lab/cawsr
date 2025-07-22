@@ -179,7 +179,7 @@ class AWScenarioRunner(object):
         print("Loading route...")
         try:
             scenario = RouteScenario(
-                world=self.carla_world, config=config, debug_mode=False
+                world=self.carla_world, config=config, debug_mode=True
             )
         except Exception:
             print("Could not load Route Scenario")
