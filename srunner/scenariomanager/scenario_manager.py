@@ -153,7 +153,6 @@ class ScenarioManager(object):
         """
         if self._timestamp_last_run < timestamp.elapsed_seconds and self._running:
             self._timestamp_last_run = timestamp.elapsed_seconds
-            print("I'm running and got ticked")
 
             self._watchdog.update()
 
@@ -176,11 +175,10 @@ class ScenarioManager(object):
                 sys.stdout.flush()
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
-                print("Set status to False")
                 self._running = False
 
         if self._sync_mode and self._running and self._watchdog.get_status():
-            CarlaDataProvider.get_world().wait_for_tick()
+            CarlaDataProvider.get_world().tick()
 
     def get_running_status(self):
         """
