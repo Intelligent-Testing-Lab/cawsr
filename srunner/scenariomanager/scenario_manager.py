@@ -179,8 +179,8 @@ class ScenarioManager(object):
                 print("Set status to False")
                 self._running = False
 
-        # if self._sync_mode and self._running and self._watchdog.get_status():
-        #    CarlaDataProvider.get_world().tick()
+        if self._sync_mode and self._running and self._watchdog.get_status():
+            CarlaDataProvider.get_world().tick()
 
     def get_running_status(self):
         """
