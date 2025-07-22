@@ -126,13 +126,17 @@ class ScenarioManager(object):
         self._running = True
 
         while self._running:
+            print("Started running")
             timestamp = None
             world = CarlaDataProvider.get_world()
+            print("Got world")
             if world:
                 snapshot = world.get_snapshot()
+                print("Took snapshot")
                 if snapshot:
                     timestamp = snapshot.timestamp
             if timestamp:
+                print("Ticked scenario tree")
                 self._tick_scenario(timestamp)
 
         self.cleanup()
