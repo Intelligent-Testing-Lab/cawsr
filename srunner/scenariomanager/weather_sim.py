@@ -262,6 +262,7 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
                 next_w = self._weathers[weather_index + 1]
 
             weather = carla.WeatherParameters()
+            print(weather)
             # weather.cloudiness = interpolate(prev_w, next_w, perc, 'cloudiness')
             weather.precipitation = interpolate(prev_w, next_w, perc, "precipitation")
             weather.precipitation_deposits = interpolate(
