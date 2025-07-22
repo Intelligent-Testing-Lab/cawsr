@@ -54,7 +54,7 @@ class AutowareAgent(AutonomousAgent):
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
         # reinitialise localization
-        self.autoware_node.request_localize()  # None uses GNSS
+        # self.autoware_node.request_localize()  # None uses GNSS
 
         # clear route
         # self.route_node.request_clear_route()
