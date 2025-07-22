@@ -254,9 +254,9 @@ class AWScenarioRunner(object):
                 self.ego_vehicles[i] = None
         self.ego_vehicles = []
 
-        if self.agent_instance:
-            self.agent_instance.destroy()
-            self.agent_instance = None
+        if self.aw_agent:
+            self.aw_agent.destroy()
+            self.aw_agent = None
 
 
 def main():

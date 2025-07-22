@@ -1,0 +1,151 @@
+{
+    "routes": [
+        {
+            "route": {
+                "id": 0,
+                "town": "Town01",
+                "weathers": [
+                    {
+                        "weather": {
+                            "route_percentage": 0.0,
+                            "preciptation": 100.0,
+                            "precipitation_deposits": 100.0,
+                            "wetness": 100.0,
+                            "wind_intensity": 100.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    },
+                    {
+                        "weather": {
+                            "route_percentage": 50.0,
+                            "preciptation": 0.0,
+                            "precipitation_deposits": 0.0,
+                            "wetness": 0.0,
+                            "wind_intensity": 0.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    }
+                ],
+                "waypoints": [
+                    {
+                        "position": {
+                            "x": 983.5,
+                            "y": 5382.2,
+                            "z": 371
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 1234,
+                            "y": 5.2,
+                            "z": 3123471
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 123412343.5,
+                            "y": 512341234.2,
+                            "z": 3712341234
+                        }
+                    }
+                ],
+                "scenarios": {}
+            }
+        },
+        {
+            "route": {
+                "id": 1,
+                "town": "Town01",
+                "weathers": [
+                    {
+                        "weather": {
+                            "route_percentage": 0.0,
+                            "cloudiness": 50.0,
+                            "preciptation": 100.0,
+                            "precipitation_deposits": 100.0,
+                            "wetness": 100.0,
+                            "wind_intensity": 100.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    },
+                    {
+                        "weather": {
+                            "route_percentage": 50.0,
+                            "cloudiness": 0.0,
+                            "preciptation": 0.0,
+                            "precipitation_deposits": 0.0,
+                            "wetness": 0.0,
+                            "wind_intensity": 0.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    }
+                ],
+                "waypoints": [
+                    {
+                        "position": {
+                            "x": 983.5,
+                            "y": 5382.2,
+                            "z": 371
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 1234,
+                            "y": 5.2,
+                            "z": 3123471
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 123412343.5,
+                            "y": 512341234.2,
+                            "z": 3712341234
+                        }
+                    }
+                ],
+                "scenarios": {}
+            }
+        }
+    ],
+    "scenarios": [
+        {
+            "scenario": {
+                "town": "Town01",
+                "ego_vehicle": {
+                    "x": 1234,
+                    "y": 5.2,
+                    "z": 3123471,
+                    "yaw": -173,
+                    "model": "vehicle.toyota.prius",
+                    "name": "ego_vehicle"
+                },
+                "other_actor": {
+                    "x": 1234,
+                    "y": 5.2,
+                    "z": 3123471,
+                    "yaw": -173,
+                    "model": "vehicle.toyota.prius"
+                },
+                "weather": {
+                    "route_percentage": 0.0,
+                    "cloudiness": 50.0,
+                    "preciptation": 100.0,
+                    "precipitation_deposits": 100.0,
+                    "wetness": 100.0,
+                    "wind_intensity": 100.0,
+                    "sun_azimuth_angle": -1.0,
+                    "sun_altitude_angle": 90.0,
+                    "fog_density": 2.0
+                }
+            }
+        }
+    ]
+}
