@@ -151,7 +151,6 @@ class ScenarioManager(object):
         Run next tick of scenario and the agent.
         If running synchornously, it also handles the ticking of the world.
         """
-        print("I got ticked")
         if self._timestamp_last_run < timestamp.elapsed_seconds and self._running:
             self._timestamp_last_run = timestamp.elapsed_seconds
             print("I'm running and got ticked")
