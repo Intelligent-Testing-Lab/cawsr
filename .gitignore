@@ -15,5 +15,6 @@ tests
 *.png
 *.svg
 *.dot
+.python-version
 PythonAPI
 results
