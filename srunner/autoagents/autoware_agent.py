@@ -77,9 +77,12 @@ class AutowareAgent(AutonomousAgent):
 
     def destroy(self) -> None:
         """Cleanup"""
-        for thread in range(len(self._node_threads)):
-            self._node_threads[thread].join()
-            self._nodes[thread].destroy_node()
+        try:
+            for thread in range(len(self._node_threads)):
+                self._node_threads[thread].join()
+                self._nodes[thread].destroy_node()
+        except RuntimeError:
+            print("Cleaned up threads...")
 
         rclpy.shutdown()
 
