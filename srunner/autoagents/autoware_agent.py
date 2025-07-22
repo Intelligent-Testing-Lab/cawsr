@@ -19,6 +19,7 @@ DEBUG_ENV = False
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     current_map = None
+    agent_set_route = False
 
     def setup(self, path_to_conf_file: dict | None = None) -> None:
         """Setup the Autoware Agent.
@@ -28,6 +29,7 @@ class AutowareAgent(AutonomousAgent):
         Args:
             _path_to_conf (dict | None): path to config, passed from AutonomousAgent
         """
+        rclpy.init(args=None)
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
@@ -42,14 +44,13 @@ class AutowareAgent(AutonomousAgent):
             threading.Thread(target=rclpy.spin, args=(self.state_node)),
         ]
 
-        self.set_route()
-
     def set_route(self) -> None:
         # for every point in the plan
         # convert to waypoint
         # get the autoware pose
         # publish
 
+        print(self._global_plan_world_coord)
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
@@ -58,6 +59,8 @@ class AutowareAgent(AutonomousAgent):
 
         # clear route
         self.route_node.publish_clear()
+
+        self.agent_set_route = True
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -82,6 +85,8 @@ class AutowareAgent(AutonomousAgent):
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""
+        if not self.agent_set_route:
+            self.set_route()
 
         if self.autoware_state.is_ready_publish_route():
             waypoints = []

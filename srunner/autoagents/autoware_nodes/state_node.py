@@ -11,15 +11,16 @@ class StateNode(Node):
     localize_state = "/api/localization/initialization_state"
 
     def __init__(self, autoware_state: autoware_state.AutowareState) -> None:
+        super().__init__("state_node")
         self.autoware_state = autoware_state
 
-        self.route_subscriber = self.create_subscriber(
+        self.route_subscriber = self.create_subscription(
             RouteState, self.route_state, self.route_state_cb, 10
         )
-        self.motion_subscriber = self.create_subscriber(
+        self.motion_subscriber = self.create_subscription(
             MotionState, self.motion_state, self.motion_state_cb, 10
         )
-        self.localize_state_subscriber = self.create_subscriber(
+        self.localize_state_subscriber = self.create_subscription(
             LocalizationInitializationState,
             self.localize_state,
             self.localize_state_cb,

@@ -64,7 +64,7 @@ class AWScenarioRunner(object):
             self.route_id = "0"
 
         # load autoware agent
-        autoware_agent_path = "srunner/autoagents/autoware_agent.py"
+        autoware_agent_path = "srunner/autoagents/autoware_agent"
         module_name = os.path.basename(autoware_agent_path).split(".")[0]
         sys.path.insert(0, os.path.dirname(autoware_agent_path))
         self.module_aw_agent = importlib.import_module(module_name)
@@ -145,6 +145,20 @@ class AWScenarioRunner(object):
 
         self.carla_world.wait_for_tick()
 
+        print("Loading Autoware agent")
+        agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
+        try:
+            print(agent_class_name)
+            print(getattr(self.module_aw_agent, agent_class_name))
+            self.aw_agent = getattr(self.module_aw_agent, agent_class_name)("")
+            config.agent = self.aw_agent
+            print(config.agent)
+        except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
+            traceback.print_exc()
+            print("Could not setup required agent due to {}".format(e))
+            # self._cleanup()
+            return False
+
         # ADD TRAFFIC MANAGER SEED TO CONFIG
         tm_port = int(self._args.traffic_port)  # type: ignore
         CarlaDataProvider.set_traffic_manager_port(tm_port)
@@ -152,17 +166,6 @@ class AWScenarioRunner(object):
         tm.set_random_device_seed(1)  # ADD TO CONFIG
 
         tm.set_synchronous_mode(True)
-
-        print("Loading Autoware agent")
-        agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
-        try:
-            self.aw_agent = getattr(self.module_aw_agent, agent_class_name)
-            config.agent = self.aw_agent
-        except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
-            traceback.print_exc()
-            print("Could not setup required agent due to {}".format(e))
-            # self._cleanup()
-            return False
 
         print("Preparing ego...")
 
@@ -220,12 +223,40 @@ class AWScenarioRunner(object):
         Clean up
         """
 
+        self._cleanup()
         if self.scenario_manager is not None:
             del self.scenario_manager
         if self.carla_client is not None:
             del self.carla_client
         if self.carla_world is not None:
             del self.carla_world
+
+    def _cleanup(self) -> None:
+        # Simulation still running and in synchronous mode?
+        if self.carla_world is not None:
+            try:
+                # Reset to asynchronous mode
+                self.carla_client.get_trafficmanager(
+                    int(self._args.traffic_port)
+                ).set_synchronous_mode(False)
+            except RuntimeError:
+                sys.exit(-1)
+
+        self.scenario_manager.cleanup()
+
+        CarlaDataProvider.cleanup()
+
+        for i, _ in enumerate(self.ego_vehicles):
+            if self.ego_vehicles[i]:
+                if self.ego_vehicles[i] is not None and self.ego_vehicles[i].is_alive:
+                    print("Destroying ego vehicle {}".format(self.ego_vehicles[i].id))
+                    self.ego_vehicles[i].destroy()
+                self.ego_vehicles[i] = None
+        self.ego_vehicles = []
+
+        if self.agent_instance:
+            self.agent_instance.destroy()
+            self.agent_instance = None
 
 
 def main():

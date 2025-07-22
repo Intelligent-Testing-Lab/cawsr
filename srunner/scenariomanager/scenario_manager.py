@@ -24,7 +24,6 @@ from srunner.scenariomanager.watchdog import Watchdog
 
 
 class ScenarioManager(object):
-
     """
     Basic scenario manager class. This class holds all functionality
     required to start, and analyze a scenario.
@@ -111,7 +110,7 @@ class ScenarioManager(object):
         # py_trees.display.render_dot_tree(self.scenario_tree)
 
         # no need to setup sensors, done by autoware bridge
-        #if self._agent is not None:
+        # if self._agent is not None:
         #    self._agent.setup_sensors(self.ego_vehicles[0], self._debug_mode)
 
     def run_scenario(self):
@@ -141,8 +140,7 @@ class ScenarioManager(object):
         self.end_system_time = time.time()
         end_game_time = GameTime.get_time()
 
-        self.scenario_duration_system = self.end_system_time - \
-            self.start_system_time
+        self.scenario_duration_system = self.end_system_time - self.start_system_time
         self.scenario_duration_game = end_game_time - start_game_time
 
         if self.scenario_tree.status == py_trees.common.Status.FAILURE:
@@ -180,8 +178,8 @@ class ScenarioManager(object):
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
 
-        if self._sync_mode and self._running and self._watchdog.get_status():
-            CarlaDataProvider.get_world().tick()
+        # if self._sync_mode and self._running and self._watchdog.get_status():
+        #    CarlaDataProvider.get_world().tick()
 
     def get_running_status(self):
         """
@@ -213,9 +211,11 @@ class ScenarioManager(object):
             return True
 
         for criterion in criteria:
-            if (not criterion.optional and
-                    criterion.test_status != "SUCCESS" and
-                    criterion.test_status != "ACCEPTABLE"):
+            if (
+                not criterion.optional
+                and criterion.test_status != "SUCCESS"
+                and criterion.test_status != "ACCEPTABLE"
+            ):
                 failure = True
                 result = "FAILURE"
             elif criterion.test_status == "ACCEPTABLE":

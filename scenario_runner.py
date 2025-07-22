@@ -100,8 +100,6 @@ class ScenarioRunner(object):
         if self._args.agent is not None:
             module_name = os.path.basename(args.agent).split(".")[0]
             sys.path.insert(0, os.path.dirname(args.agent))
-            print(module_name)
-            print(os.path.dirname(args.agent))
             self.module_agent = importlib.import_module(module_name)
 
         # Create the ScenarioManager
