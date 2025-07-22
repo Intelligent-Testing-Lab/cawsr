@@ -20,6 +20,7 @@ class AutowareAgent(AutonomousAgent):
     timestamp = None
     current_map = None
     agent_set_route = False
+    counter = 0
 
     def setup(self, path_to_conf_file: dict | None = None) -> None:
         """Setup the Autoware Agent.
@@ -56,11 +57,11 @@ class AutowareAgent(AutonomousAgent):
 
         # reinitialise localization
         print("called localise")
-        self.autoware_node.request_localize()  # None uses GNSS
+        # self.autoware_node.request_localize()  # None uses GNSS
 
         print("called clear route")
         # clear route
-        self.route_node.request_clear_route()
+        # self.route_node.request_clear_route()
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -88,6 +89,10 @@ class AutowareAgent(AutonomousAgent):
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""
+        self.counter += 1
+        if self.counter % 20 == 0:
+            print("1 second")
+
         if not self.agent_set_route:
             self.set_route()
 
