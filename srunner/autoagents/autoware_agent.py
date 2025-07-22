@@ -57,7 +57,7 @@ class AutowareAgent(AutonomousAgent):
         self.autoware_node.request_localize()  # None uses GNSS
 
         # clear route
-        self.route_node.publish_clear()
+        self.route_node.request_clear_route()
 
         self.agent_set_route = True
 
