@@ -18,7 +18,6 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          with:
             registry: ${{ secrets.REGISTRY }}
             username: ${{ github.actor }}
             password: ${{ secrets.GITHUB_TOKEN }}
