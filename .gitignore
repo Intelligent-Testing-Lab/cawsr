@@ -1,6 +1,5 @@
 *.pyc
 # ignore docker for now
-docker
 .ruff_cache
 PythonAPI
 srunner/autoagents/*.pyc
