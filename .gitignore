@@ -12,10 +12,13 @@ srunner/scenarios/__pycache__/
 srunner/utilities/*.pyc
 srunner/utilities/__pycache__/
 results*.txt
-*.json
+tests
 *.log
 .project
 .pydevproject
 *.png
 *.svg
 *.dot
+.python-version
+PythonAPI
+results

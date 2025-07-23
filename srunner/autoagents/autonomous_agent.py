@@ -9,15 +9,11 @@ This module provides the base class for all autonomous agents
 
 from __future__ import print_function
 
-import carla
 
-from srunner.autoagents.sensor_interface import SensorInterface
-from srunner.scenariomanager.timer import GameTime
 from srunner.tools.route_manipulation import downsample_route
 
 
 class AutonomousAgent(object):
-
     """
     Autonomous agent base class. All user agents have to be derived from this class
     """
@@ -28,7 +24,7 @@ class AutonomousAgent(object):
         self._global_plan_world_coord = None
 
         # this data structure will contain all sensor data
-        self.sensor_interface = SensorInterface()
+        # self.sensor_interface = SensorInterface()
 
         # agent's initialization
         self.setup(path_to_conf_file)
@@ -67,7 +63,7 @@ class AutonomousAgent(object):
         Execute one step of navigation.
         :return: control
         """
-        return 
+        return
 
     def destroy(self):
         """
@@ -82,15 +78,14 @@ class AutonomousAgent(object):
         Returns the next vehicle controls
         """
         # no need for any of this, handled by autoware
-        #input_data = self.sensor_interface.get_data()
+        # input_data = self.sensor_interface.get_data()
 
-        #timestamp = GameTime.get_time()
-        #wallclock = GameTime.get_wallclocktime()
-        #print('======[Agent] Wallclock_time = {} / Sim_time = {}'.format(wallclock, timestamp))
-        #control.manual_gear_shift = False
+        # timestamp = GameTime.get_time()
+        # wallclock = GameTime.get_wallclocktime()
+        # print('======[Agent] Wallclock_time = {} / Sim_time = {}'.format(wallclock, timestamp))
+        # control.manual_gear_shift = False
 
         self.run_step()
-
 
     def set_global_plan(self, global_plan_gps, global_plan_world_coord):
         """
@@ -98,6 +93,8 @@ class AutonomousAgent(object):
         """
 
         ds_ids = downsample_route(global_plan_world_coord, 1)
-        self._global_plan_world_coord = [(global_plan_world_coord[x][0], global_plan_world_coord[x][1])
-                                         for x in ds_ids]
+        self._global_plan_world_coord = [
+            (global_plan_world_coord[x][0], global_plan_world_coord[x][1])
+            for x in ds_ids
+        ]
         self._global_plan = [global_plan_gps[x] for x in ds_ids]

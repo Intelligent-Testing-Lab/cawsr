@@ -1,4 +1,4 @@
-from geometry_msgs.msgs import Pose
+from geometry_msgs.msg import Pose
 
 
 class AgentState(object):

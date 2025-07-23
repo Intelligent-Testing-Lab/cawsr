@@ -24,7 +24,6 @@ from srunner.scenariomanager.timer import GameTime
 
 
 class Weather(object):
-
     """
     Class to simulate weather in CARLA according to the astronomic behavior of the sun
 
@@ -57,7 +56,9 @@ class Weather(object):
 
         self._sun = ephem.Sun()  # pylint: disable=no-member
         self._observer_location = ephem.Observer()
-        geo_location = CarlaDataProvider.get_map().transform_to_geolocation(carla.Location(0, 0, 0))
+        geo_location = CarlaDataProvider.get_map().transform_to_geolocation(
+            carla.Location(0, 0, 0)
+        )
         self._observer_location.lon = str(geo_location.longitude)
         self._observer_location.lat = str(geo_location.latitude)
 
@@ -89,7 +90,6 @@ class Weather(object):
 
 
 class OSCWeatherBehavior(py_trees.behaviour.Behaviour):
-
     """
     Atomic to read weather settings from the blackboard and apply these in CARLA.
     Used in combination with UpdateWeather() to have a continuous weather simulation.
@@ -150,7 +150,9 @@ class OSCWeatherBehavior(py_trees.behaviour.Behaviour):
             self._weather = weather
             delattr(py_trees.blackboard.Blackboard(), "CarlaWeather")
             CarlaDataProvider.get_world().set_weather(self._weather.carla_weather)
-            py_trees.blackboard.Blackboard().set("Datetime", self._weather.datetime, overwrite=True)
+            py_trees.blackboard.Blackboard().set(
+                "Datetime", self._weather.datetime, overwrite=True
+            )
 
         if self._weather and self._weather.animation:
             new_time = GameTime.get_time()
@@ -161,13 +163,14 @@ class OSCWeatherBehavior(py_trees.behaviour.Behaviour):
                 self._current_time = new_time
                 CarlaDataProvider.get_world().set_weather(self._weather.carla_weather)
 
-                py_trees.blackboard.Blackboard().set("Datetime", self._weather.datetime, overwrite=True)
+                py_trees.blackboard.Blackboard().set(
+                    "Datetime", self._weather.datetime, overwrite=True
+                )
 
         return py_trees.common.Status.RUNNING
 
 
 class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
-
     """
     Given a set of route weathers ([position, carla.WeatherParameters]),
     monitors the ego vehicle to dynamically change the weather as the ego advanced through the route.
@@ -179,7 +182,9 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
     Use the debug argument to print what is the route's percentage of each route position.
     """
 
-    def __init__(self, ego_vehicle, route, weathers, debug=False, name="RouteWeatherBehavior"):
+    def __init__(
+        self, ego_vehicle, route, weathers, debug=False, name="RouteWeatherBehavior"
+    ):
         """
         Setup parameters
         """
@@ -210,7 +215,7 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
                         location + carla.Location(z=1),
                         str(new_perc),
                         color=carla.Color(50, 50, 50),
-                        life_time=100000
+                        life_time=100000,
                     )
                     debug_perc = new_perc
         self._route_weathers = self.get_route_weathers()
@@ -232,6 +237,7 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
 
     def get_route_weathers(self):
         """Calculate the desired weather at each point in the route"""
+
         def interpolate(prev_w, next_w, perc, name):
             x0 = prev_w[0]
             x1 = next_w[0]
@@ -248,25 +254,40 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
         next_w = self._weathers[weather_index + 1]
 
         for perc in self._route_perc:
-            if perc > next_w[0]:  # Must be strictly less, or an IndexError will occur at 100%
+            if (
+                perc > next_w[0]
+            ):  # Must be strictly less, or an IndexError will occur at 100%
                 weather_index += 1
                 prev_w = self._weathers[weather_index]
                 next_w = self._weathers[weather_index + 1]
 
+            # print(self._weathers)
             weather = carla.WeatherParameters()
-            weather.cloudiness = interpolate(prev_w, next_w, perc, 'cloudiness')
-            weather.precipitation = interpolate(prev_w, next_w, perc, 'precipitation')
-            weather.precipitation_deposits = interpolate(prev_w, next_w, perc, 'precipitation_deposits')
-            weather.wind_intensity = interpolate(prev_w, next_w, perc, 'wind_intensity')
-            weather.sun_azimuth_angle = interpolate(prev_w, next_w, perc, 'sun_azimuth_angle')
-            weather.sun_altitude_angle = interpolate(prev_w, next_w, perc, 'sun_altitude_angle')
-            weather.wetness = interpolate(prev_w, next_w, perc, 'wetness')
-            weather.fog_distance = interpolate(prev_w, next_w, perc, 'fog_distance')
-            weather.fog_density = interpolate(prev_w, next_w, perc, 'fog_density')
-            weather.fog_falloff = interpolate(prev_w, next_w, perc, 'fog_falloff')
-            weather.scattering_intensity = interpolate(prev_w, next_w, perc, 'scattering_intensity')
-            weather.mie_scattering_scale = interpolate(prev_w, next_w, perc, 'mie_scattering_scale')
-            weather.rayleigh_scattering_scale = interpolate(prev_w, next_w, perc, 'rayleigh_scattering_scale')
+            weather.cloudiness = interpolate(prev_w, next_w, perc, "cloudiness")
+            weather.precipitation = interpolate(prev_w, next_w, perc, "precipitation")
+            weather.precipitation_deposits = interpolate(
+                prev_w, next_w, perc, "precipitation_deposits"
+            )
+            weather.wind_intensity = interpolate(prev_w, next_w, perc, "wind_intensity")
+            weather.sun_azimuth_angle = interpolate(
+                prev_w, next_w, perc, "sun_azimuth_angle"
+            )
+            weather.sun_altitude_angle = interpolate(
+                prev_w, next_w, perc, "sun_altitude_angle"
+            )
+            weather.wetness = interpolate(prev_w, next_w, perc, "wetness")
+            weather.fog_distance = interpolate(prev_w, next_w, perc, "fog_distance")
+            weather.fog_density = interpolate(prev_w, next_w, perc, "fog_density")
+            weather.fog_falloff = interpolate(prev_w, next_w, perc, "fog_falloff")
+            weather.scattering_intensity = interpolate(
+                prev_w, next_w, perc, "scattering_intensity"
+            )
+            weather.mie_scattering_scale = interpolate(
+                prev_w, next_w, perc, "mie_scattering_scale"
+            )
+            weather.rayleigh_scattering_scale = interpolate(
+                prev_w, next_w, perc, "rayleigh_scattering_scale"
+            )
 
             route_weathers.append(weather)
 
@@ -284,7 +305,10 @@ class RouteWeatherBehavior(py_trees.behaviour.Behaviour):
 
         new_index = self._current_index
 
-        for index in range(self._current_index, min(self._current_index + self._wsize + 1, self._route_length)):
+        for index in range(
+            self._current_index,
+            min(self._current_index + self._wsize + 1, self._route_length),
+        ):
             route_transform = self._route_transforms[index]
             route_veh_vec = ego_location - route_transform.location
             if route_veh_vec.dot(route_transform.get_forward_vector()) > 0:

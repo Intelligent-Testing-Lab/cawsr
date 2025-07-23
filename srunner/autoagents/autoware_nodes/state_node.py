@@ -2,24 +2,25 @@ from rclpy.node import Node
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
-from ___ import AutowareState
+from srunner.autoagents.agent_state import autoware_state
 
 
 class StateNode(Node):
-    autoware_state = AutowareState()
-
     route_state = "/planning/mission_planning/state"
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
 
-    def __init__(self) -> None:
-        self.route_subscriber = self.create_subscriber(
+    def __init__(self, autoware_state: autoware_state.AutowareState) -> None:
+        super().__init__("state_node")
+        self.autoware_state = autoware_state
+
+        self.route_subscriber = self.create_subscription(
             RouteState, self.route_state, self.route_state_cb, 10
         )
-        self.motion_subscriber = self.create_subscriber(
+        self.motion_subscriber = self.create_subscription(
             MotionState, self.motion_state, self.motion_state_cb, 10
         )
-        self.localize_state_subscriber = self.create_subscriber(
+        self.localize_state_subscriber = self.create_subscription(
             LocalizationInitializationState,
             self.localize_state,
             self.localize_state_cb,
