@@ -48,8 +48,11 @@ class SensorLoop(object):
             except SensorReceivedNoData as e:
                 raise RuntimeError(e)
             self.ego_actor.apply_control(ego_action)
-        if self.running:
-            CarlaDataProvider.get_world().tick()
+        
+        # REMOVED tick method
+        # Allows Scenario Runner to tick the simulation instead
+        #if self.running:
+        #    CarlaDataProvider.get_world().tick()
 
 
 class InitializeInterface(object):
