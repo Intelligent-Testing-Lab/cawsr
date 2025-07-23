@@ -1,31 +1,22 @@
 FROM osrf/ros:humble-desktop
 
-# TODO when deploying
-# create new user for security
-# for dev, this is fine for now
-
-# install dependencies and add github ssh key to known hosts
 RUN apt -y update && \
-    apt install --no-install-recommends -y libpng16-16 libtiff5 libjpeg8 build-essential curl wget git libxerces-c-dev && \
-    mkdir /root/.ssh && \
-    touch /root/.ssh/known_hosts && \
-    ssh-keyscan github.com >> /root/.ssh/known_hosts
- 
-# change to be supplied via env variable
-COPY docker/id_rsa /root/.ssh 
+    apt install --no-install-recommends -y libpng16-16 libtiff5 libjpeg8 build-essential curl wget git libxerces-c-dev python3-pip
 
 # clone repo
-RUN git clone git@github.com:Intelligent-Testing-Lab/autoware_scenario_runner.git 
+COPY . /autoware_scenario_runner
 
 WORKDIR /autoware_scenario_runner
 
-RUN mkdir /ros_workspace &&  \
-    mv docker/autoware_msgs.tar /ros_workspace/ && \
+SHELL [ "/bin/bash", "-c" ]
+
+RUN mkdir /ros_workspace/ &&  \
+    cd /ros_workspace/ && \
+    mv /autoware_scenario_runner/docker/autoware_msgs.tar /ros_workspace/ && \
     tar -xvf /ros_workspace/autoware_msgs.tar && \
     rm -rf /ros_workspace/autoware_msgs.tar && \
     source /opt/ros/humble/setup.bash && \
-    cd /ros_workspace/ && \
-    rosdep install -i --from-path src --rosdistro humble -y && \
+    rosdep install -i --from-path /ros_workspace/src --rosdistro humble -y && \
     colcon build
 
 ENV AUTOWARE_MSG_PKG="/ros_workspace/install/setup.bash"
