@@ -1,4 +1,0 @@
-actor vehicle
-action base
-action super_action inherits base:
-    car: vehicle

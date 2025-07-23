@@ -1,8 +1,0 @@
-enum rgb_color: [red, green, blue]
-enum cmyk_color: [cyan = 1, magenta = 2, yellow, black]
-
-scenario my_scenario:
-    my_car: vehicle
-    col: int = rgb_color!blue.as(int)
-
-    

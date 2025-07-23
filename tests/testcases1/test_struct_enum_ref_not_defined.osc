@@ -1,4 +1,0 @@
-struct vehicle
-
-struct car inherits vehicle(vehicle_category == car_type!car):
-    color: color

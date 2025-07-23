@@ -1,8 +1,0 @@
-modifier force_lane:
-   vehicle: vehicle
-   lane: int
-   
-
-modifier force_lane:
-   vehicle: vehicle
-   lane: int

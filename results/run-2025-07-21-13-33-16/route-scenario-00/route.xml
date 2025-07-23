@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<routes>
+	<route id="0" town="Town01">
+		<weathers>
+			<weather cloudiness="50.0" fog_density="2.0" precipitation_deposits="100.0" preciptation="100.0" route_percentage="0.0" sun_altitude_angle="90.0" sun_azimuth_angle="-1.0" wetness="100.0" wind_intensity="100.0"/>
+			<weather cloudiness="0.0" fog_density="2.0" precipitation_deposits="0.0" preciptation="0.0" route_percentage="50.0" sun_altitude_angle="90.0" sun_azimuth_angle="-1.0" wetness="0.0" wind_intensity="0.0"/>
+		</weathers>
+		<waypoints>
+			<position x="983.5" y="5382.2" z="371"/>
+			<position x="1234" y="5.2" z="3123471"/>
+			<position x="123412343.5" y="512341234.2" z="3712341234"/>
+		</waypoints>
+		<scenarios/>
+	</route>
+	<route id="1" town="Town01">
+		<weathers>
+			<weather cloudiness="50.0" fog_density="2.0" precipitation_deposits="100.0" preciptation="100.0" route_percentage="0.0" sun_altitude_angle="90.0" sun_azimuth_angle="-1.0" wetness="100.0" wind_intensity="100.0"/>
+			<weather cloudiness="0.0" fog_density="2.0" precipitation_deposits="0.0" preciptation="0.0" route_percentage="50.0" sun_altitude_angle="90.0" sun_azimuth_angle="-1.0" wetness="0.0" wind_intensity="0.0"/>
+		</weathers>
+		<waypoints>
+			<position x="983.5" y="5382.2" z="371"/>
+			<position x="1234" y="5.2" z="3123471"/>
+			<position x="123412343.5" y="512341234.2" z="3712341234"/>
+		</waypoints>
+		<scenarios/>
+	</route>
+</routes>

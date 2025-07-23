@@ -1,7 +1,0 @@
-
-scenario truck_test:
-    dut_truck: truck with:
-        keep(it.axles.size() > 2)
-
-    car_in_traffic: car with:
-        keep(it.color == silver)
