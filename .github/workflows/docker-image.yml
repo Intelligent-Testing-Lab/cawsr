@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,8 +22,15 @@ jobs:
           username: ${{ secrets.USER_NAME }} # username
           password: ${{ secrets.CR_PAT }} # PAT for CR repository
       
-      - name: Build Docker Image
-        run: docker build . --file Dockerfile --tag ghcr.io/intelligent-testing-lab/autoware-scenario-runner:$(date +%s)
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Push Docker Image 
-        run: docker push ghcr.io/intelligent-testing-lab/autoware-scenario-runner:$(date +%s)
+      - name: Build and push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/intelligent-testing-lab/autoware-scenario-runner:latest
+          cache-from: type=registry,ref=ghcr.io/intelligent-testing-lab/autoware-scenario-runner:buildcache
+          cache-to: type=registry,ref=ghcr.io/intelligent-testing-lab/autoware-scenario-runner:buildcache,mode=max
+        
