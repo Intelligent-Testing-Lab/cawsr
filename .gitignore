@@ -1,7 +1,8 @@
 *.pyc
 # ignore docker for now
-docker
 .ruff_cache
+docker/id_rsa
+id_rsa
 PythonAPI
 srunner/autoagents/*.pyc
 srunner/autoagents/__pycache__/
