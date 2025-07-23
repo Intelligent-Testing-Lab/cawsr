@@ -6,8 +6,10 @@ import importlib
 import signal
 import sys
 import time
+import logging
 import argparse
 import datetime
+import yaml
 
 import carla
 
@@ -18,15 +20,13 @@ from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.tools.route_parser import RouteParser
 
+from srunner.tools.log import LogUtil
+
 
 class AWScenarioRunner(object):
     client_timeout = 10.0
 
     ego_vehicles = []
-
-    results_path = None
-    last_scenario_path = None
-    route_id = None
 
     # world and scenario handlers
     carla_world = None
@@ -49,16 +49,17 @@ class AWScenarioRunner(object):
         """
         self._args = args
 
-        if args.timeout:  # type: ignore
-            self.client_timeout = float(args.timeout)  # type: ignore
-        self.carla_client = carla.Client(args.host, int(args.port))  # type: ignore
-        self.carla_client.set_timeout(self.client_timeout)  # type: ignore
+        if args.timeout:
+            self.client_timeout = float(args.timeout)  
+            
+        self.carla_client = carla.Client(args.host, int(args.port))
+        self.carla_client.set_timeout(self.client_timeout)
 
         # update the client
         CarlaDataProvider.set_client(self.carla_client)
 
-        if args.route_id:  # type:ignore
-            self.route_id = str(args.route_id)  # type:ignore
+        if args.route_id:
+            self.route_id = str(args.route_id)
         else:
             self.route_id = "0"
 
@@ -68,10 +69,11 @@ class AWScenarioRunner(object):
         sys.path.insert(0, os.path.dirname(autoware_agent_path))
         self.module_aw_agent = importlib.import_module(module_name)
 
+        # main class to execute scenarios
         self.scenario_manager = ScenarioManager(
             args.debug,
             self.sync,
-            self.client_timeout,  # type: ignore
+            self.client_timeout
         )
 
         self.results_manager = ResultsManager()
@@ -83,31 +85,36 @@ class AWScenarioRunner(object):
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
-        self._start_wall_time = datetime.datetime.now()  #
+        self._start_wall_time = datetime.datetime.now()
 
         # parse the JSON scenario file
         if self.scenario_decoder is None:
             self.scenario_decoder = XMLToFiles()
-        self._parse_json(args.json, "route-scenario", 0)  # type: ignore
+        
+        scenario_name = os.path.split(os.path.splitext(args.json)[0])[1]
+        self._parse_json(args.json, scenario_name, 0)
 
-    def _parse_json(self, json: str, scenario: str, iteration: int) -> None:
-        # create a new directory in results
-        # like results-[date]-[time]
+    def _parse_json(self, json: str, scenario: str, iteration: str) -> None:
+        """Parses a given JSON Scenario definition. Outputs two XML files used by scenario runner
 
-        # create new results directory
-        if not self.results_path:
-            self.results_path = self.results_manager._create_run_folder()  # type: ignore
-
-        # first scenario run
-        self.last_scenario_path = self.results_manager._create_scenario_folder(
+        Args:
+            json (str): filepath to JSON scenario definition
+            scenario (str): Name of the scenario 
+            iteration (str): ID of the scenario. Can be anything, but must be unique
+        """
+        # create run directory if doesn't exist
+        if not self.results_manager.results_path:
+            self.results_manager._create_run_folder()
+            
+        self.results_manager._create_scenario_folder(
             scenario, iteration, self.results_path
-        )  # type: ignore
-        # parse the json, saving to scenario run path
-        self.scenario_decoder.parse_scenario(json, self.last_scenario_path)  # type: ignore
-
+        ) 
+        
+        self.scenario_decoder.parse_scenario(json, self.results_manager.last_scenario) 
+        
     def _signal_handler(self, signum, frame) -> None:
         """
-        Handle cleanup
+        Handle shutdown signal, do cleanup
         """
         self._shutdown_requested = True
         if self.scenario_manager:
@@ -147,11 +154,9 @@ class AWScenarioRunner(object):
         print("Loading Autoware agent")
         agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
         try:
-            print(agent_class_name)
             print(getattr(self.module_aw_agent, agent_class_name))
             self.aw_agent = getattr(self.module_aw_agent, agent_class_name)("")
             config.agent = self.aw_agent
-            print(config.agent)
         except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
             traceback.print_exc()
             print("Could not setup required agent due to {}".format(e))
@@ -215,11 +220,8 @@ class AWScenarioRunner(object):
         scenario_result = self.run_scenario(config)
         return scenario_result
 
-        # call the algorithm callback
-
     def destroy(self) -> None:
-        """
-        Clean up
+        """Deletes instances of all classes related to CARLA
         """
 
         self._cleanup()
@@ -231,6 +233,9 @@ class AWScenarioRunner(object):
             del self.carla_world
 
     def _cleanup(self) -> None:
+        """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA.
+        
+        """
         # Simulation still running and in synchronous mode?
         if self.carla_world is not None:
             try:
@@ -312,9 +317,20 @@ def main():
     )
 
     arguments = arg_parser.parse_args()
-
+    
+    # configure logger
+    log_config = None
+    with open('config.yaml', 'r') as stream:
+        log_config = yaml.safe_load(stream)
+    
+    logger = logging.getLogger('scenario-runner')
+    logger.setLevel(logging.INFO)
+    
+    log_path = LogUtil.create_log_file(log_config['log']['path'])
+    logger.addHandler(logging.FileHandler(log_path, encoding='utf-8'))
+    logger.addHandler(logging.StreamHandler(sys.stdout))
+    
     # reload world and sync must be present when running agent-based route scenarios
-
     scenario_runner = None
     try:
         scenario_runner = AWScenarioRunner(arguments)

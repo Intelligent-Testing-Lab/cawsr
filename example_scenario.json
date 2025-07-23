@@ -147,6 +147,9 @@
                     "yaw": -173,
                     "model": "vehicle.toyota.prius"
                 },
+                "route": {
+                    "route-id": 0
+                },
                 "weather": {
                     "route_percentage": 0.0,
                     "cloudiness": 50.0,
