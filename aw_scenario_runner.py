@@ -127,6 +127,7 @@ class AWScenarioRunner(object):
         # find the ego vehicle by name
         # only supports one ego
         self.carla_world = self.carla_client.get_world()
+        self.carla_client.load_world('Town01')
 
         ego_missing = True
         while ego_missing:
