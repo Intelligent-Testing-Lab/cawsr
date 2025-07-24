@@ -1,8 +1,0 @@
-<?xml version="1.0" ?>
-<scenarios>
-	<scenario town="Town01">
-		<ego_vehicle model="vehicle.toyota.prius" name="ego_vehicle" x="1234" y="5.2" yaw="-173" z="3123471"/>
-		<other_actor model="vehicle.toyota.prius" x="1234" y="5.2" yaw="-173" z="3123471"/>
-		<weather cloudiness="50.0" fog_density="2.0" precipitation_deposits="100.0" preciptation="100.0" route_percentage="0.0" sun_altitude_angle="90.0" sun_azimuth_angle="-1.0" wetness="100.0" wind_intensity="100.0"/>
-	</scenario>
-</scenarios>
