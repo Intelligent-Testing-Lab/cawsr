@@ -28,7 +28,14 @@ RUN python3 -m pip install -r requirements.txt && \
     tar -xvf PythonAPI.tar && \
     rm -rf PythonAPI.tar
 
+# update CYCLONE DDS Config for ROS
+RUN mkdir /cyclonedds && \
+    mv /autoware_scenario_runner/docker/cyclonedds.xml /cyclonedds/ && \
+    echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc && \
+    echo "export CYCLONEDDS_URI=file:///cyclonedds/cyclonedds.xml" >> ~/.bashrc && \
+    source ~/.bashrc
+
 ENV CARLA_API_ROOT="/autoware_scenario_runner/PythonAPI"
 ENV PYTHONPATH="${PYTHONPATH}:${CARLA_API_ROOT}/carla/agents:${CARLA_API_ROOT}/carla"
 
-ENTRYPOINT [ "/autoware_scenario_runner/entrypoint.sh" ] 
+ENTRYPOINT [ "/autoware_scenario_runner/entrypoint.sh" ]
