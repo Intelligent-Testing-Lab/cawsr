@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
 
+from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
+
 import carla
 import logging
 
@@ -29,6 +31,18 @@ class DefaultSensor(object):
         self.id: str = ""
         self.spawn: carla.Transform | None = None
 
+    def _spawn(self, bp_library, vehicle) -> None:
+        sensor_bp = bp_library.find(str(self.type))
+
+        ignored_params = ["type", "id", "spawn"]
+
+        sensor_params = [attr for attr in dir(self) if attr not in ignored_params]
+
+        for param in sensor_params:
+            sensor_bp.set_attribute(param, getattr(self, param))
+
+        CarlaDataProvider.get_world().spawn_actor(sensor_bp, self.spawn, vehicle)
+
 
 class CameraRGB(DefaultSensor):
     """
@@ -56,6 +70,36 @@ class LidarRayCast(DefaultSensor):
         self.lower_fov: float = 0.0
         self.rotation_freq: int = 0
         self.noise_sttdev: float = 0.0
+
+
+class SensorGNSS(DefaultSensor):
+    """
+    A class to hold additional information about GNSS
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.noise_alt_stddev = 0.0
+        self.noise_lat_stddev = 0.0
+        self.noise_lon_stddev = 0.0
+        self.noise_alt_bias = 0.0
+        self.noise_lat_bias = 0.0
+        self.noise_lon_bias = 0.0
+
+
+class SensorIMU(DefaultSensor):
+    """
+    A class to hold additional information about IMU
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.noise_accel_stddev_x = 0.0
+        self.noise_accel_stddev_y = 0.0
+        self.noise_accel_stddev_z = 0.0
+        self.noise_gyro_stddev_x = 0.0
+        self.noise_gyro_stddev_y = 0.0
+        self.noise_gyro_stddev_z = 0.0
 
 
 class EnvironmentParser(object):

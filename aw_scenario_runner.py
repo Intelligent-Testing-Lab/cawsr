@@ -221,7 +221,7 @@ class AWScenarioRunner(object):
             os.path.join(self.results_manager.last_scenario, "scenario.xml")
         )
 
-    def _spawn_ego(self, env_config: EnvironmentConfig) -> None:
+    def _spawn_ego(self, world, env_config: EnvironmentConfig) -> None:
         ego = CarlaDataProvider.request_new_actor(
             model=env_config.ego_model,
             spawn_point=env_config.ego_spawn,
@@ -229,9 +229,11 @@ class AWScenarioRunner(object):
         )
         self.ego_vehicles.append(ego)
 
+        bp_library = world.get_blueprint_library()
         # setup sensors
-
-        return
+        for sensor in env_config.sensor_config:
+            sensor._spawn(bp_library, ego)
+            print(f"Spawned sensor type {sensor.type}")
 
     def _load_route_scenario(
         self, env_config: EnvironmentConfig
