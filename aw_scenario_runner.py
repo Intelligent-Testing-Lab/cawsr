@@ -19,6 +19,10 @@ from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.tools.route_parser import RouteParser
 from srunner.tools.environment_parser import EnvironmentParser
+from srunner.tools.environment_parser import EnvironmentConfig
+from srunner.scenarioconfigs.route_scenario_configuration import (
+    RouteScenarioConfiguration,
+)
 
 from srunner.tools.log import LogUtil
 
@@ -120,27 +124,34 @@ class AWScenarioRunner(object):
             if not self.scenario_manager.get_running_status():
                 raise RuntimeError("Scenario Timeout")
 
-    def run_scenario(self, config) -> bool:
+    def run_scenario(
+        self, route_config: RouteScenarioConfiguration, env_config: EnvironmentConfig
+    ) -> bool:
         # find the ego vehicle by name
         # only supports one ego
-        self.carla_world = self.carla_client.get_world()
-        self.carla_client.load_world("Town01")
 
+        # setup world based on env config
+        # make sure to reload
+        self.carla_world = self.carla_client.get_world()
+        self.carla_client.load_world(env_config.town)
+
+        # replace with spawning ego
         ego_missing = True
         while ego_missing:
             self.ego_vehicles = []
-            for ego in config.ego_vehicles:
+            for ego in route_config.ego_vehicles:
                 carla_vehicles = (
                     self.carla_client.get_world().get_actors().filter("vehicle.*")
                 )
 
                 for carla_vehicle in carla_vehicles:
-                    if carla_vehicle.attributes["role_name"] == ego["name"]:
+                    if carla_vehicle.attributes["role_name"] == ego:
                         self.ego_vehicles.append(carla_vehicle)
                         ego_missing = False
                         break
                 print("Can't find ego, waiting...")
                 time.sleep(1)
+                ego_missing = False
         print("Found ego")
 
         # update carla provider
@@ -155,7 +166,11 @@ class AWScenarioRunner(object):
             try:
                 print(getattr(self.module_aw_agent, agent_class_name))
                 self.aw_agent = getattr(self.module_aw_agent, agent_class_name)("")
-                config.agent = self.aw_agent
+                route_config.agent = self.aw_agent
+
+                # call the agent method to notify the bridge of the ego spawn
+                # only continue once state changes!
+
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
                 traceback.print_exc()
                 print("Could not setup required agent due to {}".format(e))
@@ -163,26 +178,27 @@ class AWScenarioRunner(object):
                 return False
 
         # ADD TRAFFIC MANAGER SEED TO CONFIG
-        tm_port = int(self._args.traffic_port)  # type: ignore
+        tm_port = int(self._tm_config["port"])  # type: ignore
         CarlaDataProvider.set_traffic_manager_port(tm_port)
         tm = self.carla_client.get_trafficmanager(tm_port)
         tm.set_random_device_seed(1)  # ADD TO CONFIG
 
-        tm.set_synchronous_mode(True)
+        tm.set_synchronous_mode(self._tm_config["sync"])
 
         print("Preparing ego...")
 
         # update ego position to one specified in route
-        ego_transform = config.ego_vehicles[0]["transform"]
-        self.ego_vehicles[0].set_transform(ego_transform)
+        self.ego_vehicles[0].set_transform(env_config.ego_spawn)
         self.ego_vehicles[0].set_target_velocity(carla.Vector3D())
         self.ego_vehicles[0].set_target_angular_velocity(carla.Vector3D())
-        CarlaDataProvider.register_actor(self.ego_vehicles[0], ego_transform)
+        CarlaDataProvider.register_actor(self.ego_vehicles[0], env_config.ego_spawn)
 
         print("Loading route...")
         try:
             scenario = RouteScenario(
-                world=self.carla_world, config=config, debug_mode=True
+                world=self.carla_world,
+                config=route_config,
+                debug_mode=self._carla_config["debug"],
             )
         except Exception:
             print("Could not load Route Scenario")
@@ -200,34 +216,43 @@ class AWScenarioRunner(object):
             result = False
         return result
 
-    def _load_route_scenario(self) -> None:
-        env_config = EnvironmentParser.parse_scenario_env(
+    def _load_scenario_config(self) -> EnvironmentConfig:
+        return EnvironmentParser.parse_scenario_env(
             os.path.join(self.results_manager.last_scenario, "scenario.xml")
         )
 
+    def _spawn_ego(self, env_config: EnvironmentConfig) -> None:
+        ego = CarlaDataProvider.request_new_actor(
+            model=env_config.ego_model,
+            spawn_point=env_config.ego_spawn,
+            rolename=env_config.ego_name,
+        )
+        self.ego_vehicles.append(ego)
+
+        # setup sensors
+
+        return
+
+    def _load_route_scenario(
+        self, env_config: EnvironmentConfig
+    ) -> RouteScenarioConfiguration:
         route_config = RouteParser.parse_routes_file(
-            self.results_manager.last_scenario, env_config.route_id
+            self.results_manager.last_scenario, env_config
         )  # type: ignore
 
         return route_config[0]
 
-    def run(self) -> None:
+    def run(self) -> bool:
         # load the route config
         # load the scenarion
         # run it
         # get the metrics
         # call the algorithm callback
 
-        config = self._load_route_scenario()
+        env_config = self._load_scenario_config()
+        route_config = self._load_route_scenario(env_config)
 
-        # setup CARLA settings
-        if self._carla_config["sync"]:
-            settings = self.carla_world.get_settings()
-            settings.synchonous_mode = True
-            settings.fixed_delta_seconds = self._carla_config["fixed_delta_seconds"]
-            self.carla_world.apply_settings(settings)
-
-        scenario_result = self.run_scenario(config)
+        scenario_result = self.run_scenario(route_config, env_config)
         return scenario_result
 
     def destroy(self) -> None:

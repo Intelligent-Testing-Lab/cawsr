@@ -7,6 +7,7 @@ carla:
   timeout: 20
   sync: true
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
+  debug: false
 traffic_manager:
   active: false
   sync: true # must be the same as carla sync
@@ -15,4 +16,4 @@ scenario_runner:
   json: ./example_scenario.json
   debug: false
   route_id: 0
-  in_docker: false # used for dev
+  in_docker: true # used for dev

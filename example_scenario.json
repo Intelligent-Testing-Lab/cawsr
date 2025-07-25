@@ -3,7 +3,6 @@
         {
             "route": {
                 "id": 0,
-                "town": "Town01",
                 "weathers": [
                     {
                         "weather": {
@@ -59,7 +58,6 @@
         {
             "route": {
                 "id": 1,
-                "town": "Town01",
                 "weathers": [
                     {
                         "weather": {
@@ -147,7 +145,6 @@
                                 "id": "rgb_front",
                                 "spawn_point": {
                                     "x": 0.7,
-
                                     "y": 0.0,
                                     "z": 1.6,
                                     "roll": 0.0,

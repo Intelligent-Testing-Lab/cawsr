@@ -19,6 +19,8 @@ from srunner.scenarioconfigs.scenario_configuration import (
     ActorConfigurationData,
 )
 
+from srunner.tools.environment_parser import EnvironmentConfig
+
 # Threshold to say if a scenarios trigger position is part of the route
 DIST_THRESHOLD = 2.0
 ANGLE_THRESHOLD = 10
@@ -42,7 +44,7 @@ class RouteParser(object):
     """
 
     @staticmethod
-    def parse_routes_file(config_path, single_route_id=""):
+    def parse_routes_file(config_path, env_config: EnvironmentConfig):
         """
         Returns a list of route configuration elements.
         :param route_filename: the path to a set of routes.
@@ -51,7 +53,7 @@ class RouteParser(object):
         """
 
         route_filename = os.path.join(config_path, "route.xml")
-        scenario_config = os.path.join(config_path, "scenario.xml")
+        single_route_id = env_config.route_id
 
         route_configs = []
         tree = ET.parse(route_filename)
@@ -61,7 +63,7 @@ class RouteParser(object):
                 continue
 
             route_config = RouteScenarioConfiguration()
-            route_config.town = route.attrib["town"]
+            route_config.town = env_config.town
             route_config.name = "RouteScenario_{}".format(route_id)
             route_config.weather = RouteParser.parse_weather(route)
 
@@ -76,28 +78,9 @@ class RouteParser(object):
                     )
                 )
             route_config.keypoints = positions
+            route_config.ego_vehicles = [env_config.ego_name]
 
             scenario_configs = []
-            # load the scenario configuration from the same directory
-            # TO DO -> implement defining other actors
-            scenario_tree = ET.parse(scenario_config)
-
-            # get the name of the ego
-            _ego = scenario_tree.getroot().find("scenario").find("ego_vehicle")
-
-            _ego_config = {
-                "name": _ego.attrib.get("name"),
-                "transform": carla.Transform(
-                    carla.Location(
-                        float(_ego.attrib.get("x")),
-                        float(_ego.attrib.get("y")),
-                        float(_ego.attrib.get("z")),
-                    ),
-                    carla.Rotation(0.0, float(_ego.attrib.get("yaw")), 0.0),
-                ),
-            }
-
-            route_config.ego_vehicles = [_ego_config]
 
             # The list of ScenarioConfigurations that store the scenario's data
             for scenario in route.find("scenarios").iter("scenario"):

@@ -35,6 +35,7 @@ class AutowareState(state.AgentState):
         # internal message states
         self.sent_route: bool = False
         self.sent_engage: bool = False
+        self.bridge_ready: bool = False
 
         # ADS state
         self.motion_state: int = 0

@@ -7,22 +7,23 @@ from srunner.autoagents.autoware_nodes import state_node
 
 from srunner.autoagents.agent_state import autoware_state
 
+from srunner.tools.environment_parser import EnvironmentConfig
+
 import threading
 import rclpy
 
 
 DEBUG_ENV = False
 
+
 # uncomment if testing in scenario runner
-
-
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     current_map = None
     agent_set_route = False
     counter = 0
 
-    def setup(self, path_to_conf_file: dict | None = None) -> None:
+    def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
             - Initialise the state
             - Setup nodes
@@ -44,6 +45,13 @@ class AutowareAgent(AutonomousAgent):
             threading.Thread(target=rclpy.spin, args=(self.autoware_node)),
             threading.Thread(target=rclpy.spin, args=(self.state_node)),
         ]
+
+        # check the bridge is ready
+        # publish sensor information to the bridge
+        # wait for it to return the correct message
+        # hang until
+        while not self.autoware_state.bridge_ready:
+            return
 
     def set_route(self) -> None:
         # for every point in the plan
