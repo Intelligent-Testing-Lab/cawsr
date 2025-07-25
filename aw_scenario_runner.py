@@ -5,7 +5,6 @@ import os
 import importlib
 import signal
 import sys
-import time
 import logging
 import datetime
 import yaml
@@ -135,28 +134,31 @@ class AWScenarioRunner(object):
         self.carla_world = self.carla_client.get_world()
         self.carla_client.load_world(env_config.town)
 
-        # replace with spawning ego
-        ego_missing = True
-        while ego_missing:
-            self.ego_vehicles = []
-            for ego in route_config.ego_vehicles:
-                carla_vehicles = (
-                    self.carla_client.get_world().get_actors().filter("vehicle.*")
-                )
-
-                for carla_vehicle in carla_vehicles:
-                    if carla_vehicle.attributes["role_name"] == ego:
-                        self.ego_vehicles.append(carla_vehicle)
-                        ego_missing = False
-                        break
-                print("Can't find ego, waiting...")
-                time.sleep(1)
-                ego_missing = False
-        print("Found ego")
-
         # update carla provider
-        CarlaDataProvider.set_client(self.carla_client)
         CarlaDataProvider.set_world(self.carla_world)
+
+        # replace with spawning ego
+        # ego_missing = True
+        # while ego_missing:
+        #    self.ego_vehicles = []
+        #    for ego in route_config.ego_vehicles:
+        #        carla_vehicles = (
+        #            self.carla_client.get_world().get_actors().filter("vehicle.*")
+        #        )
+        #
+        #        for carla_vehicle in carla_vehicles:
+        #            if carla_vehicle.attributes["role_name"] == ego:
+        #                self.ego_vehicles.append(carla_vehicle)
+        #                ego_missing = False
+        #                break
+        #        print("Can't find ego, waiting...")
+        #        time.sleep(1)
+        #        ego_missing = False
+
+        print("Spawning ego...")
+        self._spawn_ego(env_config)
+
+        print("Spawned ego...")
 
         self.carla_world.wait_for_tick()
 
@@ -165,7 +167,9 @@ class AWScenarioRunner(object):
             agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
             try:
                 print(getattr(self.module_aw_agent, agent_class_name))
-                self.aw_agent = getattr(self.module_aw_agent, agent_class_name)("")
+                self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
+                    env_config
+                )
                 route_config.agent = self.aw_agent
 
                 # call the agent method to notify the bridge of the ego spawn
@@ -176,6 +180,9 @@ class AWScenarioRunner(object):
                 print("Could not setup required agent due to {}".format(e))
                 # self._cleanup()
                 return False
+
+        # only set synchronous mode once bridge is ready
+        # tick synchronously until then
 
         # ADD TRAFFIC MANAGER SEED TO CONFIG
         tm_port = int(self._tm_config["port"])  # type: ignore
@@ -221,7 +228,7 @@ class AWScenarioRunner(object):
             os.path.join(self.results_manager.last_scenario, "scenario.xml")
         )
 
-    def _spawn_ego(self, world, env_config: EnvironmentConfig) -> None:
+    def _spawn_ego(self, env_config: EnvironmentConfig) -> None:
         ego = CarlaDataProvider.request_new_actor(
             model=env_config.ego_model,
             spawn_point=env_config.ego_spawn,
@@ -229,7 +236,7 @@ class AWScenarioRunner(object):
         )
         self.ego_vehicles.append(ego)
 
-        bp_library = world.get_blueprint_library()
+        bp_library = self.carla_world.get_blueprint_library()
         # setup sensors
         for sensor in env_config.sensor_config:
             sensor._spawn(bp_library, ego)

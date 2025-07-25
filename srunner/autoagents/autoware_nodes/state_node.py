@@ -4,6 +4,8 @@ from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
 
+from srunner.tools.environment_parser import DefaultSensor
+
 
 class StateNode(Node):
     route_state = "/planning/mission_planning/state"
@@ -55,3 +57,6 @@ class StateNode(Node):
             localize_state_msg (LocalizationInitializationState): localization message received
         """
         self.autoware_state.localize_state = localize_state_msg.state
+
+    def publish_sensor_info(self, sensor_config: list[DefaultSensor]) -> None:
+        return

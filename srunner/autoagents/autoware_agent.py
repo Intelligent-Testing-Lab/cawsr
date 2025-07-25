@@ -11,6 +11,7 @@ from srunner.tools.environment_parser import EnvironmentConfig
 
 import threading
 import rclpy
+import time
 
 
 DEBUG_ENV = False
@@ -29,8 +30,9 @@ class AutowareAgent(AutonomousAgent):
             - Setup nodes
 
         Args:
-            _path_to_conf (dict | None): path to config, passed from AutonomousAgent
+            config (EnvironmentConfig | None): environment configuration file
         """
+
         rclpy.init(args=None)
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
@@ -51,6 +53,8 @@ class AutowareAgent(AutonomousAgent):
         # wait for it to return the correct message
         # hang until
         while not self.autoware_state.bridge_ready:
+            time.sleep(1)
+
             return
 
     def set_route(self) -> None:
