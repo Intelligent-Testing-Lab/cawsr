@@ -43,6 +43,8 @@ class DefaultSensor(object):
 
         CarlaDataProvider.get_world().spawn_actor(sensor_bp, self.spawn, vehicle)
 
+    def serealize(self):
+        return self.type, self.id
 
 class CameraRGB(DefaultSensor):
     """
