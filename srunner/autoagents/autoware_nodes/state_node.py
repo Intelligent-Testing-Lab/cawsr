@@ -3,7 +3,7 @@ from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
-from autoware_carla_interface.msg import EgoConfig, BridgeState
+from autoware_carla_interface_msgs.msg import EgoConfig, BridgeState
 
 
 class StateNode(Node):

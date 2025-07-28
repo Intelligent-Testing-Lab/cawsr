@@ -9,7 +9,7 @@ from srunner.autoagents.agent_state import autoware_state
 
 from srunner.tools.environment_parser import EnvironmentConfig
 
-from autoware_carla_interface.msg import EgoConfig, SensorConfig
+from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
 import threading
 import rclpy
@@ -67,7 +67,7 @@ class AutowareAgent(AutonomousAgent):
 
         # keep publishing ego_sensor config until the bridge is ready
         while not self.autoware_state.bridge_ready:
-            time.sleep(1)
+            time.sleep(5)
             self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
