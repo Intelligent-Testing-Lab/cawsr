@@ -17,3 +17,6 @@ scenario_runner:
   debug: false
   route_id: 0
   in_docker: true # used for dev
+algorithm:
+  iterations: 1000
+  hyperparmaters: # will be passed into the algorithm class
