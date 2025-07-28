@@ -174,7 +174,6 @@
                                 "upper_fov": 10.0,
                                 "lower_fov": -30.0,
                                 "rotation_frequency": 20,
-                                "noise_stddev": 0.0
                             }
                         },
                         {

@@ -19,4 +19,5 @@ scenario_runner:
   in_docker: true # used for dev
 algorithm:
   iterations: 1000
+  path: /srunner/ # relative path
   hyperparmaters: # will be passed into the algorithm class

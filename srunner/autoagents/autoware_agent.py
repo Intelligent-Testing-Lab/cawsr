@@ -53,7 +53,6 @@ class AutowareAgent(AutonomousAgent):
         # check the bridge is ready
         # publish sensor information to the bridge
         # wait for it to return the correct message
-        # hang until
 
         ego_config_msg = EgoConfig()
         ego_config_msg.ego_name = config.ego_name
@@ -69,7 +68,7 @@ class AutowareAgent(AutonomousAgent):
         # keep publishing ego_sensor config until the bridge is ready
         while not self.autoware_state.bridge_ready:
             time.sleep(1)
-            self.autoware_state.ego_config_publisher.publish(ego_config_msg)
+            self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
         # for every point in the plan
