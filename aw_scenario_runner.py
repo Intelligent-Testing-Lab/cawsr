@@ -68,10 +68,10 @@ class AWScenarioRunner(object):
             self.module_aw_agent = importlib.import_module(module_name)
 
         # load the algorithm of choice
-        algorithm = self._scenario_config["algorithm"]  # relative path to entry point
-        alg_module = os.path.basename(algorithm).split(".")[0]
-        sys.path.insert(0, os.path.dirname(algorithm))
-        self.module_algorithm = importlib.import_module(alg_module)
+        # algorithm = self._scenario_config["algorithm"]  # relative path to entry point
+        # alg_module = os.path.basename(algorithm).split(".")[0]
+        # sys.path.insert(0, os.path.dirname(algorithm))
+        # self.module_algorithm = importlib.import_module(alg_module)
 
         # main class to execute scenarios
         self.scenario_manager = ScenarioManager(
