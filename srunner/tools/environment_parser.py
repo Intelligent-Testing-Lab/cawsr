@@ -39,12 +39,14 @@ class DefaultSensor(object):
         sensor_params = [attr for attr in dir(self) if attr not in ignored_params]
 
         for param in sensor_params:
-            sensor_bp.set_attribute(param, getattr(self, param))
+            sensor_bp.set_attribute(param, str(getattr(self, param)))
 
         CarlaDataProvider.get_world().spawn_actor(sensor_bp, self.spawn, vehicle)
+        CarlaDataProvider.get_world().wait_for_tick()
 
     def serealize(self):
         return self.type, self.id
+
 
 class CameraRGB(DefaultSensor):
     """
@@ -70,8 +72,7 @@ class LidarRayCast(DefaultSensor):
         self.points_per_second: int = 0
         self.upper_fov: float = 0.0
         self.lower_fov: float = 0.0
-        self.rotation_freq: int = 0
-        self.noise_sttdev: float = 0.0
+        self.rotation_frequency: int = 0
 
 
 class SensorGNSS(DefaultSensor):
@@ -171,8 +172,9 @@ class EnvironmentParser(object):
                 sensor_obj.points_per_second = sensor.attrib.get("points_per_second", 0)
                 sensor_obj.upper_fov = sensor.attrib.get("upper_fov", 0.0)
                 sensor_obj.lower_fov = sensor.attrib.get("lower_fov", 0.0)
-                sensor_obj.rotation_freq = sensor.attrib.get("rotation_frequency", 0)
-                sensor_obj.noise_sttdev = sensor.attrib.get("noise_sttdev", 0.0)
+                sensor_obj.rotation_frequency = sensor.attrib.get(
+                    "rotation_frequency", 0
+                )
 
             sensor_obj.type = sensor_type
             sensor_obj.id = sensor.attrib.get("id", "")

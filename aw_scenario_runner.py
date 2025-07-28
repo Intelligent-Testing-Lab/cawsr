@@ -67,6 +67,12 @@ class AWScenarioRunner(object):
             sys.path.insert(0, os.path.dirname(autoware_agent_path))
             self.module_aw_agent = importlib.import_module(module_name)
 
+        # load the algorithm of choice
+        algorithm = self._scenario_config["algorithm"]  # relative path to entry point
+        alg_module = os.path.basename(algorithm).split(".")[0]
+        sys.path.insert(0, os.path.dirname(algorithm))
+        self.module_algorithm = importlib.import_module(alg_module)
+
         # main class to execute scenarios
         self.scenario_manager = ScenarioManager(
             self._scenario_config["debug"],
@@ -221,7 +227,7 @@ class AWScenarioRunner(object):
             result = True
         except Exception:
             traceback.print_exc()
-            print("It doesn't wokr")
+            print("It doesn't work")
             result = False
         return result
 
@@ -237,6 +243,8 @@ class AWScenarioRunner(object):
             rolename=env_config.ego_name,
         )
         self.ego_vehicles.append(ego)
+
+        CarlaDataProvider.get_world().wait_for_tick()  # wait for tick
 
         bp_library = self.carla_world.get_blueprint_library()
         # setup sensors
@@ -254,11 +262,15 @@ class AWScenarioRunner(object):
         return route_config[0]
 
     def run(self) -> bool:
+        # load the original JSON file
         # load the route config
-        # load the scenarion
-        # run it
+        # load the scenario config
+        # run scenario
         # get the metrics
         # call the algorithm callback
+        # save using ResultsManager static class
+
+        # repeat for iterations
 
         env_config = self._load_scenario_config()
         route_config = self._load_route_scenario(env_config)

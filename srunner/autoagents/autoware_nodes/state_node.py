@@ -5,15 +5,13 @@ from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
 from autoware_carla_interface.msg import EgoConfig, BridgeState
 
-from srunner.tools.environment_parser import DefaultSensor
-
 
 class StateNode(Node):
     route_state = "/planning/mission_planning/state"
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
 
-    ego_config = "/bridge/ego_vehicle/config" # publish sensor config type: EgoConfig
+    ego_config = "/bridge/ego_vehicle/config"  # publish sensor config type: EgoConfig
     bridge_state = "/bridge/state"
 
     def __init__(self, autoware_state: autoware_state.AutowareState) -> None:
@@ -33,18 +31,13 @@ class StateNode(Node):
             10,
         )
         self.autoware_state_subscriber = self.create_subscription(
-            BridgeState,
-            self.bridge_state,
-            self.bridge_state_cb,
-            10
+            BridgeState, self.bridge_state, self.bridge_state_cb, 10
         )
-        
+
         self.ego_config_publisher = self.create_publisher(
-            EgoConfig,
-            self.ego_config,
-            10
+            EgoConfig, self.ego_config, 10
         )
-        
+
     def bridge_state_cb(self, bridge_state_msg: BridgeState):
         """Set the AutowareState attribute bridge_state
 
@@ -78,6 +71,3 @@ class StateNode(Node):
             localize_state_msg (LocalizationInitializationState): localization message received
         """
         self.autoware_state.localize_state = localize_state_msg.state
-
-    def publish_sensor_info(self, sensor_config: list[DefaultSensor]) -> None:
-        return
