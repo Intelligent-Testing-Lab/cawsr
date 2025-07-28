@@ -66,6 +66,7 @@ class AutowareAgent(AutonomousAgent):
             sensor_config_msg.sensor_id = sensor_config.id
             ego_config_msg.sensors.append(sensor_config_msg)
 
+        # keep publishing ego_sensor config until the bridge is ready
         while not self.autoware_state.bridge_ready:
             time.sleep(1)
             self.autoware_state.ego_config_publisher.publish(ego_config_msg)

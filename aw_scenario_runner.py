@@ -167,14 +167,12 @@ class AWScenarioRunner(object):
             agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
             try:
                 print(getattr(self.module_aw_agent, agent_class_name))
+                # call the agent method to notify the bridge of the ego spawn
+                # this will loop until the bridge is ready
                 self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
                     env_config
                 )
                 route_config.agent = self.aw_agent
-
-                # call the agent method to notify the bridge of the ego spawn
-                # only continue once state changes!
-
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
                 traceback.print_exc()
                 print("Could not setup required agent due to {}".format(e))
@@ -182,7 +180,11 @@ class AWScenarioRunner(object):
                 return False
 
         # only set synchronous mode once bridge is ready
-        # tick synchronously until then
+        # tick asynchronously until then
+        settings = CarlaDataProvider.get_world().get_settings()
+        settings.synchronous_mode = True
+        settings.fixed_delta_seconds = self._carla_config["fixed_delta_seconds"]
+        CarlaDataProvider.get_world().apply_settings(settings)
 
         # ADD TRAFFIC MANAGER SEED TO CONFIG
         tm_port = int(self._tm_config["port"])  # type: ignore
