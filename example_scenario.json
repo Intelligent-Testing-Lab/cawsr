@@ -7,7 +7,7 @@
                     {
                         "weather": {
                             "route_percentage": 0.0,
-                            "preciptation": 100.0,
+                            "precipitation": 100.0,
                             "precipitation_deposits": 100.0,
                             "wetness": 100.0,
                             "wind_intensity": 100.0,
@@ -19,7 +19,7 @@
                     {
                         "weather": {
                             "route_percentage": 50.0,
-                            "preciptation": 0.0,
+                            "precipitation": 0.0,
                             "precipitation_deposits": 0.0,
                             "wetness": 0.0,
                             "wind_intensity": 0.0,
@@ -63,7 +63,7 @@
                         "weather": {
                             "route_percentage": 0.0,
                             "cloudiness": 0.0,
-                            "preciptation": 100.0,
+                            "precipitation": 100.0,
                             "precipitation_deposits": 100.0,
                             "wetness": 100.0,
                             "wind_intensity": 100.0,
@@ -76,7 +76,7 @@
                         "weather": {
                             "route_percentage": 50.0,
                             "cloudiness": 50.0,
-                            "preciptation": 0.0,
+                            "precipitation": 0.0,
                             "precipitation_deposits": 0.0,
                             "wetness": 0.0,
                             "wind_intensity": 0.0,
@@ -89,7 +89,7 @@
                         "weather": {
                             "route_percentage": 100.0,
                             "cloudiness": 100.0,
-                            "preciptation": 0.0,
+                            "precipitation": 0.0,
                             "precipitation_deposits": 0.0,
                             "wetness": 0.0,
                             "wind_intensity": 0.0,
@@ -132,10 +132,10 @@
                 "town": "Town01",
                 "route-id": 0,
                 "ego_vehicle": {
-                    "x": 1234,
-                    "y": 5.2,
-                    "z": 3123471,
-                    "yaw": -173,
+                    "x": 312,
+                    "y": 129,
+                    "z": 0,
+                    "yaw": 180,
                     "model": "vehicle.toyota.prius",
                     "name": "ego_vehicle",
                     "sensor_configuration": [
@@ -173,7 +173,7 @@
                                 "points_per_second": 300000,
                                 "upper_fov": 10.0,
                                 "lower_fov": -30.0,
-                                "rotation_frequency": 20,
+                                "rotation_frequency": 20
                             }
                         },
                         {
