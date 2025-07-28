@@ -7,29 +7,34 @@ from srunner.autoagents.autoware_nodes import state_node
 
 from srunner.autoagents.agent_state import autoware_state
 
+from srunner.tools.environment_parser import EnvironmentConfig
+
+from autoware_carla_interface.msg import EgoConfig, SensorConfig
+
 import threading
 import rclpy
+import time
 
 
 DEBUG_ENV = False
 
+
 # uncomment if testing in scenario runner
-
-
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     current_map = None
     agent_set_route = False
     counter = 0
 
-    def setup(self, path_to_conf_file: dict | None = None) -> None:
+    def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
             - Initialise the state
             - Setup nodes
 
         Args:
-            _path_to_conf (dict | None): path to config, passed from AutonomousAgent
+            config (EnvironmentConfig | None): environment configuration file
         """
+
         rclpy.init(args=None)
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
@@ -44,6 +49,26 @@ class AutowareAgent(AutonomousAgent):
             threading.Thread(target=rclpy.spin, args=(self.autoware_node)),
             threading.Thread(target=rclpy.spin, args=(self.state_node)),
         ]
+
+        # check the bridge is ready
+        # publish sensor information to the bridge
+        # wait for it to return the correct message
+        # hang until
+
+        ego_config_msg = EgoConfig()
+        ego_config_msg.ego_name = config.ego_name
+        ego_config_msg.ego_model = config.ego_model
+        ego_config_msg.sensors = []
+
+        for sensor_config in config.sensor_config:
+            sensor_config_msg = SensorConfig()
+            sensor_config_msg.sensor_type = sensor_config.type
+            sensor_config_msg.sensor_id = sensor_config.id
+            ego_config_msg.sensors.append(sensor_config_msg)
+
+        while not self.autoware_state.bridge_ready:
+            time.sleep(1)
+            self.autoware_state.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
         # for every point in the plan

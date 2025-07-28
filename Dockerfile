@@ -23,6 +23,8 @@ ENV AUTOWARE_MSG_PKG="/ros_workspace/install/setup.bash"
 ENV ROS_PKG="/opt/ros/${ROS_DISTRO}/setup.bash"
 
 # install pip requirements and carla
+# NETWORKX has issues with collections.abc
+# switch to different versions (python 3.9+)
 RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
