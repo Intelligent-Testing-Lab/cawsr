@@ -42,12 +42,16 @@ class AutowareAgent(AutonomousAgent):
         self.state_node = state_node.StateNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
 
-        self._nodes = [self.route_node, self.autoware_node, self.state_node]
-        self._node_threads = [
-            threading.Thread(target=rclpy.spin, args=(self.route_node)),
-            threading.Thread(target=rclpy.spin, args=(self.autoware_node)),
-            threading.Thread(target=rclpy.spin, args=(self.state_node)),
-        ]
+        self._multi_thread_executor = rclpy.executor.MultiThreadedExecutor()
+
+        self._multi_thread_executor.add(self.route_node)
+        self._multi_thread_executor.add(self.state_node)
+        self._multi_thread_executor.add(self.autoware_node)
+
+        self._executor_thread = threading.Thread(
+            target=self._multi_thread_executor.spin, daemon=True
+        )
+        self._executor_thread.start()
 
         # check the bridge is ready
         # publish sensor information to the bridge
@@ -105,13 +109,13 @@ class AutowareAgent(AutonomousAgent):
     def destroy(self) -> None:
         """Cleanup"""
         try:
-            for thread in range(len(self._node_threads)):
-                self._node_threads[thread].join()
-                self._nodes[thread].destroy_node()
+            self.autoware_node.destroy()
+            self.state_node.destroy()
+            self.route_node.destroy()
+            rclpy.shutdown()
+            self._executor_thread.join()
         except RuntimeError:
             logger.info("Cleaned up threads...")
-
-        rclpy.shutdown()
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""

@@ -67,5 +67,5 @@ class EgoVehicle(object):
         """Clean up
         Check if the actor exists in CARLA, delete if so
         """
-        if self._actor.is_alive():
+        if self._actor.is_alive:
             self._actor.destroy()
