@@ -12,8 +12,7 @@ import yaml
 import carla
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
-from srunner.scenario_decoder.json_to_xml_files import XMLToFiles
-from srunner.tools.results_manager import ResultsManager
+from srunner.tools.results_manager import ScenarioDefinitionManager
 from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.tools.route_parser import RouteParser
@@ -23,22 +22,26 @@ from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
 
+from srunner.objects.ego_vehicle import EgoVehicle
+
 from srunner.tools.log import LogUtil
+
+logger = logging.getLogger("scenario-runner")
 
 
 class AWScenarioRunner(object):
+    # flags
+    DEV_MODE = False
+    DEBUG = False
+
+    # global class instances
     ego_vehicles = []
 
-    # world and scenario handlers
     carla_world = None
     carla_client = None
 
     scenario_manager = None
-    scenario_decoder = None
-    results_manager = None
-
-    wait_for_update = False
-    finished = False
+    definition_manager = None
 
     aw_agent = None
 
@@ -46,6 +49,7 @@ class AWScenarioRunner(object):
         """
         Setup Scenario Manager and the Carla client
         """
+
         self._carla_config = config["carla"]
         self._tm_config = config["traffic_manager"]
         self._scenario_config = config["scenario_runner"]
@@ -53,25 +57,25 @@ class AWScenarioRunner(object):
         self.carla_client = carla.Client(
             self._carla_config["host"], int(self._carla_config["port"])
         )
+
         self.carla_client.set_timeout(self._carla_config["timeout"])
 
-        # update the client
+        # Flags
+        self.DEV_MODE = self._scenario_config["dev_mode"]
+        self.DEBUG = self._scenario_config["dev_mode"]
+
         CarlaDataProvider.set_client(self.carla_client)
 
-        # load autoware agent
-        # only load if in docker environment
-        # debug
-        if self._scenario_config["in_docker"]:
-            autoware_agent_path = "srunner/autoagents/autoware_agent"
+        if not self.DEV_MODE:  # only load agents and algorithms in non-dev mode
+            autoware_agent_path = self._scenario_config["agent"]
             module_name = os.path.basename(autoware_agent_path).split(".")[0]
             sys.path.insert(0, os.path.dirname(autoware_agent_path))
             self.module_aw_agent = importlib.import_module(module_name)
 
-        # load the algorithm of choice
-        # algorithm = self._scenario_config["algorithm"]  # relative path to entry point
-        # alg_module = os.path.basename(algorithm).split(".")[0]
-        # sys.path.insert(0, os.path.dirname(algorithm))
-        # self.module_algorithm = importlib.import_module(alg_module)
+            algorithm = self._scenario_config["algorithm"]["path"]
+            alg_module = os.path.basename(algorithm).split(".")[0]
+            sys.path.insert(0, os.path.dirname(algorithm))
+            self.module_algorithm = importlib.import_module(alg_module)
 
         # main class to execute scenarios
         self.scenario_manager = ScenarioManager(
@@ -80,9 +84,9 @@ class AWScenarioRunner(object):
             self._carla_config["timeout"],
         )
 
-        self.results_manager = ResultsManager()
+        self.results_manager = ScenarioDefinitionManager()
 
-        # Create signal handler for SIGINT
+        #  capture SIGINT for cleanp
         self._shutdown_requested = False
         if sys.platform != "win32":
             signal.signal(signal.SIGHUP, self._signal_handler)
@@ -91,32 +95,13 @@ class AWScenarioRunner(object):
 
         self._start_wall_time = datetime.datetime.now()
 
-        # parse the JSON scenario file
-        if self.scenario_decoder is None:
-            self.scenario_decoder = XMLToFiles()
-
         scenario_name = os.path.split(
             os.path.splitext(self._scenario_config["json"])[0]
         )[1]
-        self._parse_json(self._scenario_config["json"], scenario_name, "0")
 
-    def _parse_json(self, json: str, scenario: str, iteration: str) -> None:
-        """Parses a given JSON Scenario definition. Outputs two XML files used by scenario runner
-
-        Args:
-            json (str): filepath to JSON scenario definition
-            scenario (str): Name of the scenario
-            iteration (str): ID of the scenario. Can be anything, but must be unique
-        """
-        # create run directory if doesn't exist
-        if not self.results_manager.results_path:
-            self.results_manager.create_run_folder()
-
-        self.results_manager.create_scenario_folder(
-            scenario, iteration, self.results_manager.results_path
+        self.results_manager.parse_json(
+            self._scenario_config["json"], scenario_name, "0"
         )
-
-        self.scenario_decoder.parse_scenario(json, self.results_manager.last_scenario)
 
     def _signal_handler(self, signum, frame) -> None:
         """
@@ -132,83 +117,58 @@ class AWScenarioRunner(object):
     def run_scenario(
         self, route_config: RouteScenarioConfiguration, env_config: EnvironmentConfig
     ) -> bool:
-        # find the ego vehicle by name
-        # only supports one ego
-
-        # setup world based on env config
-        # make sure to reload
         self.carla_world = self.carla_client.get_world()
         self.carla_client.load_world(env_config.town)
 
-        # update carla provider
         CarlaDataProvider.set_world(self.carla_world)
 
-        # replace with spawning ego
-        # ego_missing = True
-        # while ego_missing:
-        #    self.ego_vehicles = []
-        #    for ego in route_config.ego_vehicles:
-        #        carla_vehicles = (
-        #            self.carla_client.get_world().get_actors().filter("vehicle.*")
-        #        )
-        #
-        #        for carla_vehicle in carla_vehicles:
-        #            if carla_vehicle.attributes["role_name"] == ego:
-        #                self.ego_vehicles.append(carla_vehicle)
-        #                ego_missing = False
-        #                break
-        #        print("Can't find ego, waiting...")
-        #        time.sleep(1)
-        #        ego_missing = False
-
-        print("Spawning ego...")
-        self._spawn_ego(env_config)
-
-        print("Spawned ego...")
+        logger.info("Spawning ego...")
+        ego = EgoVehicle(env_config)
+        self.ego_vehicles.append(ego.spawn())
+        logger.info("Spawned ego...")
 
         self.carla_world.wait_for_tick()
 
-        if self._scenario_config["in_docker"]:
-            print("Loading Autoware agent")
+        logger.info("Setting up sensort configuration...")
+        ego.setup_sensors()
+
+        if not self.DEV_MODE:
+            logger.info("Loading Autoware agent")
             agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
             try:
-                print(getattr(self.module_aw_agent, agent_class_name))
-                # call the agent method to notify the bridge of the ego spawn
-                # this will loop until the bridge is ready
+                logger.info(getattr(self.module_aw_agent, agent_class_name))
                 self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
                     env_config
                 )
                 route_config.agent = self.aw_agent
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
-                traceback.print_exc()
-                print("Could not setup required agent due to {}".format(e))
+                logger.error("Could not setup required agent due to {}".format(e))
                 # self._cleanup()
                 return False
 
-        # only set synchronous mode once bridge is ready
+        ego.prepare_ego()
+
+        logger.info("Updating world settings:")
+
         # tick asynchronously until then
         settings = CarlaDataProvider.get_world().get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = self._carla_config["fixed_delta_seconds"]
         CarlaDataProvider.get_world().apply_settings(settings)
 
-        # ADD TRAFFIC MANAGER SEED TO CONFIG
-        tm_port = int(self._tm_config["port"])  # type: ignore
-        CarlaDataProvider.set_traffic_manager_port(tm_port)
-        tm = self.carla_client.get_trafficmanager(tm_port)
-        tm.set_random_device_seed(1)  # ADD TO CONFIG
+        logger.info(f"{settings.__str__()}")
 
-        tm.set_synchronous_mode(self._tm_config["sync"])
+        if self._tm_config["active"]:
+            logger.info("Loading Traffic Manager...")
+            tm_port = int(self._tm_config["port"])  # type: ignore
+            CarlaDataProvider.set_traffic_manager_port(tm_port)
+            tm = self.carla_client.get_trafficmanager(tm_port)
 
-        print("Preparing ego...")
+            tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
+            tm.set_synchronous_mode(self._tm_config["sync"])
 
-        # update ego position to one specified in route
-        self.ego_vehicles[0].set_transform(env_config.ego_spawn)
-        self.ego_vehicles[0].set_target_velocity(carla.Vector3D())
-        self.ego_vehicles[0].set_target_angular_velocity(carla.Vector3D())
-        CarlaDataProvider.register_actor(self.ego_vehicles[0], env_config.ego_spawn)
+        logger.info("Loading route...")
 
-        print("Loading route...")
         try:
             scenario = RouteScenario(
                 world=self.carla_world,
@@ -216,64 +176,28 @@ class AWScenarioRunner(object):
                 debug_mode=self._carla_config["debug"],
             )
         except Exception:
-            print("Could not load Route Scenario")
+            logger.info("Could not load Route Scenario")
             traceback.print_exc()
             return False
 
-        print("Starting scenario...")
+        logger.info("Starting scenario...")
         try:
             self.scenario_manager.load_scenario(scenario, self.aw_agent)
             self.scenario_manager.run_scenario()
             result = True
         except Exception:
             traceback.print_exc()
-            print("It doesn't work")
+            logger.info("It doesn't work")
             result = False
         return result
 
-    def _load_scenario_config(self) -> EnvironmentConfig:
-        return EnvironmentParser.parse_scenario_env(
+    def run(self) -> bool:
+        env_config = EnvironmentParser.parse_scenario_env(
             os.path.join(self.results_manager.last_scenario, "scenario.xml")
         )
-
-    def _spawn_ego(self, env_config: EnvironmentConfig) -> None:
-        ego = CarlaDataProvider.request_new_actor(
-            model=env_config.ego_model,
-            spawn_point=env_config.ego_spawn,
-            rolename=env_config.ego_name,
-        )
-        self.ego_vehicles.append(ego)
-
-        CarlaDataProvider.get_world().wait_for_tick()  # wait for tick
-
-        bp_library = self.carla_world.get_blueprint_library()
-        # setup sensors
-        for sensor in env_config.sensor_config:
-            sensor._spawn(bp_library, ego)
-            print(f"Spawned sensor type {sensor.type}")
-
-    def _load_route_scenario(
-        self, env_config: EnvironmentConfig
-    ) -> RouteScenarioConfiguration:
         route_config = RouteParser.parse_routes_file(
             self.results_manager.last_scenario, env_config
-        )  # type: ignore
-
-        return route_config[0]
-
-    def run(self) -> bool:
-        # load the original JSON file
-        # load the route config
-        # load the scenario config
-        # run scenario
-        # get the metrics
-        # call the algorithm callback
-        # save using ResultsManager static class
-
-        # repeat for iterations
-
-        env_config = self._load_scenario_config()
-        route_config = self._load_route_scenario(env_config)
+        )[self._scenario_config["route_id"]]
 
         scenario_result = self.run_scenario(route_config, env_config)
         return scenario_result
@@ -296,7 +220,7 @@ class AWScenarioRunner(object):
             try:
                 # Reset to asynchronous mode
                 self.carla_client.get_trafficmanager(
-                    int(self._args.traffic_port)
+                    int(self._tm_config["port"])
                 ).set_synchronous_mode(False)
             except RuntimeError:
                 sys.exit(-1)
@@ -308,7 +232,9 @@ class AWScenarioRunner(object):
         for i, _ in enumerate(self.ego_vehicles):
             if self.ego_vehicles[i]:
                 if self.ego_vehicles[i] is not None and self.ego_vehicles[i].is_alive:
-                    print("Destroying ego vehicle {}".format(self.ego_vehicles[i].id))
+                    logger.info(
+                        "Destroying ego vehicle {}".format(self.ego_vehicles[i].id)
+                    )
                     self.ego_vehicles[i].destroy()
                 self.ego_vehicles[i] = None
         self.ego_vehicles = []
@@ -319,6 +245,8 @@ class AWScenarioRunner(object):
 
 
 def main():
+    # single argument of configuration file
+
     # configure logger
     config = None
     with open("config.yaml", "r") as stream:
@@ -326,7 +254,6 @@ def main():
 
     log_config = config["log"]
 
-    logger = logging.getLogger("scenario-runner")
     logger.setLevel(logging.INFO)
 
     log_path = LogUtil.create_log_file(log_config["path"])
@@ -338,7 +265,7 @@ def main():
     try:
         scenario_runner = AWScenarioRunner(config)
         results = scenario_runner.run()
-        print(results)
+        logger.info(results)
     except Exception:  # NOT GOOD PRACTICE PROBABLY CHANGE
         traceback.print_exc()
     finally:
