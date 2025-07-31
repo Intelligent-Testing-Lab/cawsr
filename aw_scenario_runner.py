@@ -129,8 +129,10 @@ class AWScenarioRunner(object):
 
         self.carla_world.wait_for_tick()
 
-        logger.info("Setting up sensort configuration...")
+        logger.info("Setting up sensor configuration...")
         ego.setup_sensors()
+
+        self.carla_world.wait_for_tick()
 
         if not self.DEV_MODE:
             logger.info("Loading Autoware agent")

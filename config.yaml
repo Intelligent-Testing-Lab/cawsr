@@ -7,18 +7,18 @@ carla:
   timeout: 20
   sync: true
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
-  dev_mode: false
-  debug: false
 traffic_manager:
   active: false
   sync: true # must be the same as carla sync
   seed: 0
   port: 8000
 scenario_runner:
+  debug: false
+  dev_mode: false
   json: ./example_scenario.json
   route_id: 0
   agent: srunner/autoagents/autoware_agent
   algorithm:
     iterations: 1000
-    path: /srunner/ # relative path
+    path: /algorithms # relative path
     hyperparmaters: # will be passed into the algorithm class

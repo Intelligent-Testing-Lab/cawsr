@@ -16,13 +16,10 @@ class DefaultSensor(object):
     def _spawn(self, bp_library, vehicle) -> None:
         sensor_bp = bp_library.find(str(self.type))
 
-        ignored_params = ["serealize", "id", "spawn", "type"]
+        ignored_params = ["serealize", "id", "_spawn", "type", "spawn"]
 
-        sensor_params = [
-            attr
-            for attr in dir(self)
-            if attr not in ignored_params or not attr.startswith("_")
-        ]
+        sensor_params = [attr for attr in dir(self) if attr not in ignored_params]
+        sensor_params = filter(lambda x: not x.startswith("__"), sensor_params)
 
         for param in sensor_params:
             sensor_bp.set_attribute(param, str(getattr(self, param)))
