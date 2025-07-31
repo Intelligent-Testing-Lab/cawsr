@@ -44,9 +44,9 @@ class AutowareAgent(AutonomousAgent):
 
         self._multi_thread_executor = rclpy.executors.MultiThreadedExecutor()
 
-        self._multi_thread_executor.add(self.route_node)
-        self._multi_thread_executor.add(self.state_node)
-        self._multi_thread_executor.add(self.autoware_node)
+        self._multi_thread_executor.add_node(self.route_node)
+        self._multi_thread_executor.add_node(self.state_node)
+        self._multi_thread_executor.add_node(self.autoware_node)
 
         self._executor_thread = threading.Thread(
             target=self._multi_thread_executor.spin, daemon=True
