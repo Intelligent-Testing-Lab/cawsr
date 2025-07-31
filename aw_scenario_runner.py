@@ -17,7 +17,7 @@ from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.tools.route_parser import RouteParser
 from srunner.tools.environment_parser import EnvironmentParser
-from srunner.tools.environment_parser import EnvironmentConfig
+from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
@@ -191,7 +191,12 @@ class AWScenarioRunner(object):
             result = False
         return result
 
-    def run(self) -> bool:
+    def run(self) -> None:
+        """The Scenario loop. Read the scenario configuration from the parsed XML files,
+        configure the scenario in CARLA and execute. Use the results to and parse to the algorithm callback.
+        Repeats **iterations** times, as defined in config.yaml
+
+        """
         env_config = EnvironmentParser.parse_scenario_env(
             os.path.join(self.results_manager.last_scenario, "scenario.xml")
         )
@@ -199,8 +204,7 @@ class AWScenarioRunner(object):
             self.results_manager.last_scenario, env_config
         )[self._scenario_config["route_id"]]
 
-        scenario_result = self.run_scenario(route_config, env_config)
-        return scenario_result
+        self.run_scenario(route_config, env_config)
 
     def destroy(self) -> None:
         """Deletes instances of all classes related to CARLA"""
