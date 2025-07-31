@@ -7,19 +7,18 @@ from srunner.autoagents.autoware_nodes import state_node
 
 from srunner.autoagents.agent_state import autoware_state
 
-from srunner.tools.environment_parser import EnvironmentConfig
+from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
 from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
 import threading
 import rclpy
 import time
+import logging
+
+logger = logging.getLogger("scenario-runner")
 
 
-DEBUG_ENV = False
-
-
-# uncomment if testing in scenario runner
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     current_map = None
@@ -66,7 +65,9 @@ class AutowareAgent(AutonomousAgent):
             ego_config_msg.sensors.append(sensor_config_msg)
 
         # keep publishing ego_sensor config until the bridge is ready
+        # big performance diminishment here
         while not self.autoware_state.bridge_ready:
+            logger.info("Sending Sensor state to Agent...")
             time.sleep(5)
             self.state_node.ego_config_publisher.publish(ego_config_msg)
 
@@ -81,10 +82,10 @@ class AutowareAgent(AutonomousAgent):
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
         # reinitialise localization
-        print("called localise")
+        logger.info("called localise")
         # self.autoware_node.request_localize()  # None uses GNSS
 
-        print("called clear route")
+        logger.info("called clear route")
         # clear route
         # self.route_node.request_clear_route()
 
@@ -108,7 +109,7 @@ class AutowareAgent(AutonomousAgent):
                 self._node_threads[thread].join()
                 self._nodes[thread].destroy_node()
         except RuntimeError:
-            print("Cleaned up threads...")
+            logger.info("Cleaned up threads...")
 
         rclpy.shutdown()
 
@@ -116,7 +117,7 @@ class AutowareAgent(AutonomousAgent):
         """Tick method containing all logic based on autoware state"""
         self.counter += 1
         if self.counter % 20 == 0:
-            print("1 second")
+            logger.info("1 second")
 
         if not self.agent_set_route:
             self.set_route()
