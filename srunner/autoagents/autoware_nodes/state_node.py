@@ -30,6 +30,7 @@ class StateNode(Node):
             self.localize_state_cb,
             10,
         )
+
         self.autoware_state_subscriber = self.create_subscription(
             BridgeState, self.bridge_state, self.bridge_state_cb, 10
         )
@@ -44,7 +45,7 @@ class StateNode(Node):
         Args:
             bridge_state_msg (BridgeState): bridge state boolean value
         """
-        self.bridge_state = bridge_state_msg.bridge_ready
+        self.autoware_state.bridge_ready = bridge_state_msg.bridge_ready
 
     def route_state_cb(self, route_state_msg: RouteState) -> None:
         """Set the AutowareState attribute route_state

@@ -42,11 +42,11 @@ class AutowareAgent(AutonomousAgent):
         self.state_node = state_node.StateNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
 
-        self._multi_thread_executor = rclpy.executor.MultiThreadedExecutor()
+        self._multi_thread_executor = rclpy.executors.MultiThreadedExecutor()
 
-        self._multi_thread_executor.add(self.route_node)
-        self._multi_thread_executor.add(self.state_node)
-        self._multi_thread_executor.add(self.autoware_node)
+        self._multi_thread_executor.add_node(self.route_node)
+        self._multi_thread_executor.add_node(self.state_node)
+        self._multi_thread_executor.add_node(self.autoware_node)
 
         self._executor_thread = threading.Thread(
             target=self._multi_thread_executor.spin, daemon=True
