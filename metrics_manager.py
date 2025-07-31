@@ -22,10 +22,12 @@ import importlib
 import inspect
 import json
 import argparse
+import yaml
 from argparse import RawTextHelpFormatter
 
 import carla
 from srunner.metrics.tools.metrics_log import MetricsLog
+from srunner.metrics.helper.metric_data import MetricData
 
 
 class MetricsManager(object):
@@ -53,9 +55,25 @@ class MetricsManager(object):
         # Instanciate the MetricsLog, used to querry the needed information
         log = MetricsLog(recorder_str)
 
+        # Parse defintino json input
+        with open(args.definition, "r", encoding="UTF-8") as raw_json:
+            MetricData.definition = json.loads(raw_json.read())
+
+        with open("config.yaml", "r") as stream:
+            MetricData.config = yaml.safe_load(stream)
+
+        metrics = [
+            "percentage_over_line_metric",
+            "collision_metric",
+            "acceleration_metric"
+        ]
+
         # Read and run the metric class
         metric_class = self._get_metric_class(self._args.metric)
-        metric_class(town_map, log, criteria_dict)
+        if metric_class.__name__ == "driving_score_metric":
+            metric_class(town_map, log, metrics, criteria_dict)
+        else:
+            metric_class(town_map, log, criteria_dict)
 
     def _get_recorder(self, log):
         """
@@ -64,10 +82,10 @@ class MetricsManager(object):
 
         # Get the log information.
         self._client = carla.Client(self._args.host, int(self._args.port))
-        recorder_file = "{}/{}".format(os.getenv('SCENARIO_RUNNER_ROOT', "./"), log)
+        recorder_file = "{}/{}".format(os.getenv("SCENARIO_RUNNER_ROOT", "./"), log)
 
         # Check that the file is correct
-        if recorder_file[-4:] != '.log':
+        if recorder_file[-4:] != ".log":
             print("ERROR: The log argument has to point to a .log file")
             sys.exit(-1)
         if not os.path.exists(recorder_file):
@@ -99,7 +117,7 @@ class MetricsManager(object):
             metric_file (str): path to the metric's file.
         """
         # Get their module
-        module_name = os.path.basename(metric_file).split('.')[0]
+        module_name = os.path.basename(metric_file).split(".")[0]
         sys.path.insert(0, os.path.dirname(metric_file))
         metric_module = importlib.import_module(module_name)
 
@@ -107,7 +125,7 @@ class MetricsManager(object):
         for member in inspect.getmembers(metric_module, inspect.isclass):
             # Get the first one with parent BasicMetrics
             member_parent = member[1].__bases__[0]
-            if 'BasicMetric' in str(member_parent):
+            if "BasicMetric" in str(member_parent):
                 return member[1]
 
         print("No child class of BasicMetric was found ... Exiting")
@@ -130,25 +148,42 @@ def main():
     """
 
     # pylint: disable=line-too-long
-    description = ("Scenario Runner's metrics module. Evaluate the execution of a specific scenario by developing your own metric.\n")
+    description = "Scenario Runner's metrics module. Evaluate the execution of a specific scenario by developing your own metric.\n"
 
-    parser = argparse.ArgumentParser(description=description,
-                                    formatter_class=RawTextHelpFormatter)
-    parser.add_argument('--host', default='127.0.0.1',
-                        help='IP of the host server (default: localhost)')
-    parser.add_argument('--port', '-p', default=2000,
-                        help='TCP port to listen to (default: 2000)')
-    parser.add_argument('--log', required=True,
-                        help='Path to the CARLA recorder .log file (relative to SCENARIO_RUNNER_ROOT).\nThis file is created by the record functionality at ScenarioRunner')
-    parser.add_argument('--metric', required=True,
-                        help='Path to the .py file defining the used metric.\nSome examples at srunner/metrics')
-    parser.add_argument('--criteria', default="",
-                        help='Path to the .json file with the criteria information.\nThis file is created by the record functionality at ScenarioRunner')
+    parser = argparse.ArgumentParser(
+        description=description, formatter_class=RawTextHelpFormatter
+    )
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="IP of the host server (default: localhost)"
+    )
+    parser.add_argument(
+        "--port", "-p", default=2000, help="TCP port to listen to (default: 2000)"
+    )
+    parser.add_argument(
+        "--log",
+        required=True,
+        help="Path to the CARLA recorder .log file (relative to SCENARIO_RUNNER_ROOT).\nThis file is created by the record functionality at ScenarioRunner",
+    )
+    parser.add_argument(
+        "--metric",
+        required=True,
+        default="srunner/metrics/all_metrics/driving_score_metric.py",
+        help="Path to the .py file defining the used metric.\nSome examples at srunner/metrics",
+    )
+    parser.add_argument(
+        "--criteria",
+        default="",
+        help="Path to the .json file with the criteria information.\nThis file is created by the record functionality at ScenarioRunner",
+    )
+    parser.add_argument(
+        "--definition", required=True, help="path to json scenario definition"
+    )
     # pylint: enable=line-too-long
 
     args = parser.parse_args()
 
     MetricsManager(args)
+
 
 if __name__ == "__main__":
     sys.exit(main())

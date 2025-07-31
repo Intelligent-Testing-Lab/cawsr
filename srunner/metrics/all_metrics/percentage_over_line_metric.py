@@ -1,42 +1,23 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2020 Computer Vision Center (CVC) at the Universitat Autonoma de
-# Barcelona (UAB).
-#
-# This work is licensed under the terms of the MIT license.
-# For a copy, see <https://opensource.org/licenses/MIT>.
-
-"""
-This metric calculates the distance between the ego vehicle and
-the center of the lane, dumping it to a json file.
-
-It is meant to serve as an example of how to use the map API
-"""
-
 import math
-import json
 
-from srunner.metrics.all_metrics.basic_metric import BasicMetric
+from .basic_metric import BasicMetric
 
 
-class DistanceToLaneCenter(BasicMetric):
-    """
-    Metric class DistanceToLaneCenter
-    """
-
+class PercentageOverLineMetric(BasicMetric):
+    
+    def __init__(self, town_map, log, criteria=None):
+        super().__init__(town_map, log, criteria)
+        self.metric_value = 0
+        
     def _create_metric(self, town_map, log, criteria):
-        """
-        Implementation of the metric.
-        """
 
         # Get ego vehicle id
         ego_id = log.get_ego_vehicle_id()
 
-        dist_list = []
-        frames_list = []
-
         # Get the frames the ego actor was alive and its transforms
         start, end = log.get_actor_alive_frames(ego_id)
+        
+        actor_over_line_counter = 0
 
         # Get the projected distance vector to the center of the lane
         for i in range(start, end + 1):
@@ -59,10 +40,17 @@ class DistanceToLaneCenter(BasicMetric):
             if ac_cross < 0:
                 dist *= -1
 
-            dist_list.append(dist)
-            frames_list.append(i)
+            if dist <= 0:
+                actor_over_line_counter += 1
+                
+        total_frames = end - start
+        percentage = (total_frames - actor_over_line_counter/actor_over_line_counter) * 100
+        self.metric_value = 1 - percentage
 
-        # Save the results to a file
-        results = {'frames': frames_list, 'distance': dist_list}
-        with open('srunner/metrics/data/DistanceToLaneCenter_results.json', 'w') as fw:
-            json.dump(results, fw, sort_keys=False, indent=4)
+    def get_value(self):
+        return self.metric_value
+        
+
+            
+        
+    
