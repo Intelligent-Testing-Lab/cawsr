@@ -1,19 +1,22 @@
 import os
 import datetime
 
+from srunner.scenario_decoder.json_to_xml_files import XMLToFiles
 
-class ResultsManager(object):
+
+class ScenarioDefinitionManager(object):
     """Class to manage the file structure of the results. Creates folders for entire experiments (runs) and individual scenario executions (scenarios)
     Holds the file path of the last scenario executes, and the results.
-    
+
     """
-    
-    def __init__(self, output_dir: str = 'results') -> None:
+
+    def __init__(self, output_dir: str = "results") -> None:
         self.output_dir = output_dir
-        self.last_scenario = ''
-        self.results_path = ''
-        
-    def create_run_folder(self, base_path: str = ''):
+        self.last_scenario = ""
+        self.results_path = ""
+        self._scenario_decoder = XMLToFiles()
+
+    def _create_run_folder(self, base_path: str = ""):
         """Creates a experiment folder under base_path. The naming convention is as follows
         ```
         run-{yy-mm-dd-h-m-s}
@@ -27,7 +30,7 @@ class ResultsManager(object):
         """
         if not base_path:
             base_path = self.output_dir
-        
+
         now = datetime.datetime.now()
         full_path = os.path.join(base_path, f"run-{now.strftime('%Y-%m-%d-%H-%M-%S')}")  # type: ignore
 
@@ -35,7 +38,7 @@ class ResultsManager(object):
         self.results_path = full_path
         return full_path
 
-    def create_scenario_folder(
+    def _create_scenario_folder(
         self, scenario: str, iteration: str, results_folder: str
     ):
         """Creates a folder to hold the results of a individual scenario execution.
@@ -52,9 +55,24 @@ class ResultsManager(object):
         Returns:
             _type_: _description_
         """
-        
+
         full_path = os.path.join(results_folder, f"{scenario}-{iteration}")
 
-        os.makedirs(full_path, exist_ok=True) # exist_ok=True, no need to error handle
+        os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.last_scenario = full_path
         return full_path
+
+    def parse_json(self, json: str, scenario: str, iteration: str):
+        """Parses a given JSON Scenario definition. Outputs two XML files used by scenario runner
+
+        Args:
+            json (str): filepath to JSON scenario definition
+            scenario (str): Name of the scenario
+            iteration (str): ID of the scenario. Can be anything, but must be unique
+        """
+
+        if not self.results_path:
+            self._create_run_folder()
+
+        self._create_scenario_folder(scenario, iteration, self.results_path)
+        self._scenario_decoder.parse_scenario(json, self.last_scenario)

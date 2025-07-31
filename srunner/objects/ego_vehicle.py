@@ -1,0 +1,64 @@
+from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
+from srunner.tools.environment_parser import EnvironmentConfig
+
+import carla
+import logging
+
+logger = logging.getLogger("scenario-runner")
+
+
+class EgoVehicle(object):
+    """
+    A basic class to encompass the definition of an ego_vehicle controlled by ADS
+    """
+
+    ego_name = ""
+    ego_model = ""
+    world = None
+
+    def __init__(self, env_config: EnvironmentConfig) -> None:
+        self._env = env_config
+        self.ego_model = self._env.ego_model
+        self.ego_name = self._env.ego_name
+        self.ego_spawn = self._env.ego_spawn
+        self.sensor_config = self._env.sensor_config
+
+        self._actor = None
+
+    def spawn(self) -> carla.Actor:
+        """Spawns an actor to act as ego_vehicle
+
+        Returns:
+            carla.Actor: EgoVehicle class
+        """
+
+        self._actor = CarlaDataProvider.request_new_actor(
+            self.ego_model, self.ego_spawn, self.ego_name
+        )
+
+        if self._actor is None:
+            logger.warning(
+                "Failed to spawn EgoVehicle. This is likely an issue with CARLA."
+            )
+
+        return self._actor
+
+    def setup_sensors(self) -> None:
+        """Spawns and attatches the necessary sensors to the EgoVehcicle."""
+        if self._actor is None:
+            logger.error(
+                "EgoVehicle has no carla.Actor, it probably failed to spawn. Check the spawn coordinates, and ensure you call EgoVehicle.spawn() first."
+            )
+
+        bp_library = CarlaDataProvider.get_world().get_blueprint_library()
+
+        for sensor in self._env.sensor_config:
+            sensor._spawn(bp_library, self._actor)
+            logger.info(f"Spawned {sensor.type} attatched to {self.ego_name}")
+
+    def prepare_ego(self) -> None:
+        """Reset the position and velocity of the ego. Register the actor"""
+        self._actor.set_transform(self._env.ego_spawn)
+        self._actor.set_target_velocity(carla.Vector3D())
+        self._actor.set_target_angular_velocity(carla.Vector3D())
+        CarlaDataProvider.register_actor(self._actor, self._env.ego_spawn)
