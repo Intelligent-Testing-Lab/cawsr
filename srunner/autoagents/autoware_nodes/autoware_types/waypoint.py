@@ -1,5 +1,7 @@
 from tf_transformations import quaternion_from_euler
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Point
+from geometry_msgs.msg import Quaternion
 
 
 class Waypoint(object):
@@ -12,13 +14,25 @@ class Waypoint(object):
         # rounding is need by autoware to function properly
         self.quaternion = quaternion_from_euler(0, 0, round(self.yaw, 1))
 
-    def autoware_from_world_coords(self) -> PoseStamped:
+    def autoware_from_world_coords(self) -> Pose:
         """convert from carla world coordinates to autoware waypoints
 
         Returns:
             PoseStamped: position and time stamp
         """
-        pose = PoseStamped()
+        pose = Pose()
 
-        pose.header.frame_id = "map"
-        return
+        ros_point = Point()
+        ros_point.x = self.x
+        ros_point.y = -self.y
+        ros_point.z = self.z
+
+        pose.position = ros_point
+        pose.orientation = Quaternion(
+            w=self.quaternion[3],
+            x=self.quaternion[0],
+            y=self.quaternion[1],
+            z=self.quaternion[2],
+        )
+
+        return pose

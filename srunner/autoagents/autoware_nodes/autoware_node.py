@@ -90,7 +90,7 @@ class AutowareNode(Node):
             # Example: request.pose = PoseWithCovarianceStamped() # Creates an empty message
 
         # Call the service asynchronously
-        future = self.localize_client.call(request)
+        future = self.localize_client.call_async(request)
 
         # Add a callback to process the response when it arrives
         future.add_done_callback(self.localize_response_callback)

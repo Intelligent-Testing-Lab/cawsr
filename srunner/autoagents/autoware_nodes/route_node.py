@@ -18,9 +18,11 @@ class RouteNode(Node):
     set_route_points_service_name = "/api/routing/set_route_points"
     clear_route_service_name = "/api/routing/clear_route"
 
-    def __init__(self) -> None:
+    def __init__(self, autoware_state) -> None:
         # Initialize the Node base class with a unique name
         super().__init__("route_client_node")
+
+        self.autoware_state = autoware_state
 
         # Create service clients, not publishers
         self.set_route_client = self.create_client(
@@ -81,7 +83,7 @@ class RouteNode(Node):
         request.waypoints = waypoints
 
         # Call the service asynchronously. This returns a Future object.
-        future = self.set_route_client.call(request)
+        future = self.set_route_client.call_async(request)
 
         # Add a callback to process the response when it arrives.
         future.add_done_callback(self.set_route_response_callback)
@@ -93,6 +95,7 @@ class RouteNode(Node):
             response = future.result()
             # Assuming Autoware services return a status field with success/message
             if response.status.success:
+                self.autoware_state.sent_route = True
                 self.get_logger().info("Route set successfully!")
             else:
                 self.get_logger().warn(
@@ -109,7 +112,7 @@ class RouteNode(Node):
         request = ClearRoute_Request()  # Or ClearRoute()
 
         # Call the service asynchronously
-        future = self.clear_route_client.call(request)
+        future = self.clear_route_client.call_async(request)
         future.add_done_callback(self.clear_route_response_callback)
 
     def clear_route_response_callback(self, future):
