@@ -175,7 +175,7 @@ class RouteScenario(BasicScenario):
         elevate_transform = self.route[0][0]
         elevate_transform.location.z += 0.5
 
-        ego.set_transform()
+        ego.set_transform(elevate_transform)
 
     def _estimate_route_timeout(self):
         """
