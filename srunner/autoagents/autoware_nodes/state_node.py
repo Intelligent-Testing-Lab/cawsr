@@ -5,6 +5,10 @@ from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
 from autoware_carla_interface_msgs.msg import EgoConfig, BridgeState
 
+import logging
+
+logger = logging.getLogger("scenario-runner")
+
 
 class StateNode(Node):
     route_state = "/planning/mission_planning/state"
@@ -46,6 +50,7 @@ class StateNode(Node):
             bridge_state_msg (BridgeState): bridge state boolean value
         """
         self.autoware_state.bridge_ready = bridge_state_msg.bridge_ready
+        logger.info(f"Bridge ready state: {self.autoware_state.bridge_ready}")
 
     def route_state_cb(self, route_state_msg: RouteState) -> None:
         """Set the AutowareState attribute route_state
@@ -54,6 +59,7 @@ class StateNode(Node):
             route_state_msg (RouteState): route state message received
         """
         self.autoware_state.route_state = route_state_msg.state
+        logger.info(f"Route state: {self.autoware_state.route_state}")
 
     def motion_state_cb(self, motion_state_msg: MotionState) -> None:
         """set the AutowareState attribute motion_state
@@ -61,7 +67,9 @@ class StateNode(Node):
         Args:
             motion_state_msg (MotionState): motion state message received
         """
+
         self.autoware_state.motion_state = motion_state_msg.state
+        logger.info(f"Motion state: {self.autoware_state.motion_state}")
 
     def localize_state_cb(
         self, localize_state_msg: LocalizationInitializationState
@@ -72,3 +80,4 @@ class StateNode(Node):
             localize_state_msg (LocalizationInitializationState): localization message received
         """
         self.autoware_state.localize_state = localize_state_msg.state
+        logger.info(f"Localization state: {self.autoware_state.localize_state}")

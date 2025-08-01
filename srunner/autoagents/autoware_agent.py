@@ -38,7 +38,7 @@ class AutowareAgent(AutonomousAgent):
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
-        self.route_node = route_node.RouteNode()
+        self.route_node = route_node.RouteNode(self.autoware_state)
         self.state_node = state_node.StateNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
 
@@ -87,7 +87,7 @@ class AutowareAgent(AutonomousAgent):
 
         # reinitialise localization
         logger.info("Localising Autoware agent...")
-        self.autoware_node.request_localize()  # None uses GNSS
+        # self.autoware_node.request_localize()  # None uses GNSS
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
@@ -135,7 +135,6 @@ class AutowareAgent(AutonomousAgent):
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
             self.route_node.request_route(goal_pose, waypoints)
-            self.autoware_state.sent_route = True
 
         # check if the current route is set
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:

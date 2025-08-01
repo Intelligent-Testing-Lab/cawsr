@@ -146,7 +146,7 @@ class AWScenarioRunner(object):
         self.ego_vehicles.append(ego.spawn())
         logger.info("Spawned ego...")
 
-        self.carla_world.tick()
+        self.carla_world.tick()  # client must tick to spawn actors
 
         logger.info("Setting up sensor configuration...")
         ego.setup_sensors()

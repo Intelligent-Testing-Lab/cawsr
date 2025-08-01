@@ -23,6 +23,3 @@ class AgentState(object):
     def __str__(self):
         """Return name of state and list of attributes"""
         return f"{self.__class__.__name__} state: {self.__dict__}"
-
-    def route_ready(self) -> None:
-        pass

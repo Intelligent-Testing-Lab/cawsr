@@ -31,6 +31,9 @@ class AutowareState(state.AgentState):
     def is_planning(self) -> bool:
         return self.route_state == 3
 
+    def route_ready(self) -> bool:
+        return self.sent_route and self.route_set()
+
     def reset_state(self) -> None:
         # internal message states
         self.sent_route: bool = False
