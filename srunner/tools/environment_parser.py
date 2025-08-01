@@ -71,6 +71,7 @@ class EnvironmentParser(object):
 
             elif sensor_type == "sensor.lidar.ray_cast":
                 sensor_obj = LidarRayCast()
+                sensor_obj.range = sensor.attrib.get("range", 0)
                 sensor_obj.channels = sensor.attrib.get("channels", 0)
                 sensor_obj.points_per_second = sensor.attrib.get("points_per_second", 0)
                 sensor_obj.upper_fov = sensor.attrib.get("upper_fov", 0.0)
