@@ -8,6 +8,7 @@
                         "weather": {
                             "route_percentage": 0.0,
                             "precipitation": 100.0,
+                            "cloudiness": 0.0,
                             "precipitation_deposits": 100.0,
                             "wetness": 100.0,
                             "wind_intensity": 100.0,
@@ -18,8 +19,9 @@
                     },
                     {
                         "weather": {
-                            "route_percentage": 50.0,
+                            "route_percentage": 100.0,
                             "precipitation": 0.0,
+                            "cloudiness": 0.0,
                             "precipitation_deposits": 0.0,
                             "wetness": 0.0,
                             "wind_intensity": 0.0,
@@ -130,7 +132,6 @@
         {
             "scenario": {
                 "town": "Town01",
-                "route-id": 0,
                 "ego_vehicle": {
                     "x": 312,
                     "y": 129,

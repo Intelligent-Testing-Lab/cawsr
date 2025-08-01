@@ -1,6 +1,7 @@
 log:
   path: 'logs/'
   clear_old_logs: true
+  log_format: '[%(levelname)s] [%(asctime)s] [%(message)s] [%(filename)s]:[%(lineno)d]'
 carla:
   host: 127.0.0.1
   port: 2000
@@ -8,10 +9,10 @@ carla:
   sync: true
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
 traffic_manager:
-  active: false
+  active: true
   sync: true # must be the same as carla sync
   seed: 0
-  port: 8000
+  port: 8001
 scenario_runner:
   debug: false
   dev_mode: false
