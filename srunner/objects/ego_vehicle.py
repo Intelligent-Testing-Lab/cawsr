@@ -61,7 +61,6 @@ class EgoVehicle(object):
         self._actor.set_transform(self._env.ego_spawn)
         self._actor.set_target_velocity(carla.Vector3D())
         self._actor.set_target_angular_velocity(carla.Vector3D())
-        CarlaDataProvider.register_actor(self._actor, self._env.ego_spawn)
 
     def __del__(self) -> None:
         """Clean up
