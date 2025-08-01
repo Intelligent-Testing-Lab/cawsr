@@ -8,6 +8,7 @@ import sys
 import logging
 import datetime
 import yaml
+import argparse
 
 import carla
 
@@ -252,28 +253,50 @@ class AWScenarioRunner(object):
 
 
 def main():
+    """Main function for executing"""
     # single argument of configuration file
+    argparser = argparse.ArgumentParser(
+        prog="Autoware Scenario Runner",
+        description="Scenario runner with support for Autoware",
+        epilog="See you, space cowboy...",
+    )
 
-    # configure logger
-    config = None
-    with open("config.yaml", "r") as stream:
-        config = yaml.safe_load(stream)
+    argparser.add_argument(
+        "-c", "--config", help="Filepath to a config file", default="config.yaml"
+    )
+    argparser.add_argument(
+        "-j",
+        "--json",
+        help="File path to a JSON scenario definition. Overrides the JSON in config.yaml.",
+    )
+
+    _args = argparser.parse_args()
+
+    try:
+        with open("config.yaml", "r") as stream:
+            config = yaml.safe_load(stream)
+    except FileNotFoundError:
+        print("[ERROR] Config file provided does not exist")
+        print(f"[ERROR]         {_args.config}")
+        sys.exit(1)
+
+    # update config with new JSON path
+    if _args.json:
+        config["scenario_runner"]["json"] = _args.json
 
     log_config = config["log"]
 
     logger.setLevel(logging.INFO)
-
     log_path = LogUtil.create_log_file(log_config["path"])
     logger.addHandler(logging.FileHandler(log_path, encoding="utf-8"))
     logger.addHandler(logging.StreamHandler(sys.stdout))
 
-    # reload world and sync must be present when running agent-based route scenarios
     scenario_runner = None
     try:
         scenario_runner = AWScenarioRunner(config)
         results = scenario_runner.run()
         logger.info(results)
-    except Exception:  # NOT GOOD PRACTICE PROBABLY CHANGE
+    except Exception:
         traceback.print_exc()
     finally:
         if scenario_runner is not None:

@@ -1,5 +1,6 @@
 log:
   path: 'logs/'
+  log_format: '[%(levelname)s] [%(asctime)s] [%(message)s] [%(filename)s]:[%(lineno)d]'
   clear_old_logs: true
 carla:
   host: 127.0.0.1
