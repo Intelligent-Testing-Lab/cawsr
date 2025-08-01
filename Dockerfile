@@ -1,7 +1,7 @@
 FROM osrf/ros:humble-desktop
 
 RUN apt -y update && \
-    apt install --no-install-recommends -y libpng16-16 libtiff5 libjpeg8 build-essential curl wget git libxerces-c-dev python3-pip
+    apt install --no-install-recommends -y libpng16-16 libtiff5 libjpeg8 build-essential curl wget git libxerces-c-dev python3-pip vim
 
 # clone repo
 COPY . /autoware_scenario_runner

@@ -62,7 +62,7 @@ class AWScenarioRunner(object):
 
         # Flags
         self.DEV_MODE = self._scenario_config["dev_mode"]
-        self.DEBUG = self._scenario_config["dev_mode"]
+        self.DEBUG = self._scenario_config["debug"]
 
         CarlaDataProvider.set_client(self.carla_client)
 
@@ -79,7 +79,7 @@ class AWScenarioRunner(object):
 
         # main class to execute scenarios
         self.scenario_manager = ScenarioManager(
-            self._scenario_config["debug"],
+            self.DEBUG,
             self._carla_config["sync"],
             self._carla_config["timeout"],
         )
@@ -175,7 +175,8 @@ class AWScenarioRunner(object):
             scenario = RouteScenario(
                 world=self.carla_world,
                 config=route_config,
-                debug_mode=self._carla_config["debug"],
+                debug_mode=self.DEBUG,
+                ego_vehicle=ego,
             )
         except Exception:
             logger.info("Could not load Route Scenario")
