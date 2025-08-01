@@ -120,8 +120,6 @@ class AWScenarioRunner(object):
         self.carla_world = self.carla_client.get_world()
         self.carla_client.load_world(env_config.town)
 
-        CarlaDataProvider.set_world(self.carla_world)
-
         logger.info("Spawning ego...")
         ego = EgoVehicle(env_config)
         self.ego_vehicles.append(ego.spawn())
@@ -154,10 +152,10 @@ class AWScenarioRunner(object):
         logger.info("Updating world settings:")
 
         # tick asynchronously until then
-        settings = CarlaDataProvider.get_world().get_settings()
+        settings = self.carla_world.get_settings()
         settings.synchronous_mode = True
         settings.fixed_delta_seconds = self._carla_config["fixed_delta_seconds"]
-        CarlaDataProvider.get_world().apply_settings(settings)
+        self.carla_world.apply_settings(settings)
 
         logger.info(f"{settings.__str__()}")
 
@@ -169,6 +167,10 @@ class AWScenarioRunner(object):
 
             tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
             tm.set_synchronous_mode(self._tm_config["sync"])
+
+        # update the world
+        CarlaDataProvider.set_world(self.carla_world)
+
         try:
             scenario = RouteScenario(
                 world=self.carla_world,
