@@ -17,7 +17,7 @@ the recorder
 import math
 import matplotlib.pyplot as plt
 
-from srunner.metrics.examples.basic_metric import BasicMetric
+from srunner.metrics.all_metrics.basic_metric import BasicMetric
 
 
 class DistanceBetweenVehicles(BasicMetric):
