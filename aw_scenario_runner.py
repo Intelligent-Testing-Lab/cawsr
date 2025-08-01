@@ -263,9 +263,17 @@ def main():
 
     logger.setLevel(logging.INFO)
 
+    log_formatter = logging.Formatter(log_config["log_format"])
+
     log_path = LogUtil.create_log_file(log_config["path"])
-    logger.addHandler(logging.FileHandler(log_path, encoding="utf-8"))
-    logger.addHandler(logging.StreamHandler(sys.stdout))
+    fh = logging.FileHandler(log_path, encoding="utf-8")
+    sh = logging.StreamHandler(sys.stdout)
+
+    fh.setFormatter(log_formatter)
+    sh.setFormatter(log_formatter)
+
+    logger.addHandler(fh)
+    logger.addHandler(sh)
 
     # reload world and sync must be present when running agent-based route scenarios
     scenario_runner = None

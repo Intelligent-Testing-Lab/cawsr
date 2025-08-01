@@ -25,7 +25,7 @@ class DefaultSensor(object):
             sensor_bp.set_attribute(param, str(getattr(self, param)))
 
         CarlaDataProvider.get_world().spawn_actor(sensor_bp, self.spawn, vehicle)
-        CarlaDataProvider.get_world().wait_for_tick()
+        CarlaDataProvider.get_world().tick()
 
     def serealize(self):
         return self.type, self.id

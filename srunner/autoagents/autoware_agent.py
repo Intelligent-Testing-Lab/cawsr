@@ -86,12 +86,11 @@ class AutowareAgent(AutonomousAgent):
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
         # reinitialise localization
-        logger.info("called localise")
-        # self.autoware_node.request_localize()  # None uses GNSS
+        logger.info("Localising Autoware agent...")
+        self.autoware_node.request_localize()  # None uses GNSS
 
-        logger.info("called clear route")
-        # clear route
-        # self.route_node.request_clear_route()
+        logger.info("Clearing route...")
+        self.route_node.request_clear_route()
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -121,7 +120,7 @@ class AutowareAgent(AutonomousAgent):
         """Tick method containing all logic based on autoware state"""
         self.counter += 1
         if self.counter % 20 == 0:
-            logger.info("1 second")
+            logger.info("Ticked 1 second")
 
         if not self.agent_set_route:
             self.set_route()
@@ -135,7 +134,7 @@ class AutowareAgent(AutonomousAgent):
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
-            self.route_node.publish_route(goal_pose, waypoints)
+            self.route_node.request_route(goal_pose, waypoints)
             self.autoware_state.sent_route = True
 
         # check if the current route is set
