@@ -145,26 +145,14 @@ class AWScenarioRunner(object):
                 route_config.agent = self.aw_agent
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
                 logger.error("Could not setup required agent due to {}".format(e))
-                # self._cleanup()
+                self._cleanup()
                 return False
 
         ego.prepare_ego()
 
         logger.info("Loading route...")
-
-        try:
-            scenario = RouteScenario(
-                world=self.carla_world,
-                config=route_config,
-                debug_mode=self.DEBUG,
-                ego_vehicle=ego,
-            )
-        except Exception:
-            logger.info("Could not load Route Scenario")
-            traceback.print_exc()
-            return False
-
         logger.info("Updating world settings:")
+
         # tick asynchronously until then
         settings = CarlaDataProvider.get_world().get_settings()
         settings.synchronous_mode = True
@@ -181,6 +169,17 @@ class AWScenarioRunner(object):
 
             tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
             tm.set_synchronous_mode(self._tm_config["sync"])
+        try:
+            scenario = RouteScenario(
+                world=self.carla_world,
+                config=route_config,
+                debug_mode=self.DEBUG,
+                ego_vehicle=ego._actor,
+            )
+        except Exception:
+            logger.info("Could not load Route Scenario")
+            traceback.print_exc()
+            return False
 
         logger.info("Starting scenario...")
         try:
