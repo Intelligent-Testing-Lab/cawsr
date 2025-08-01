@@ -120,37 +120,7 @@ class AWScenarioRunner(object):
         self.carla_world = self.carla_client.get_world()
         self.carla_client.load_world(env_config.town)
 
-        logger.info("Spawning ego...")
-        ego = EgoVehicle(env_config)
-        self.ego_vehicles.append(ego.spawn())
-        logger.info("Spawned ego...")
-
-        self.carla_world.wait_for_tick()
-
-        logger.info("Setting up sensor configuration...")
-        ego.setup_sensors()
-
-        self.carla_world.wait_for_tick()
-
-        if not self.DEV_MODE:
-            logger.info("Loading Autoware agent")
-            agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
-            try:
-                logger.info(getattr(self.module_aw_agent, agent_class_name))
-                self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
-                    env_config
-                )
-                route_config.agent = self.aw_agent
-            except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
-                logger.error("Could not setup required agent due to {}".format(e))
-                self._cleanup()
-                return False
-
-        ego.prepare_ego()
-
-        logger.info("Loading route...")
         logger.info("Updating world settings:")
-
         # tick asynchronously until then
         settings = self.carla_world.get_settings()
         settings.synchronous_mode = True
@@ -170,6 +140,36 @@ class AWScenarioRunner(object):
 
         # update the world
         CarlaDataProvider.set_world(self.carla_world)
+
+        logger.info("Spawning ego...")
+        ego = EgoVehicle(env_config)
+        self.ego_vehicles.append(ego.spawn())
+        logger.info("Spawned ego...")
+
+        self.carla_world.tick()
+
+        logger.info("Setting up sensor configuration...")
+        ego.setup_sensors()
+
+        self.carla_world.tick()
+
+        if not self.DEV_MODE:
+            logger.info("Loading Autoware agent")
+            agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
+            try:
+                logger.info(getattr(self.module_aw_agent, agent_class_name))
+                self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
+                    env_config
+                )
+                route_config.agent = self.aw_agent
+            except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
+                logger.error("Could not setup required agent due to {}".format(e))
+                self._cleanup()
+                return False
+
+        ego.prepare_ego()
+
+        logger.info("Loading route...")
 
         try:
             scenario = RouteScenario(
