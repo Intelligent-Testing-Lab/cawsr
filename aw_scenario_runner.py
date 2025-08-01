@@ -157,7 +157,7 @@ class AWScenarioRunner(object):
                 world=self.carla_world,
                 config=route_config,
                 debug_mode=self.DEBUG,
-                ego_vehicle=ego,
+                ego_vehicle=ego._actor,
             )
         except Exception:
             logger.info("Could not load Route Scenario")
@@ -165,6 +165,7 @@ class AWScenarioRunner(object):
             return False
 
         logger.info("Updating world settings:")
+
         # tick asynchronously until then
         settings = CarlaDataProvider.get_world().get_settings()
         settings.synchronous_mode = True
