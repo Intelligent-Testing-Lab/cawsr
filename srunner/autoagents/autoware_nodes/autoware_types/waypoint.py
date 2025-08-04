@@ -9,16 +9,14 @@ from geometry_msgs.msg import Quaternion
 
 
 class Waypoint(object):
-    def __init__(self, x, y, z):
+    def __init__(self, x, y, z, marker_pub=None):
         self.x = x
         self.y = y
         self.z = z
 
-        self.client = CarlaDataProvider.get_client()
+        self.marker_pub = marker_pub
 
-        self.marker_publisher = self.create_publisher(
-            Marker, "visulaization_marker", 10
-        )
+        self.client = CarlaDataProvider.get_client()
 
     def autoware_from_world_coords(self) -> Pose:
         """convert from carla world coordinates to autoware waypoints
@@ -42,8 +40,12 @@ class Waypoint(object):
             z=orientation["z"],
             w=orientation["w"],
         )
-    
-        self._publish_marker()
+
+        if self.marker_pub is not None:
+            print(self)
+            self.marker_pub.publish(self._publish_marker(pose))
+
+        self.pose = pose
 
         return pose
 
@@ -93,4 +95,9 @@ class Waypoint(object):
         marker.color.b = 0.0
         marker.color.a = 1.0
 
-        self.marker_publisher.publish(marker)
+        return marker
+
+    def __str__(self) -> str:
+        if self.pose:
+            return f"{self.pose}"
+        return f"x: {self.x}, y: {-self.y}, z: {self.z}"
