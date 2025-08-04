@@ -102,7 +102,7 @@ class AutowareAgent(AutonomousAgent):
             point[0].location.x,
             point[0].location.y,
             point[0].location.z,
-            marker_pub=self.autoware_node.marker_publisher,
+            node=self.autoware_node,
         )
 
     def destroy(self) -> None:
