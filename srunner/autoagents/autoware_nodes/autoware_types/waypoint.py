@@ -33,12 +33,25 @@ class Waypoint(object):
 
         orientation = self._get_orientation()
 
+        curr_location = carla.Location(self.x, self.y, self.z)
+        orientation = (
+            self.client.get_world()
+            .get_waypoint(
+                curr_location, project_to_road=True, lane_type=carla.LaneType.Driving
+            )
+            .transform.rotation
+        )
+
+        qx, qy, qz, qw = quaternion_from_euler(
+            orientation.roll, orientation.pitch, round(orientation.yaw, 1)
+        )
+
         pose.position = ros_point
         pose.orientation = Quaternion(
-            x=orientation["x"],
-            y=orientation["y"],
-            z=orientation["z"],
-            w=orientation["w"],
+            x=qx,
+            y=qy,
+            z=qz,
+            w=qw,
         )
 
         if self.marker_pub is not None:
@@ -50,7 +63,6 @@ class Waypoint(object):
         return pose
 
     def _get_orientation(self) -> dict:
-        curr_location = carla.Location(self.x, self.y, self.z)
         point1 = (
             self.client.get_world()
             .get_map()
