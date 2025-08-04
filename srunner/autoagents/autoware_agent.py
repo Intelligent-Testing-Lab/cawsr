@@ -102,7 +102,6 @@ class AutowareAgent(AutonomousAgent):
             point[0].location.x,
             point[0].location.y,
             point[0].location.z,
-            point[0].rotation.yaw,
         )
 
     def destroy(self) -> None:
