@@ -101,13 +101,13 @@ class RouteNode(Node):
         
     def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
         self._publish_goal(goal)
-        self.node.create_rate(1.0).sleep()
+
         for checkpoint in checkpoints:
             self._publish_checkpoint(checkpoint)
         
     def _publish_goal(self, goal_point) -> None:
         goal = PoseStamped()
-        goal.header.stamp = self.node.get_clock().now().to_msg()
+        goal.header.stamp = self.get_clock().now().to_msg()
         goal.header.frame_id = "map"
         
         goal.pose = goal_point
@@ -116,7 +116,7 @@ class RouteNode(Node):
         
     def _publish_checkpoint(self, checkpoint) -> None:
         checkpoint_msg = PoseStamped()
-        checkpoint_msg.header.stamp = self.node.get_clock().now().to_msg()
+        checkpoint_msg.header.stamp = self.get_clock().now().to_msg()
         checkpoint_msg.header.frame_id = "map"
         
         checkpoint_msg.pose = checkpoint
