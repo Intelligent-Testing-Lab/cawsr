@@ -10,6 +10,7 @@ from srunner.autoagents.agent_state import autoware_state
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
 from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
+from geometry_msgs.msg import PoseStamped
 
 import threading
 import rclpy
@@ -35,6 +36,7 @@ class AutowareAgent(AutonomousAgent):
         """
 
         rclpy.init(args=None)
+
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
@@ -91,6 +93,8 @@ class AutowareAgent(AutonomousAgent):
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
+        
+        
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -136,6 +140,7 @@ class AutowareAgent(AutonomousAgent):
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
             self.route_node.request_route(goal_pose, waypoints)
+            self.route_node.publish_route(goal_pose, waypoints)
 
         # check if the current route is set
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
