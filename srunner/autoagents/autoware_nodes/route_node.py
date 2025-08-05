@@ -8,6 +8,7 @@ from autoware_adapi_v1_msgs.srv import SetRoutePoints, ClearRoute
 # You might explicitly import the Request types for clarity, though not strictly necessary
 from autoware_adapi_v1_msgs.srv._set_route_points import SetRoutePoints_Request
 from autoware_adapi_v1_msgs.srv._clear_route import ClearRoute_Request
+from geometry_msgs.msg import PoseStamped
 
 
 class RouteNode(Node):
@@ -17,6 +18,9 @@ class RouteNode(Node):
     # These are service names, not topic names. Renamed for clarity.
     set_route_points_service_name = "/api/routing/set_route_points"
     clear_route_service_name = "/api/routing/clear_route"
+    
+    goal_topic = '/planning/mission_planning/goal'
+    checkpoint_topic = '/planning/mission_planning/checkpoint'
 
     def __init__(self, autoware_state) -> None:
         # Initialize the Node base class with a unique name
@@ -30,6 +34,13 @@ class RouteNode(Node):
         )
         self.clear_route_client = self.create_client(
             ClearRoute, self.clear_route_service_name
+        )
+        
+        self.goal_publisher = self.create_publisher(
+            PoseStamped, self.goal_topic, 10
+        )
+        self.checkpoint_publisher = self.create_publisher(
+            PoseStamped, self.checkpoint_topic, 10
         )
 
         # Good practice: Wait for the service server to be available before trying to call it
@@ -87,6 +98,25 @@ class RouteNode(Node):
 
         # Add a callback to process the response when it arrives.
         future.add_done_callback(self.set_route_response_callback)
+        
+    def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
+        self._publish_goal(goal)
+        
+        for checkpoint in checkpoints:
+            self._publish_checkpoint(checkpoint)
+        
+    def _publish_goal(self, goal) -> None:
+        goal = PoseStamped()
+        goal.header.stamp = self.node.get_clock().now().to_msg()
+        goal.pose = goal
+        self.goal_publisher.publish(goal)
+        
+        
+    def _publish_checkpoint(self, checkpoint) -> None:
+        goal = PoseStamped()
+        goal.header.stamp = self.node.get_clock().now().to_msg()
+        goal.pose = checkpoint
+        self.checkpoint_publisher.publish(goal)
 
     def set_route_response_callback(self, future):
         """Callback to handle the response from the SetRoutePoints service."""
