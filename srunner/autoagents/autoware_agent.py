@@ -102,7 +102,7 @@ class AutowareAgent(AutonomousAgent):
             point[0].location.x,
             point[0].location.y,
             point[0].location.z,
-            marker_pub=self.autoware_node.marker_publisher,
+            node=self.autoware_node,
         )
 
     def destroy(self) -> None:
@@ -130,6 +130,7 @@ class AutowareAgent(AutonomousAgent):
             goal_pose = self._convert_to_waypoint(
                 self.goal_pose_world
             ).autoware_from_world_coords()
+
             for waypoint in self.waypoints_world:
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
