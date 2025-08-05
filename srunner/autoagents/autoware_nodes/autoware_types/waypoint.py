@@ -6,6 +6,8 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 
+import math
+
 
 class Waypoint(object):
     def __init__(self, x, y, z, node=None):
@@ -14,7 +16,7 @@ class Waypoint(object):
         self.z = z
 
         self.node = node
-        self.marker_pub = node.marker_pub
+        self.marker_pub = node.marker_publisher
 
         self.client = CarlaDataProvider.get_client()
 
@@ -42,7 +44,9 @@ class Waypoint(object):
         )
 
         qx, qy, qz, qw = quaternion_from_euler(
-            orientation.roll, orientation.pitch, round(orientation.yaw, 1)
+            math.radians(orientation.roll),
+            -math.radians(orientation.pitch),
+            -math.radians(round(orientation.yaw, 1)),
         )
 
         pose.position = ros_point
@@ -54,10 +58,6 @@ class Waypoint(object):
         )
 
         self.pose = pose
-
-        if self.marker_pub is not None:
-            print(self)
-            self.marker_pub.publish(self._publish_marker(pose))
 
         return pose
 
