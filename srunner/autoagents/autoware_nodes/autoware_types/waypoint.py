@@ -7,6 +7,7 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 
 import math
+import random
 
 
 class Waypoint(object):
@@ -14,6 +15,7 @@ class Waypoint(object):
         self.x = x
         self.y = y
         self.z = z
+        self.id = random.randint(0, 10000)
 
         self.node = node
         self.marker_pub = node.marker_publisher
@@ -59,20 +61,24 @@ class Waypoint(object):
 
         self.pose = pose
 
+        if self.marker_pub is not None:
+            self.marker_pub.publish(self._publish_marker(pose))
+
         return pose
 
     def _publish_marker(self, pose):
         marker = Marker()
-        marker.header.frame_id = "/map"
+        marker.header.frame_id = "map"
         marker.header.stamp = self.node.get_clock().now().to_msg()
 
-        marker.type = marker.ARROW
+        marker.type = marker.SPHERE
         marker.action = marker.ADD
+        marker.id = self.id
 
         marker.pose = pose
 
-        marker.scale.x = 0.5
-        marker.scale.y = 0.05
+        marker.scale.x = 1.0
+        marker.scale.y = 0.4
         marker.scale.z = 1.0
 
         marker.color.r = 1.0

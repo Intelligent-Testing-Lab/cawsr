@@ -127,17 +127,15 @@ class AutowareAgent(AutonomousAgent):
 
         if self.autoware_state.is_ready_publish_route() and self.agent_set_route:
             waypoints = []
-            goal_pose = self._convert_to_waypoint(self.goal_pose_world)
-
-            goal_pose._publish_marker(goal_pose.autoware_from_world_coords())
+            goal_pose = self._convert_to_waypoint(
+                self.goal_pose_world
+            ).autoware_from_world_coords()
 
             for waypoint in self.waypoints_world:
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
-            self.route_node.request_route(
-                goal_pose.autoware_from_world_coords(), waypoints
-            )
+            self.route_node.request_route(goal_pose, waypoints)
 
         # check if the current route is set
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
