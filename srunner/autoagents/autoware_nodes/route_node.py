@@ -101,22 +101,26 @@ class RouteNode(Node):
         
     def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
         self._publish_goal(goal)
-        
+        self.node.create_rate(1.0).sleep()
         for checkpoint in checkpoints:
             self._publish_checkpoint(checkpoint)
         
-    def _publish_goal(self, goal) -> None:
+    def _publish_goal(self, goal_point) -> None:
         goal = PoseStamped()
         goal.header.stamp = self.node.get_clock().now().to_msg()
-        goal.pose = goal
+        goal.header.frame_id = "map"
+        
+        goal.pose = goal_point
         self.goal_publisher.publish(goal)
         
         
     def _publish_checkpoint(self, checkpoint) -> None:
-        goal = PoseStamped()
-        goal.header.stamp = self.node.get_clock().now().to_msg()
-        goal.pose = checkpoint
-        self.checkpoint_publisher.publish(goal)
+        checkpoint_msg = PoseStamped()
+        checkpoint_msg.header.stamp = self.node.get_clock().now().to_msg()
+        checkpoint_msg.header.frame_id = "map"
+        
+        checkpoint_msg.pose = checkpoint
+        self.checkpoint_publisher.publish(checkpoint_msg)
 
     def set_route_response_callback(self, future):
         """Callback to handle the response from the SetRoutePoints service."""
