@@ -4,6 +4,7 @@ from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
 from autoware_carla_interface_msgs.msg import EgoConfig, BridgeState
+from autoware_internal_msgs.msg import MissionRemainingDistanceTime
 
 import logging
 
@@ -34,7 +35,12 @@ class StateNode(Node):
             self.localize_state_cb,
             10,
         )
-
+        self.remaining_time_distance_subscriber_ = self.create_subscription(
+            MissionRemainingDistanceTime,
+            "/planning/mission_remaining_distance_time",
+            self.time_distance_callback,
+            10,
+        )
         self.autoware_state_subscriber = self.create_subscription(
             BridgeState, self.bridge_state, self.bridge_state_cb, 10
         )
@@ -81,3 +87,7 @@ class StateNode(Node):
         """
         self.autoware_state.localize_state = localize_state_msg.state
         logger.info(f"Localization state: {self.autoware_state.localize_state}")
+
+    def time_distance_callback(self, time_distance_msg):
+        self.autoware_state.remaining_distance = time_distance_msg.remaining_distance
+        self.remaining_time = time_distance_msg.remaining_time

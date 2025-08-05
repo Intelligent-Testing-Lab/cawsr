@@ -51,3 +51,4 @@ class AutowareState(state.AgentState):
         self.goal_threshold: float = 0.5
 
         self.initial_distance: float = -1  # distance reading when ADS reaches goal
+        self.remaining_distance: float = -1.0
