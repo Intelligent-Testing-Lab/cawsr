@@ -37,7 +37,6 @@ class AutowareAgent(AutonomousAgent):
 
         rclpy.init(args=None)
 
-
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
         self.route_node = route_node.RouteNode(self.autoware_state)
@@ -54,6 +53,8 @@ class AutowareAgent(AutonomousAgent):
             target=self._multi_thread_executor.spin, daemon=True
         )
         self._executor_thread.start()
+
+        self.sent_route = False
 
         # check the bridge is ready
         # publish sensor information to the bridge
@@ -93,8 +94,6 @@ class AutowareAgent(AutonomousAgent):
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
-        
-        
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -129,7 +128,11 @@ class AutowareAgent(AutonomousAgent):
         if not self.agent_set_route:
             self.set_route()
 
-        if self.autoware_state.is_ready_publish_route() and self.agent_set_route:
+        if (
+            self.autoware_state.is_ready_publish_route()
+            and self.agent_set_route
+            and not self.sent_route
+        ):
             waypoints = []
             goal_pose = self._convert_to_waypoint(
                 self.goal_pose_world
@@ -139,8 +142,9 @@ class AutowareAgent(AutonomousAgent):
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
-            self.route_node.request_route(goal_pose, waypoints)
+            # self.route_node.request_route(goal_pose, waypoints)
             self.route_node.publish_route(goal_pose, waypoints)
+            self.sent_route = True
 
         # check if the current route is set
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
