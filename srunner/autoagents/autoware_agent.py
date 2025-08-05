@@ -82,9 +82,9 @@ class AutowareAgent(AutonomousAgent):
         # publish
         self.agent_set_route = True
 
-        self.waypoints_world = self._global_plan_world_coord
+        self.waypoints_world = self._global_plan_world_coord[1:]
 
-        self.autoware_state.total_waypoints = len(self._global_plan_world_coord)  # type: ignore
+        self.autoware_state.total_waypoints = len(self.waypoints_world)  # type: ignore
 
         # reinitialise localization
         logger.info("Localising Autoware agent...")
@@ -137,13 +137,24 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
 
-        # check we within some threshold distance
-        if self.autoware_state.within_goal():
+        # if the route is set, we can plan again
+        if self.autoware_state.route_set():
+            self.autoware_state.planning = False
+
+        # check we are within some threshold distance and we are moving
+        # use the flag to only send once
+        if (
+            self.autoware_state.within_goal()
+            and self.autoware_state.in_motion()
+            and not self.autoware_state.planning
+        ):
+            logger.info(
+                f"Updated goal_pose to waypoint number {self.autoware_state.current_waypoint}"
+            )
             goal_pose = self._convert_to_waypoint(
                 self.waypoints_world[self.autoware_state.current_waypoint]  # type: ignore
             ).autoware_from_world_coords()
 
             self.route_node.change_route(goal_pose, [])
             self.autoware_state.current_waypoint += 1
-        else:
-            logger.info("Approaching last waypoint")
+            self.autoware_state.planning = True
