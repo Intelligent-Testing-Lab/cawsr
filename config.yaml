@@ -1,7 +1,7 @@
 log:
   path: 'logs/'
   clear_old_logs: true
-  log_format: '[%(levelname)s] [%(asctime)s] [%(message)s] [%(filename)s]:[%(lineno)d]'
+  log_format: '[%(levelname)s] [%(asctime)s] %(message)s [%(filename)s]:[%(lineno)d]'
 carla:
   host: 127.0.0.1
   port: 2000

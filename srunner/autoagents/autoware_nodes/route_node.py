@@ -14,9 +14,9 @@ class RouteNode(Node):
     last_goal = None
     last_waypoints = []
 
-    # These are service names, not topic names. Renamed for clarity.
     set_route_points_service_name = "/api/routing/set_route_points"
     clear_route_service_name = "/api/routing/clear_route"
+    change_route_points_service_name = "/api/routing/change_route_points"
 
     def __init__(self, autoware_state) -> None:
         # Initialize the Node base class with a unique name
@@ -32,26 +32,61 @@ class RouteNode(Node):
             ClearRoute, self.clear_route_service_name
         )
 
-        # Good practice: Wait for the service server to be available before trying to call it
-        self.get_logger().info(
-            f"Waiting for '{self.set_route_points_service_name}' service..."
+        self.change_route_client = self.create_client(
+            SetRoutePoints, self.change_route_points_service_name
         )
+
+        # wait for the services to become available
+
         while not self.set_route_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
-                f"Service '{self.set_route_points_service_name}' not available, waiting again..."
+                f"Waiting for '{self.set_route_points_service_name}' service..."
             )
         self.get_logger().info(
             f"Service '{self.set_route_points_service_name}' available."
         )
 
-        self.get_logger().info(
-            f"Waiting for '{self.clear_route_service_name}' service..."
-        )
         while not self.clear_route_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
-                f"Service '{self.clear_route_service_name}' not available, waiting again..."
+                f"Waiting for '{self.clear_route_service_name}' service..."
             )
         self.get_logger().info(f"Service '{self.clear_route_service_name}' available.")
+
+        while not self.change_route_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info(
+                f"Waiting for '{self.change_route_points_service_name}' service..."
+            )
+        self.get_logger().info(
+            f"Service '{self.change_route_points_service_name}' available."
+        )
+
+    def _assemble_route_msg(
+        self, goal: Pose, waypoints: list[Pose]
+    ) -> SetRoutePoints_Request:
+        """Build a SetRoutePoints_Request message for use with
+            - /api/routing/set_route_points
+            - /api/routing/change_route_points
+
+        Args:
+            goal (Pose): Goal Pose
+            waypoints (list[Pose]): List of waypoints
+
+        Returns:
+            SetRoutePoints_Request: Request Object
+        """
+        request = SetRoutePoints_Request()
+
+        header_msg = Header()
+        time_stamp = self.get_clock().now().to_msg()
+
+        header_msg.frame_id = "map"
+        header_msg.stamp = time_stamp
+
+        request.header = header_msg
+        request.goal = goal
+        request.waypoints = waypoints
+
+        return request
 
     def request_route(self, goal: Pose, waypoints: list[Pose]) -> None:
         """Send a request to the /api/routing/set_route_points service.
@@ -62,31 +97,30 @@ class RouteNode(Node):
         """
         self.get_logger().info("Sending route request...")
 
-        # Create a request object for the SetRoutePoints service
-        # The request message structure is defined in the .srv file.
-        # It's typically accessed as ServiceType.Request or by instantiating ServiceType()
-        request = (
-            SetRoutePoints_Request()
-        )  # Or just SetRoutePoints() as it defaults to Request
-
-        header_msg = Header()
-        time_stamp = self.get_clock().now().to_msg()
-
-        header_msg.frame_id = "map"
-        # FIX: Assign the timestamp to header_msg.stamp, not frame_id.
-        header_msg.stamp = time_stamp
-
-        request.header = header_msg
-        # FIX: The field name in SetRoutePoints.srv is likely 'goal', not 'pose'.
-        request.goal = goal
-        # FIX: Corrected typo from 'wayponts' to 'waypoints'.
-        request.waypoints = waypoints
+        request = self._assemble_route_msg(goal, waypoints)
 
         # Call the service asynchronously. This returns a Future object.
         future = self.set_route_client.call_async(request)
 
         # Add a callback to process the response when it arrives.
         future.add_done_callback(self.set_route_response_callback)
+
+    def change_route(self, goal: Pose, waypoints: list[Pose]) -> None:
+        """Send a request to the /api/routing/change_route_points service.
+
+        Args:
+            goal (Pose): The goal position.
+            waypoints (list[Pose]): A list of waypoints to pass through.
+        """
+        self.get_logger().info("Sending route request...")
+
+        request = self._assemble_route_msg(goal, waypoints)
+
+        # Call the service asynchronously. This returns a Future object.
+        future = self.change_route_client.call_async(request)
+
+        # Add a callback to process the response when it arrives.
+        future.add_done_callback(self.change_route_response_callback)
 
     def set_route_response_callback(self, future):
         """Callback to handle the response from the SetRoutePoints service."""
@@ -114,6 +148,19 @@ class RouteNode(Node):
         # Call the service asynchronously
         future = self.clear_route_client.call_async(request)
         future.add_done_callback(self.clear_route_response_callback)
+
+    def change_route_response_callback(self, future):
+        """Callback to handle the response from the ChangeRoute service."""
+        try:
+            response = future.result()
+            if response.status.success:
+                self.get_logger().info("Updated route successfully!")
+            else:
+                self.get_logger().warn(
+                    f"Failed to update route, terminating scenario: {response.status.message}"
+                )
+        except Exception as e:
+            self.get_logger().error(f"Service call failed: {e}")
 
     def clear_route_response_callback(self, future):
         """Callback to handle the response from the ClearRoute service."""

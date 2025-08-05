@@ -82,12 +82,12 @@ class AutowareAgent(AutonomousAgent):
         # publish
         self.agent_set_route = True
 
-        self.goal_pose_world = self._global_plan_world_coord[-1]
-        self.waypoints_world = self._global_plan_world_coord[:-1]
+        self.waypoints_world = self._global_plan_world_coord
+
+        self.autoware_state.total_waypoints = len(self._global_plan_world_coord)  # type: ignore
 
         # reinitialise localization
         logger.info("Localising Autoware agent...")
-        # self.autoware_node.request_localize()  # None uses GNSS
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
@@ -126,17 +126,24 @@ class AutowareAgent(AutonomousAgent):
             self.set_route()
 
         if self.autoware_state.is_ready_publish_route() and self.agent_set_route:
-            waypoints = []
             goal_pose = self._convert_to_waypoint(
-                self.goal_pose_world
+                self.waypoints_world[self.autoware_state.current_waypoint]  # type: ignore
             ).autoware_from_world_coords()
 
-            for waypoint in self.waypoints_world:
-                waypoints.append(
-                    self._convert_to_waypoint(waypoint).autoware_from_world_coords()
-                )
-            self.route_node.request_route(goal_pose, waypoints)
+            self.route_node.request_route(goal_pose, [])
+            self.autoware_state.current_waypoint += 1
 
         # check if the current route is set
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
+
+        # check we within some threshold distance
+        if self.autoware_state.within_goal():
+            goal_pose = self._convert_to_waypoint(
+                self.waypoints_world[self.autoware_state.current_waypoint]  # type: ignore
+            ).autoware_from_world_coords()
+
+            self.route_node.change_route(goal_pose, [])
+            self.autoware_state.current_waypoint += 1
+        else:
+            logger.info("Approaching last waypoint")

@@ -9,9 +9,9 @@ class AutowareState(state.AgentState):
 
     def within_goal(self) -> bool:
         return (
-            self.distance_to_goal >= self.goal_threshold
-            or self.distance_to_goal == self.goal_threshold
-        )
+            self.remaining_distance >= self.goal_threshold
+            or self.remaining_distance == self.goal_threshold
+        ) and (not (self.current_waypoint + 1) == self.total_waypoints)
 
     def completed_route(self) -> bool:
         return self.route_state == 6 or self.motion_state == 1
@@ -46,9 +46,9 @@ class AutowareState(state.AgentState):
         self.localize_state: int = 0
 
         # goal state
-        self.achieved_goal: bool = False
-        self.distance_to_goal: float = -1
-        self.goal_threshold: float = 0.5
-
-        self.initial_distance: float = -1  # distance reading when ADS reaches goal
+        self.goal_threshold: float = 5.0
+        self.initial_distance: float = -1.0  # distance reading when ADS reaches goal
         self.remaining_distance: float = -1.0
+
+        self.current_waypoint = 0
+        self.total_waypoints = 0
