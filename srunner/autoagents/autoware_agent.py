@@ -151,7 +151,5 @@ class AutowareAgent(AutonomousAgent):
             self.sent_route = True
 
         # check if the current route is set
-        logger.info("About to publish engage")
-        if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
-            logger.info("publishing engage")
+        if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
