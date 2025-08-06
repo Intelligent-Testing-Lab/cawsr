@@ -29,7 +29,8 @@ ENV ROS_PKG="/opt/ros/${ROS_DISTRO}/setup.bash"
 RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
-    rm -rf PythonAPI.tar
+    rm -rf PythonAPI.tar && \
+    mkdir /logs
 
 # update CYCLONE DDS Config for ROS
 RUN mkdir /cyclonedds && \
