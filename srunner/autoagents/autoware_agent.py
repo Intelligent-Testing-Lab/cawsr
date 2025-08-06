@@ -10,7 +10,6 @@ from srunner.autoagents.agent_state import autoware_state
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
 from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
-from geometry_msgs.msg import PoseStamped
 
 import threading
 import rclpy
@@ -147,5 +146,7 @@ class AutowareAgent(AutonomousAgent):
             self.sent_route = True
 
         # check if the current route is set
+        logger.info("About to publish engage")
         if self.autoware_state.route_ready() and not self.autoware_state.sent_engage:
+            logger.info("publishing engage")
             self.autoware_node.publish_engage(True)
