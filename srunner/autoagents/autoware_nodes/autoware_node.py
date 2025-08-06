@@ -7,7 +7,7 @@ from autoware_adapi_v1_msgs.srv._initialize_localization import (
     InitializeLocalization_Request,
 )  # Explicitly import Request
 from geometry_msgs.msg import PoseWithCovarianceStamped
-from nav_msgs.msg import Path
+from visualization_msgs.msg import Marker
 
 # Assuming this import path is correct for your project
 from srunner.autoagents.agent_state import autoware_state
@@ -33,7 +33,9 @@ class AutowareNode(Node):
         )
 
         # marker publisher
-        self.path_publisher = self.create_publisher(Path, "path", 10)
+        self.marker_publisher = self.create_publisher(
+            Marker, "visulaization_marker", 10
+        )
 
         # Good practice: Wait for the service to be available
         self.get_logger().info(f"Waiting for '{self.localize_service}' service...")
