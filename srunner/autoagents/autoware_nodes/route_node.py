@@ -98,10 +98,11 @@ class RouteNode(Node):
         future.add_done_callback(self.set_route_response_callback)
 
     def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
-        self._publish_goal(goal)
 
         for checkpoint in checkpoints:
             self._publish_checkpoint(checkpoint)
+        
+        self._publish_goal(goal)
 
     def _publish_goal(self, goal_point) -> None:
         goal = PoseStamped()

@@ -30,7 +30,7 @@ RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
     rm -rf PythonAPI.tar && \
-    mkdir /logs
+    mkdir logs
 
 # update CYCLONE DDS Config for ROS
 RUN mkdir /cyclonedds && \

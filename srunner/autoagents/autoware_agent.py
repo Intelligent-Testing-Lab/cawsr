@@ -141,8 +141,13 @@ class AutowareAgent(AutonomousAgent):
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
+            
+            # autoware cannot handle than around 9 waypoints so reduce to 7 waypoints
+            n_waypoints = len(waypoints)
+            segment_size = int(n_waypoints / 7)
+            
             # self.route_node.request_route(goal_pose, waypoints)
-            self.route_node.publish_route(goal_pose, waypoints)
+            self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
             self.sent_route = True
 
         # check if the current route is set
