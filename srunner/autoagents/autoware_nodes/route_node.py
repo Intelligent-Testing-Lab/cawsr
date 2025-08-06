@@ -1,10 +1,12 @@
 from rclpy.node import Node
+from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
 
 # Import the service types directly
 from autoware_adapi_v1_msgs.srv import SetRoutePoints, ClearRoute
 
 # You might explicitly import the Request types for clarity, though not strictly necessary
+from autoware_adapi_v1_msgs.srv._set_route_points import SetRoutePoints_Request
 from autoware_adapi_v1_msgs.srv._clear_route import ClearRoute_Request
 from geometry_msgs.msg import PoseStamped
 
@@ -60,40 +62,40 @@ class RouteNode(Node):
             )
         self.get_logger().info(f"Service '{self.clear_route_service_name}' available.")
 
-    # def request_route(self, goal: Pose, waypoints: list[Pose]) -> None:
-    #     """Send a request to the /api/routing/set_route_points service.
+    def request_route(self, goal: Pose, waypoints: list[Pose]) -> None:
+        """Send a request to the /api/routing/set_route_points service.
 
-    #     Args:
-    #         goal (Pose): The goal position.
-    #         waypoints (list[Pose]): A list of waypoints to pass through.
-    #     """
-    #     self.get_logger().info("Sending route request...")
+        Args:
+            goal (Pose): The goal position.
+            waypoints (list[Pose]): A list of waypoints to pass through.
+        """
+        self.get_logger().info("Sending route request...")
 
-    #     # Create a request object for the SetRoutePoints service
-    #     # The request message structure is defined in the .srv file.
-    #     # It's typically accessed as ServiceType.Request or by instantiating ServiceType()
-    #     request = (
-    #         SetRoutePoints_Request()
-    #     )  # Or just SetRoutePoints() as it defaults to Request
+        # Create a request object for the SetRoutePoints service
+        # The request message structure is defined in the .srv file.
+        # It's typically accessed as ServiceType.Request or by instantiating ServiceType()
+        request = (
+            SetRoutePoints_Request()
+        )  # Or just SetRoutePoints() as it defaults to Request
 
-    #     header_msg = Header()
-    #     time_stamp = self.get_clock().now().to_msg()
+        header_msg = Header()
+        time_stamp = self.get_clock().now().to_msg()
 
-    #     header_msg.frame_id = "map"
-    #     # FIX: Assign the timestamp to header_msg.stamp, not frame_id.
-    #     header_msg.stamp = time_stamp
+        header_msg.frame_id = "map"
+        # FIX: Assign the timestamp to header_msg.stamp, not frame_id.
+        header_msg.stamp = time_stamp
 
-    #     request.header = header_msg
-    #     # FIX: The field name in SetRoutePoints.srv is likely 'goal', not 'pose'.
-    #     request.goal = goal
-    #     # FIX: Corrected typo from 'wayponts' to 'waypoints'.
-    #     request.waypoints = waypoints
+        request.header = header_msg
+        # FIX: The field name in SetRoutePoints.srv is likely 'goal', not 'pose'.
+        request.goal = goal
+        # FIX: Corrected typo from 'wayponts' to 'waypoints'.
+        request.waypoints = waypoints
 
-    #     # Call the service asynchronously. This returns a Future object.
-    #     future = self.set_route_client.call_async(request)
+        # Call the service asynchronously. This returns a Future object.
+        future = self.set_route_client.call_async(request)
 
-    #     # Add a callback to process the response when it arrives.
-    #     future.add_done_callback(self.set_route_response_callback)
+        # Add a callback to process the response when it arrives.
+        future.add_done_callback(self.set_route_response_callback)
 
     def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
         self._publish_goal(goal)
