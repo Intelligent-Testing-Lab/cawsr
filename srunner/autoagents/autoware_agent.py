@@ -142,11 +142,11 @@ class AutowareAgent(AutonomousAgent):
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
             
-            # autoware cannot handle than around 9 waypoints so reduce to 7 waypoints
+            # autoware cannot handle many waypoints, becomes unreliable
             n_waypoints = len(waypoints)
-            segment_size = int(n_waypoints / 7)
+            segment_size = int(n_waypoints / 3)
             
-            # self.route_node.request_route(goal_pose, waypoints)
+            #self.route_node.request_route(goal_pose, waypoints[0::segment_size])
             self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
             self.sent_route = True
 
