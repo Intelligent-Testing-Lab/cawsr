@@ -18,7 +18,7 @@ class Waypoint(object):
         self.id = random.randint(0, 10000)
 
         self.node = node
-        self.marker_pub = node.marker_publisher
+        self.path_publisher = node.path_publisher
 
         self.client = CarlaDataProvider.get_client()
 
@@ -61,32 +61,16 @@ class Waypoint(object):
 
         self.pose = pose
 
-        if self.marker_pub is not None:
-            self.marker_pub.publish(self._publish_marker(pose))
-
         return pose
 
-    def _publish_marker(self, pose):
-        marker = Marker()
-        marker.header.frame_id = "map"
-        marker.header.stamp = self.node.get_clock().now().to_msg()
+    def publish_route(self, poses: list[Pose]) -> None:
+        path = Marker()
+        path.header.frame_id = "map"
+        path.header.stamp = self.node.get_clock().now().to_msg()
 
-        marker.type = marker.SPHERE
-        marker.action = marker.ADD
-        marker.id = self.id
+        path.poses = poses
 
-        marker.pose = pose
-
-        marker.scale.x = 1.0
-        marker.scale.y = 0.4
-        marker.scale.z = 1.0
-
-        marker.color.r = 1.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0
-        marker.color.a = 1.0
-
-        return marker
+        self.path_publisher.publish(path)
 
     def __str__(self) -> str:
         if self.pose:
