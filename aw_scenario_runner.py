@@ -242,12 +242,18 @@ class AWScenarioRunner(object):
                     logger.info(
                         "Destroying ego vehicle {}".format(self.ego_vehicles[i].id)
                     )
-                    self.ego_vehicles[i].destroy()
+                    try:
+                        self.ego_vehicles[i].destroy()
+                    except AttributeError:
+                        logger.warning("ego vehicle {} already destroyed".format(self.ego_vehicles[i].id))
                 self.ego_vehicles[i] = None
         self.ego_vehicles = []
 
         if self.aw_agent:
-            self.aw_agent.destroy()
+            try:
+                self.aw_agent.destroy()
+            except AttributeError:
+                logger.warning("aw_agent already destroyed")
             self.aw_agent = None
 
 
