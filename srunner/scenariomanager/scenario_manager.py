@@ -145,7 +145,10 @@ class ScenarioManager(object):
 
         if self.scenario_tree.status == py_trees.common.Status.FAILURE:
             print("ScenarioManager: Terminated due to failure")
+        else:
+            print("ScenarioManager: Terminated due end of route")
 
+        
     def _tick_scenario(self, timestamp):
         """
         Run next tick of scenario and the agent.
