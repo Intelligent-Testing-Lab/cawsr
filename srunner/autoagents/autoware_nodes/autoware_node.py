@@ -9,6 +9,8 @@ from autoware_adapi_v1_msgs.srv._initialize_localization import (
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from visualization_msgs.msg import Marker
 
+from std_msgs.msg import Empty
+
 # Assuming this import path is correct for your project
 from srunner.autoagents.agent_state import autoware_state
 
@@ -18,6 +20,7 @@ class AutowareNode(Node):
     localize_service = (
         "/api/localization/initialize"  # Renamed for clarity as it's a service
     )
+    reset_topic = "/bridge/reset"
 
     def __init__(
         self, autoware_state_instance: autoware_state.AutowareState
@@ -36,6 +39,8 @@ class AutowareNode(Node):
         self.marker_publisher = self.create_publisher(
             Marker, "visulaization_marker", 10
         )
+
+        self.reset_bridge_publisher = self.create_publisher(Empty, self.reset_topic, 10)
 
         # Good practice: Wait for the service to be available
         self.get_logger().info(f"Waiting for '{self.localize_service}' service...")

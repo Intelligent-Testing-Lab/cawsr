@@ -62,49 +62,25 @@ class RouteNode(Node):
             )
         self.get_logger().info(f"Service '{self.clear_route_service_name}' available.")
 
-    def request_route(self, goal: Pose, waypoints: list[Pose]) -> None:
-        """Send a request to the /api/routing/set_route_points service.
+    def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
+        """Responsible for publishing the end goal point and the obligatory checkpoints to visist
 
         Args:
-            goal (Pose): The goal position.
-            waypoints (list[Pose]): A list of waypoints to pass through.
+            goal (Pose): goal position
+            checkpoints (list[Pose]): checkpoints to visit before end goal
         """
-        self.get_logger().info("Sending route request...")
-
-        # Create a request object for the SetRoutePoints service
-        # The request message structure is defined in the .srv file.
-        # It's typically accessed as ServiceType.Request or by instantiating ServiceType()
-        request = (
-            SetRoutePoints_Request()
-        )  # Or just SetRoutePoints() as it defaults to Request
-
-        header_msg = Header()
-        time_stamp = self.get_clock().now().to_msg()
-
-        header_msg.frame_id = "map"
-        # FIX: Assign the timestamp to header_msg.stamp, not frame_id.
-        header_msg.stamp = time_stamp
-
-        request.header = header_msg
-        # FIX: The field name in SetRoutePoints.srv is likely 'goal', not 'pose'.
-        request.goal = goal
-        # FIX: Corrected typo from 'wayponts' to 'waypoints'.
-        request.waypoints = waypoints
-
-        # Call the service asynchronously. This returns a Future object.
-        future = self.set_route_client.call_async(request)
-
-        # Add a callback to process the response when it arrives.
-        future.add_done_callback(self.set_route_response_callback)
-
-    def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
 
         for checkpoint in checkpoints:
             self._publish_checkpoint(checkpoint)
-        
+
         self._publish_goal(goal)
 
-    def _publish_goal(self, goal_point) -> None:
+    def _publish_goal(self, goal_point: Pose) -> None:
+        """publish the goal position
+
+        Args:
+            goal_point (Pose): end goal position
+        """
         goal = PoseStamped()
         goal.header.stamp = self.get_clock().now().to_msg()
         goal.header.frame_id = "map"
@@ -112,29 +88,18 @@ class RouteNode(Node):
         goal.pose = goal_point
         self.goal_publisher.publish(goal)
 
-    def _publish_checkpoint(self, checkpoint) -> None:
+    def _publish_checkpoint(self, checkpoint: Pose) -> None:
+        """publish a single checkpoint position
+
+        Args:
+            checkpoint (Pose): checkpoint position
+        """
         checkpoint_msg = PoseStamped()
         checkpoint_msg.header.stamp = self.get_clock().now().to_msg()
         checkpoint_msg.header.frame_id = "map"
 
         checkpoint_msg.pose = checkpoint
         self.checkpoint_publisher.publish(checkpoint_msg)
-
-    def set_route_response_callback(self, future):
-        """Callback to handle the response from the SetRoutePoints service."""
-        try:
-            # Get the result from the future object
-            response = future.result()
-            # Assuming Autoware services return a status field with success/message
-            if response.status.success:
-                self.autoware_state.sent_route = True
-                self.get_logger().info("Route set successfully!")
-            else:
-                self.get_logger().warn(
-                    f"Failed to set route: {response.status.message}"
-                )
-        except Exception as e:
-            self.get_logger().error(f"Service call failed: {e}")
 
     def request_clear_route(self):
         """Send a request to clear the route by calling /api/routing/clear_route service."""
