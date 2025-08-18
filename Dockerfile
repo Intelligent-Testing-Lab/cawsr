@@ -17,11 +17,21 @@ RUN mkdir /ros_workspace/ &&  \
     rm -rf /ros_workspace/autoware_msgs.tar && \
     source /opt/ros/humble/setup.bash && \
     apt install -y ros-humble-rmw-cyclonedds-cpp ros-humble-tf-transformations && \
-    rosdep install -i --from-path /ros_workspace/src --rosdistro humble -y && \
+    rosdep install -i --from-path /ros_workspace/autoware_msgs/src --rosdistro humble -y &&  cd autoware_msgs && \
     colcon build
 
-ENV AUTOWARE_MSG_PKG="/ros_workspace/install/setup.bash"
+ENV AUTOWARE_MSG_PKG="/ros_workspace/autoware_msgs/install/setup.bash"
 ENV ROS_PKG="/opt/ros/${ROS_DISTRO}/setup.bash"
+
+# install the autoware_carla_interface package
+RUN source ${AUTOWARE_MSG_PKG} && \
+    mkdir -p /ros_workspace/autoware_carla_interface && mv /autoware_scenario_runner/docker/autoware_carla_interface /ros_workspace/autoware_carla_interface && \
+    source /opt/ros/humble/setup.bash && \
+    rosdep install -i --from-path /ros_workspace/autoware_carla_interface --rosdistro humble -y && cd /ros_workspace/autoware_carla_interface && \
+    colcon build
+
+ENV AUTOWARE_CARLA_INTERFACE_PKG="/ros_workspace/autoware_carla_interface/install/setup.bash"
+ENV AUTOWARE_CARLA_INTERFACE_LOC="/ros_workspace/autoware_carla_interface"
 
 # install pip requirements and carla
 # NETWORKX has issues with collections.abc
