@@ -38,7 +38,17 @@ class ROS2Launch(object):
 
     @staticmethod
     def _run_command(command: list[str], package_name) -> None:
-        process = subprocess.Popen(command, check=True)
+        command = (
+            f"/bin/bash && source /opt/ros/humble/setup.bash && {' '.join(command)}"
+        )
+
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
 
         if package_name in ROS2Launch.threads:
             while not ROS2Launch.threads[package_name]["stop"]:
