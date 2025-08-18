@@ -13,6 +13,7 @@ from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
 from std_msgs.msg import Empty
 
+
 import threading
 import rclpy
 import time
@@ -60,7 +61,6 @@ class AutowareAgent(AutonomousAgent):
         # check the bridge is ready
         # publish sensor information to the bridge
         # wait for it to return the correct message
-
         ego_config_msg = EgoConfig()
         ego_config_msg.ego_name = config.ego_name
         ego_config_msg.ego_model = config.ego_model
@@ -148,12 +148,12 @@ class AutowareAgent(AutonomousAgent):
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
-            
+
             # autoware cannot handle many waypoints, becomes unreliable
             n_waypoints = len(waypoints)
             segment_size = int(n_waypoints / 3)
-            
-            #self.route_node.request_route(goal_pose, waypoints[0::segment_size])
+
+            # self.route_node.request_route(goal_pose, waypoints[0::segment_size])
             self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
             self.sent_route = True
 
