@@ -13,6 +13,8 @@ from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
 from std_msgs.msg import Empty
 
+from srunner.tools import ROS2_launch
+
 
 import threading
 import rclpy
@@ -57,6 +59,11 @@ class AutowareAgent(AutonomousAgent):
         self._executor_thread.start()
 
         self.sent_route = False
+
+        # launch the bridge
+        ROS2_launch.ROS2Launch.launch_file(
+            "autoware_carla_interface", "autoware_carla_interface.launch"
+        )
 
         # check the bridge is ready
         # publish sensor information to the bridge
