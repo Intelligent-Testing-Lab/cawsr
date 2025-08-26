@@ -1,5 +1,4 @@
 import subprocess
-import threading
 
 class CARLAManager(object):
     container_id = None
