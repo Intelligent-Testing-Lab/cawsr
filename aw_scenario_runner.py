@@ -8,8 +8,10 @@ import sys
 import logging
 import datetime
 import yaml
+import json
 
 import carla
+
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
@@ -22,9 +24,11 @@ from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
 
+
 from srunner.objects.ego_vehicle import EgoVehicle
 
 from srunner.tools.log import LogUtil
+
 
 logger = logging.getLogger("scenario-runner")
 
@@ -64,6 +68,9 @@ class AWScenarioRunner(object):
         self.DEV_MODE = self._scenario_config["dev_mode"]
         self.DEBUG = self._scenario_config["debug"]
 
+        self.curr_iteration = 0
+        self.iterations = int(self._scenario_config["algorithm"]["iterations"])
+
         CarlaDataProvider.set_client(self.carla_client)
 
         if not self.DEV_MODE:  # only load agents and algorithms in non-dev mode
@@ -94,14 +101,6 @@ class AWScenarioRunner(object):
         signal.signal(signal.SIGTERM, self._signal_handler)
 
         self._start_wall_time = datetime.datetime.now()
-
-        scenario_name = os.path.split(
-            os.path.splitext(self._scenario_config["json"])[0]
-        )[1]
-
-        self.results_manager.parse_json(
-            self._scenario_config["json"], scenario_name, "0"
-        )
 
     def _signal_handler(self, signum, frame) -> None:
         """
@@ -185,8 +184,13 @@ class AWScenarioRunner(object):
 
         logger.info("Starting scenario...")
         try:
+            recorder_name = f"{self.results_manager.last_scenario}/recording.log"
+            self.client.start_recorder(recorder_name, True)
+
             self.scenario_manager.load_scenario(scenario, self.aw_agent)
             self.scenario_manager.run_scenario()
+
+            self.client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
@@ -200,14 +204,63 @@ class AWScenarioRunner(object):
         Repeats **iterations** times, as defined in config.yaml
 
         """
-        env_config = EnvironmentParser.parse_scenario_env(
-            os.path.join(self.results_manager.last_scenario, "scenario.xml")
-        )
-        route_config = RouteParser.parse_routes_file(
-            self.results_manager.last_scenario, env_config
-        )[self._scenario_config["route_id"]]
 
-        self.run_scenario(route_config, env_config)
+        logger.info("Loading the initial scenario configuration")
+
+        scenario_name = os.path.split(
+            os.path.splitext(self._scenario_config["json"])[0]
+        )[1]
+
+        try:
+            with open(self._scenario_config["json"], "r", encoding="UTF-8") as raw_json:  # type: ignore
+                self.json_definition = json.loads(raw_json.read())
+        except json.JSONDecodeError:
+            logger.error("Failed to decode scenario defintion, exiting...")
+            sys.exit(1)
+
+        # load the algorithm instance
+        alg_class_name = self.module_algorithm.__name__.title().replace("_", "")
+        logger.info(
+            f"Loading the algorithm class: f{getattr(self.module_algorithm, alg_class_name)}"
+        )
+        self.algorithm = getattr(self.module_algorithm, alg_class_name)(
+            self._scenario_config["algorithm"]["args"]
+        )
+
+        for iteration in range(self.iterations):
+            self.curr_iteration = iteration
+            logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
+
+            # parse the initial scenario config
+            self.results_manager.parse_json(
+                self.json_definition,
+                scenario_name,
+                str(self.curr_iteration),
+                save_def=True,
+            )
+
+            env_config = EnvironmentParser.parse_scenario_env(
+                os.path.join(self.results_manager.last_scenario, "scenario.xml")
+            )
+
+            route_config = RouteParser.parse_routes_file(
+                self.results_manager.last_scenario, env_config
+            )[self._scenario_config["route_id"]]
+
+            self.run_scenario(route_config, env_config)
+
+            # run the metric manager with the recorded file to calculate the driving score
+            driving_score = 0.0
+
+            # read the scenario definition
+            self.json_definition = self.algorithm._scenario_callback(
+                self.json_definition, driving_score
+            )
+
+            # destroy the agent to be loaded again
+            if self.aw_agent:
+                self.aw_agent.destroy()
+                self.aw_agent = None
 
     def destroy(self) -> None:
         """Deletes instances of all classes related to CARLA"""

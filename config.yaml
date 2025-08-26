@@ -20,6 +20,7 @@ scenario_runner:
   route_id: 0
   agent: srunner/autoagents/autoware_agent
   algorithm:
-    iterations: 1000
-    path: /algorithms # relative path
-    hyperparmaters: # will be passed into the algorithm class
+    iterations: 10
+    path: /algorithms/test_alg # relative path
+    args: # will be passed into the algorithm class as a dict
+      test_arg: 10

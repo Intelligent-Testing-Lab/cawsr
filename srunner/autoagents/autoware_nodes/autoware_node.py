@@ -20,7 +20,7 @@ class AutowareNode(Node):
     localize_service = (
         "/api/localization/initialize"  # Renamed for clarity as it's a service
     )
-    reset_topic = "/bridge/reset"
+    reset_topic = "/autoware/restart"
 
     def __init__(
         self, autoware_state_instance: autoware_state.AutowareState
@@ -40,7 +40,7 @@ class AutowareNode(Node):
             Marker, "visulaization_marker", 10
         )
 
-        self.reset_bridge_publisher = self.create_publisher(Empty, self.reset_topic, 10)
+        self.reset_autoware_pub = self.create_publisher(Empty, self.reset_topic, 10)
 
         # Good practice: Wait for the service to be available
         self.get_logger().info(f"Waiting for '{self.localize_service}' service...")
@@ -119,3 +119,7 @@ class AutowareNode(Node):
                 )
         except Exception as e:
             self.get_logger().error(f"Service call failed: {e}")
+
+    def reset_autoware(self):
+        """Publishes an empty message to reset autoware."""
+        self.reset_autoware_pub.publish(Empty())

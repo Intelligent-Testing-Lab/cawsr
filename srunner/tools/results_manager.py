@@ -1,6 +1,7 @@
 import os
 import datetime
 
+import json
 from srunner.scenario_decoder.json_to_xml_files import XMLToFiles
 
 
@@ -62,7 +63,9 @@ class ScenarioDefinitionManager(object):
         self.last_scenario = full_path
         return full_path
 
-    def parse_json(self, json: str, scenario: str, iteration: str):
+    def parse_json(
+        self, json_: str | dict, scenario: str, iteration: str, save_def: bool = False
+    ):
         """Parses a given JSON Scenario definition. Outputs two XML files used by scenario runner
 
         Args:
@@ -75,4 +78,12 @@ class ScenarioDefinitionManager(object):
             self._create_run_folder()
 
         self._create_scenario_folder(scenario, iteration, self.results_path)
-        self._scenario_decoder.parse_scenario(json, self.last_scenario)
+
+        # save the definition as a new file
+        if save_def and isinstance(json_, dict):
+            with open(
+                f"{self.last_scenario}/definition.json", "a", encoding="utf-8"
+            ) as f:
+                json.dump(json_, f)
+
+        self._scenario_decoder.parse_scenario(json_, self.last_scenario)

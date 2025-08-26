@@ -1,9 +1,9 @@
 class BasicAlgorithm(object):
-    def __init__(self) -> None:
-        return
+    def __init__(self, args: dict) -> None:
+        self._args = args
 
     def _scenario_callback(
-        self, scenario_definition: dict, scenario_critera: dict, results: dict
+        self, scenario_definition: dict, driving_score: float
     ) -> dict:
         """
         Purely virtual method to be implemented by the user. Receives a

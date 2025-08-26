@@ -6,10 +6,10 @@ from math import sqrt, pow
 
 
 class Hill_Climb(BasicAlgorithm):
-    def __init__(self, radius, lanelet_path) -> None:
+    def __init__(self, args: dict) -> None:
         super(BasicAlgorithm).__init__()
-        self.radius = radius
-        self.lanelet_path = lanelet_path
+        self.radius = args["radius"]
+        self.lanelet_path = args["lanelet_path"]
         self.visited_points: set[tuple[int, int]] = set()
 
         self.prev_ds = None

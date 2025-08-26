@@ -21,12 +21,11 @@ import sys
 import importlib
 import inspect
 import json
-import argparse
 import yaml
-from argparse import RawTextHelpFormatter
 
 import carla
 from srunner.metrics.tools.metrics_log import MetricsLog
+from srunner.metrics.examples import basic_metric
 from srunner.metrics.helper.metric_data import MetricData
 
 
@@ -36,16 +35,30 @@ class MetricsManager(object):
     the metrics.
     """
 
-    def __init__(self, args):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        log: str,
+        metric: basic_metric.BasicMetric,
+        scenario_definition: str,
+        criteria: str = "",
+    ):
         """
         Initialization of the metrics manager. This creates the client, needed to parse
         the information from the recorder, extract the metrics class, and runs it
         """
-        self._args = args
+
+        self.host = host
+        self.port = port
+        self.log = log
+        self.metric = metric
+        self.criteria = criteria
+        self.scenario_definition = scenario_definition
 
         # Parse the arguments
-        recorder_str = self._get_recorder(self._args.log)
-        criteria_dict = self._get_criteria(self._args.criteria)
+        recorder_str = self._get_recorder(self.log)
+        criteria_dict = self._get_criteria(self.criteria)
 
         # Get the correct world and load it
         map_name = self._get_recorder_map(recorder_str)
@@ -56,7 +69,7 @@ class MetricsManager(object):
         log = MetricsLog(recorder_str)
 
         # Parse defintino json input
-        with open(args.definition, "r", encoding="UTF-8") as raw_json:
+        with open(self.scenario_definition, "r", encoding="UTF-8") as raw_json:
             MetricData.definition = json.loads(raw_json.read())
 
         with open("config.yaml", "r") as stream:
@@ -65,11 +78,11 @@ class MetricsManager(object):
         metrics = [
             "percentage_over_line_metric",
             "collision_metric",
-            "acceleration_metric"
+            "acceleration_metric",
         ]
 
         # Read and run the metric class
-        metric_class = self._get_metric_class(self._args.metric)
+        metric_class = self._get_metric_class(self.metric)
         if metric_class.__name__ == "driving_score_metric":
             metric_class(town_map, log, metrics, criteria_dict)
         else:
@@ -81,7 +94,7 @@ class MetricsManager(object):
         """
 
         # Get the log information.
-        self._client = carla.Client(self._args.host, int(self._args.port))
+        self._client = carla.Client(self.host, int(self.port))
         recorder_file = "{}/{}".format(os.getenv("SCENARIO_RUNNER_ROOT", "./"), log)
 
         # Check that the file is correct
@@ -140,50 +153,3 @@ class MetricsManager(object):
         sim_map = header[1][5:]
 
         return sim_map
-
-
-def main():
-    """
-    main function
-    """
-
-    # pylint: disable=line-too-long
-    description = "Scenario Runner's metrics module. Evaluate the execution of a specific scenario by developing your own metric.\n"
-
-    parser = argparse.ArgumentParser(
-        description=description, formatter_class=RawTextHelpFormatter
-    )
-    parser.add_argument(
-        "--host", default="127.0.0.1", help="IP of the host server (default: localhost)"
-    )
-    parser.add_argument(
-        "--port", "-p", default=2000, help="TCP port to listen to (default: 2000)"
-    )
-    parser.add_argument(
-        "--log",
-        required=True,
-        help="Path to the CARLA recorder .log file (relative to SCENARIO_RUNNER_ROOT).\nThis file is created by the record functionality at ScenarioRunner",
-    )
-    parser.add_argument(
-        "--metric",
-        required=True,
-        default="srunner/metrics/all_metrics/driving_score_metric.py",
-        help="Path to the .py file defining the used metric.\nSome examples at srunner/metrics",
-    )
-    parser.add_argument(
-        "--criteria",
-        default="",
-        help="Path to the .json file with the criteria information.\nThis file is created by the record functionality at ScenarioRunner",
-    )
-    parser.add_argument(
-        "--definition", required=True, help="path to json scenario definition"
-    )
-    # pylint: enable=line-too-long
-
-    args = parser.parse_args()
-
-    MetricsManager(args)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

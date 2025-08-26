@@ -11,16 +11,14 @@ from math import sqrt, pow
 
 
 class Simulated_Annealing(BasicAlgorithm):
-    def __init__(
-        self, temperature, min_temperature, temperature_step, radius, lanelet_path
-    ) -> None:
-        super(BasicAlgorithm).__init__()
-        self.temperature = temperature
-        self.min_temperature = min_temperature
-        self.temperature_step = temperature_step
+    def __init__(self, args: dict) -> None:
+        super(BasicAlgorithm).__init__(args)
+        self.temperature = args["temperature"]
+        self.min_temperature = args["min_temperature"]
+        self.temperature_step = args["temperature_step"]
 
-        self.radius = radius
-        self.lanelet_path = lanelet_path
+        self.radius = args["radius"]
+        self.lanelet_path = args["lanelet_path"]
 
         self.prev_ds = None
         self.prev_waypoints = None

@@ -11,7 +11,6 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
 from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
-from std_msgs.msg import Empty
 
 from srunner.tools import ROS2_launch
 
@@ -118,19 +117,15 @@ class AutowareAgent(AutonomousAgent):
 
     def destroy(self) -> None:
         """Cleanup"""
+        self.autoware_node.reset_autoware()
         try:
             self.autoware_node.destroy()
             self.state_node.destroy()
             self.route_node.destroy()
-            self.send_reset_bridge_signal()
             rclpy.shutdown()
             self._executor_thread.join()
         except RuntimeError:
             logger.info("Cleaned up threads...")
-
-    def send_reset_bridge_signal(self) -> None:
-        message = Empty()
-        self.autoware_node.reset_bridge_publisher.publish(message)
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""

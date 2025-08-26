@@ -17,9 +17,13 @@ class Definitions(Enum):
 class XMLToFiles:
     """Class to create appropriate scenario runner compatible xml files from a json file"""
 
-    def parse_scenario(self, json_path: str, output_dir: str = ".") -> None:
-        with open(json_path, "r", encoding="UTF-8") as raw_json:
-            self.parsed_json = json.loads(raw_json.read())
+    def parse_scenario(self, json_path: str | dict, output_dir: str = ".") -> None:
+        # allow json_path to be either a path to json file or dict
+        if isinstance(json_path, str):
+            with open(json_path, "r", encoding="UTF-8") as raw_json:  # type: ignore
+                self.parsed_json = json.loads(raw_json.read())
+        elif isinstance(json_path, dict):
+            self.parsed_json = json_path
 
         self.route_node = self.create_xml(
             self.parsed_json[Definitions.ROUTES.value], None, Definitions.ROUTES.value
