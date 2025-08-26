@@ -247,7 +247,10 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[self._scenario_config["route_id"]]
 
-            self.run_scenario(route_config, env_config)
+            scenario_status = self.run_scenario(route_config, env_config)
+            logger.info(
+                f"Scenario iteration {self.curr_iteration} has concluded with the status of {'Success' if scenario_status else 'Failure'}"
+            )
 
             # run the metric manager with the recorded file to calculate the driving score
             driving_score = 0.0
