@@ -252,14 +252,48 @@ class AWScenarioRunner(object):
                 f"Scenario iteration {self.curr_iteration} has concluded with the status of {'Success' if scenario_status else 'Failure'}"
             )
 
-            # run the metric manager with the recorded file to calculate the driving score
-            # for now use a combination of the criteria
-            driving_score = 0.0
+            criteria = self._output_criteria(
+                self.scenario_manager.scenario.get_criteria(),  # type: ignore
+                f"{self.results_manager.last_scenario}/{scenario_name}.json",
+            )
+
+            driving_score = self._calculate_driving_score(criteria)
 
             # read the scenario definition
             self.json_definition = self.algorithm._scenario_callback(
                 self.json_definition, driving_score
             )
+
+    def _output_criteria(
+        self, criteria, file_name: str, save_file: bool = True
+    ) -> dict:
+        # Filter the attributes that aren't JSON serializable
+        with open("temp.json", "w", encoding="utf-8") as fp:
+            criteria_dict = {}
+            for criterion in criteria:
+                criterion_dict = criterion.__dict__
+                criteria_dict[criterion.name] = {}
+
+                for key in criterion_dict:
+                    if key != "name":
+                        try:
+                            key_dict = {key: criterion_dict[key]}
+                            json.dump(key_dict, fp, sort_keys=False, indent=4)
+                            criteria_dict[criterion.name].update(key_dict)
+                        except TypeError:
+                            pass
+
+        os.remove("temp.json")
+
+        # Save the criteria dictionary into a .json file
+        if save_file:
+            with open(file_name, "w", encoding="utf-8") as fp:
+                json.dump(criteria_dict, fp, sort_keys=False, indent=4)
+        return criteria_dict
+
+    def _calculate_driving_score(self, criteria: dict) -> float:
+        # to be implemented
+        return 0.0
 
     def destroy(self) -> None:
         """Deletes instances of all classes related to CARLA"""
