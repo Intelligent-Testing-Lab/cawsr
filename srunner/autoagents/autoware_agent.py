@@ -106,6 +106,7 @@ class AutowareAgent(AutonomousAgent):
         logger.info("Sending shutdown signal to autoware...")
         self.autoware_node.reset_autoware()
         logger.info("Waiting for shutdown. Starting Node cleanup")
+        time.sleep(1)  # sleep for 1 second for sanity
         try:
             self.autoware_node.destroy_node()
             self.state_node.destroy_node()

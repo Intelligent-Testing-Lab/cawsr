@@ -79,6 +79,9 @@ class ScenarioManager(object):
         """
         This function triggers a proper termination of a scenario
         """
+        if self._agent is not None:
+            self._agent.cleanup()
+            self._agent = None
 
         if self._watchdog is not None:
             self._watchdog.stop()
@@ -86,10 +89,6 @@ class ScenarioManager(object):
 
         if self.scenario is not None:
             self.scenario.terminate()
-
-        if self._agent is not None:
-            self._agent.cleanup()
-            self._agent = None
 
         CarlaDataProvider.cleanup()
 

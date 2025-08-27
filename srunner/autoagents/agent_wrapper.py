@@ -42,11 +42,7 @@ class AgentWrapper(object):
 
     def cleanup(self):
         """
-        Remove and destroy all sensors
+        Call agent cleanup method
         """
-        for i, _ in enumerate(self._sensors_list):
-            if self._sensors_list[i] is not None:
-                self._sensors_list[i].stop()
-                self._sensors_list[i].destroy()
-                self._sensors_list[i] = None
-        self._sensors_list = []
+        # call agent cleanup
+        self._agent.cleanup()
