@@ -17,6 +17,7 @@ import time
 import logging
 
 logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class AutowareAgent(AutonomousAgent):
