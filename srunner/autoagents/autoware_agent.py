@@ -11,23 +11,18 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
 from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
 
-
-from srunner.tools import ROS2_launch
-
-
 import threading
 import rclpy
 import time
 import logging
 
 logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class AutowareAgent(AutonomousAgent):
     timestamp = None
-    current_map = None
     agent_set_route = False
-    counter = 0
 
     def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
@@ -39,11 +34,14 @@ class AutowareAgent(AutonomousAgent):
         """
 
         rclpy.init(args=None)
+        self.config = config
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
-        self.route_node = route_node.RouteNode(self.autoware_state)
         self.state_node = state_node.StateNode(self.autoware_state)
+        self.state_node.reset_autoware()
+
+        self.route_node = route_node.RouteNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
 
         self._multi_thread_executor = rclpy.executors.MultiThreadedExecutor()
@@ -59,20 +57,17 @@ class AutowareAgent(AutonomousAgent):
 
         self.sent_route = False
 
-        # launch the bridge
-        ROS2_launch.ROS2Launch.launch_file(
-            "autoware_carla_interface", "autoware_carla_interface.launch"
-        )
+        self.publish_sensor_state()
 
-        # check the bridge is ready
+    def publish_sensor_state(self) -> None:
         # publish sensor information to the bridge
         # wait for it to return the correct message
         ego_config_msg = EgoConfig()
-        ego_config_msg.ego_name = config.ego_name
-        ego_config_msg.ego_model = config.ego_model
+        ego_config_msg.ego_name = self.config.ego_name  # type: ignore
+        ego_config_msg.ego_model = self.config.ego_model  # type: ignore
         ego_config_msg.sensors = []
 
-        for sensor_config in config.sensor_config:
+        for sensor_config in self.config.sensor_config:  # type: ignore
             sensor_config_msg = SensorConfig()
             sensor_config_msg.sensor_type = sensor_config.type
             sensor_config_msg.sensor_id = sensor_config.id
@@ -82,22 +77,14 @@ class AutowareAgent(AutonomousAgent):
         # big performance diminishment here
         while not self.autoware_state.bridge_ready:
             logger.info("Sending Sensor state to Agent...")
-            time.sleep(5)
+            time.sleep(2)
             self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
-        # for every point in the plan
-        # convert to waypoint
-        # get the autoware pose
-        # publish
         self.agent_set_route = True
 
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
-
-        # reinitialise localization
-        logger.info("Localising Autoware agent...")
-        # self.autoware_node.request_localize()  # None uses GNSS
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
@@ -115,24 +102,23 @@ class AutowareAgent(AutonomousAgent):
             node=self.autoware_node,
         )
 
-    def destroy(self) -> None:
+    def cleanup(self) -> None:
         """Cleanup"""
+        logger.info("Sending shutdown signal to autoware...")
         self.autoware_node.reset_autoware()
+        logger.info("Waiting for shutdown. Starting Node cleanup")
+        time.sleep(1)  # sleep for 1 second for sanity
         try:
-            self.autoware_node.destroy()
-            self.state_node.destroy()
-            self.route_node.destroy()
+            self.autoware_node.destroy_node()
+            self.state_node.destroy_node()
+            self.route_node.destroy_node()
             rclpy.shutdown()
             self._executor_thread.join()
         except RuntimeError:
-            logger.info("Cleaned up threads...")
+            logger.info("Failed to clean up executor thread...")
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""
-        self.counter += 1
-        if self.counter % 20 == 0:
-            logger.info("Ticked 1 second")
-
         if not self.agent_set_route:
             self.set_route()
 

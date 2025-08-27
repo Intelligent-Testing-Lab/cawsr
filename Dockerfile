@@ -23,15 +23,18 @@ RUN mkdir /ros_workspace/ &&  \
 ENV AUTOWARE_MSG_PKG="/ros_workspace/autoware_msgs/install/setup.bash"
 ENV ROS_PKG="/opt/ros/${ROS_DISTRO}/setup.bash"
 
-# install the autoware_carla_interface package
-RUN source ${AUTOWARE_MSG_PKG} && \
-    mkdir -p /ros_workspace/autoware_carla_interface && mv /autoware_scenario_runner/docker/autoware_carla_interface /ros_workspace/autoware_carla_interface && \
-    source /opt/ros/humble/setup.bash && \
-    rosdep install -i --from-path /ros_workspace/autoware_carla_interface --rosdistro humble -y && cd /ros_workspace/autoware_carla_interface && \
-    colcon build
-
-ENV AUTOWARE_CARLA_INTERFACE_PKG="/ros_workspace/autoware_carla_interface/install/setup.bash"
-ENV AUTOWARE_CARLA_INTERFACE_LOC="/ros_workspace/autoware_carla_interface"
+# install docker inside container
+RUN apt-get update -y\
+    apt-get install ca-certificates curl -y\
+    install -m 0755 -d /etc/apt/keyrings \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+    chmod a+r /etc/apt/keyrings/docker.asc \
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    apt-get update -y\
+    apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
 # install pip requirements and carla
 # NETWORKX has issues with collections.abc

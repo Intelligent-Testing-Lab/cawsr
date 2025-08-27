@@ -23,12 +23,9 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
-
-
 from srunner.objects.ego_vehicle import EgoVehicle
-
 from srunner.tools.log import LogUtil
-
+from srunner.tools.CARLA_manager import CARLAManager
 
 logger = logging.getLogger("scenario-runner")
 
@@ -58,20 +55,12 @@ class AWScenarioRunner(object):
         self._tm_config = config["traffic_manager"]
         self._scenario_config = config["scenario_runner"]
 
-        self.carla_client = carla.Client(
-            self._carla_config["host"], int(self._carla_config["port"])
-        )
-
-        self.carla_client.set_timeout(self._carla_config["timeout"])
-
         # Flags
         self.DEV_MODE = self._scenario_config["dev_mode"]
         self.DEBUG = self._scenario_config["debug"]
 
         self.curr_iteration = 0
         self.iterations = int(self._scenario_config["algorithm"]["iterations"])
-
-        CarlaDataProvider.set_client(self.carla_client)
 
         if not self.DEV_MODE:  # only load agents and algorithms in non-dev mode
             autoware_agent_path = self._scenario_config["agent"]
@@ -228,6 +217,17 @@ class AWScenarioRunner(object):
         )
 
         for iteration in range(self.iterations):
+            logger.info("Starting CARLA container....")
+            CARLAManager.start_carla()
+
+            logger.info("Connecting to CARLA...")
+            self.carla_client = carla.Client(
+                self._carla_config["host"], int(self._carla_config["port"])
+            )
+
+            self.carla_client.set_timeout(self._carla_config["timeout"])
+            CarlaDataProvider.set_client(self.carla_client)
+
             self.curr_iteration = iteration
             logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
 
@@ -252,18 +252,48 @@ class AWScenarioRunner(object):
                 f"Scenario iteration {self.curr_iteration} has concluded with the status of {'Success' if scenario_status else 'Failure'}"
             )
 
-            # run the metric manager with the recorded file to calculate the driving score
-            driving_score = 0.0
+            criteria = self._output_criteria(
+                self.scenario_manager.scenario.get_criteria(),  # type: ignore
+                f"{self.results_manager.last_scenario}/{scenario_name}.json",
+            )
+
+            driving_score = self._calculate_driving_score(criteria)
 
             # read the scenario definition
             self.json_definition = self.algorithm._scenario_callback(
                 self.json_definition, driving_score
             )
 
-            # destroy the agent to be loaded again
-            if self.aw_agent:
-                self.aw_agent.destroy()
-                self.aw_agent = None
+    def _output_criteria(
+        self, criteria, file_name: str, save_file: bool = True
+    ) -> dict:
+        # Filter the attributes that aren't JSON serializable
+        with open("temp.json", "w", encoding="utf-8") as fp:
+            criteria_dict = {}
+            for criterion in criteria:
+                criterion_dict = criterion.__dict__
+                criteria_dict[criterion.name] = {}
+
+                for key in criterion_dict:
+                    if key != "name":
+                        try:
+                            key_dict = {key: criterion_dict[key]}
+                            json.dump(key_dict, fp, sort_keys=False, indent=4)
+                            criteria_dict[criterion.name].update(key_dict)
+                        except TypeError:
+                            pass
+
+        os.remove("temp.json")
+
+        # Save the criteria dictionary into a .json file
+        if save_file:
+            with open(file_name, "w", encoding="utf-8") as fp:
+                json.dump(criteria_dict, fp, sort_keys=False, indent=4)
+        return criteria_dict
+
+    def _calculate_driving_score(self, criteria: dict) -> float:
+        # to be implemented
+        return 0.0
 
     def destroy(self) -> None:
         """Deletes instances of all classes related to CARLA"""
