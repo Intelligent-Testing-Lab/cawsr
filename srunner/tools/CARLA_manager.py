@@ -3,20 +3,17 @@ import subprocess
 
 class CARLAManager(object):
     container_id = None
-    run_command = """
-        docker run -d --rm \
-    --gpus all \
-    -e NVIDIA_DRIVER_CAPABILITIES=all \
-    -e NVIDIA_VISIBLE_DEVICES=all \
-    -e SQL_LVDELDRIVER=x11 \
-    -e DISPLAY=:1 \
-    -e XDG_RUNTIME_DIR=/tmp \
-    -e NVIDIA_REQUIRE_CUDA="cuda>=10.1 brand=tesla,driver>=384 driver>=384 brand=tesla,driver>=396 driver>=396 brand=tesla,driver>=410 driver>=410" \
-    --network host \
-    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
-    carlasim/carla:0.9.15 \
-    /bin/bash -c "/home/carla/CarlaUE4.sh"
-    """
+    run_command = (
+        "docker run -d --rm"
+        "--gpus all"
+        "-e NVIDIA_VISIBLE_DEVICES=all"
+        "-e DISPLAY=:0"
+        "-v /tmp/.X11-unix:/tmp/.X11-unix:rw"
+        "-e XDG_RUNTIME_DIR=/tmp"
+        "--network host"
+        "carlasim/carla:0.9.15"
+        "/bin/bash -c '/home/carla/CarlaUE4.sh'"
+    )
 
     @staticmethod
     def start_carla():
