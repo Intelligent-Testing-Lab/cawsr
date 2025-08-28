@@ -90,4 +90,4 @@ class StateNode(Node):
 
     def reset_autoware(self):
         """Publishes an empty message to reset autoware."""
-        self.reset_autoware_pub.publish(Empty())
+        self.restart_autoware_pub.publish(Empty())

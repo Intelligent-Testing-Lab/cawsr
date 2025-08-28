@@ -23,6 +23,7 @@ logger.propagate = False
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     agent_set_route = False
+    counter = 0
 
     def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
@@ -77,7 +78,7 @@ class AutowareAgent(AutonomousAgent):
         # big performance diminishment here
         while not self.autoware_state.bridge_ready:
             logger.info("Sending Sensor state to Agent...")
-            time.sleep(2)
+            time.sleep(5) # DO NOT CHANGE THIS IS A MAGIC NUMBER
             self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
@@ -105,7 +106,7 @@ class AutowareAgent(AutonomousAgent):
     def cleanup(self) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
-        self.autoware_node.reset_autoware()
+        self.state_node.reset_autoware()
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
@@ -119,6 +120,10 @@ class AutowareAgent(AutonomousAgent):
 
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""
+        self.counter += 1
+        if self.counter % 20 == 0:
+            logger.info("Ticked 1 second")
+        
         if not self.agent_set_route:
             self.set_route()
 
