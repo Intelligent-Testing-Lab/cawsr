@@ -148,10 +148,9 @@ class AWScenarioRunner(object):
 
         self.carla_world.tick()  # client must tick to spawn actors
 
-        logger.info("Setting up sensor configuration...")
-        ego.setup_sensors()
-
-        self.carla_world.tick()
+        #logger.info("Setting up sensor configuration...")
+        #ego.setup_sensors()
+        #self.carla_world.tick()
 
         if not self.DEV_MODE:
             logger.info("Loading Autoware agent")

@@ -15,7 +15,7 @@ traffic_manager:
   port: 8001
 scenario_runner:
   debug: false
-  dev_mode: true
+  dev_mode: false
   json: ./example_scenario.json
   route_id: 0
   agent: srunner/autoagents/autoware_agent

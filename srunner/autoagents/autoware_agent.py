@@ -152,4 +152,4 @@ class AutowareAgent(AutonomousAgent):
 
         # check if the current route is set
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
-            self.autoware_node.publish_engage(True)
+           self.autoware_node.publish_engage(True)

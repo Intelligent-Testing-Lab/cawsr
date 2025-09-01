@@ -28,8 +28,6 @@ class EnvironmentParser(object):
             for elem in scenario.iter():
                 if elem.tag == "ego_vehicle":
                     EnvironmentParser.parse_ego_config(config, elem)
-
-        print(config.sensor_config[0].fov)
         return config
 
     @staticmethod
