@@ -10,8 +10,9 @@ import datetime
 import yaml
 import json
 
-import carla
+import multiprocessing
 
+import carla
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
@@ -25,7 +26,6 @@ from srunner.scenarioconfigs.route_scenario_configuration import (
 )
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
-from srunner.tools.CARLA_manager import CARLAManager
 
 logger = logging.getLogger("scenario-runner")
 
@@ -103,9 +103,23 @@ class AWScenarioRunner(object):
                 raise RuntimeError("Scenario Timeout")
 
     def run_scenario(
-        self, route_config: RouteScenarioConfiguration, env_config: EnvironmentConfig
-    ) -> bool:
+        self,
+        route_config: RouteScenarioConfiguration,
+        env_config: EnvironmentConfig,
+        scenario_name: str,
+        result_,
+    ) -> None:
+        logger.info("Connecting to client...")
+        self.carla_client = carla.Client(
+            self._carla_config["host"], int(self._carla_config["port"])
+        )
+        self.carla_client.set_timeout(self._carla_config["timeout"])
+        CarlaDataProvider.set_client(self.carla_client)
+
+        logger.info("Fetching current world...")
+
         self.carla_world = self.carla_client.get_world()
+        logger.info("Updating map...")
         self.carla_client.load_world(env_config.town)
 
         logger.info("Updating world settings:")
@@ -136,11 +150,6 @@ class AWScenarioRunner(object):
 
         self.carla_world.tick()  # client must tick to spawn actors
 
-        logger.info("Setting up sensor configuration...")
-        ego.setup_sensors()
-
-        self.carla_world.tick()
-
         if not self.DEV_MODE:
             logger.info("Loading Autoware agent")
             agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
@@ -148,18 +157,19 @@ class AWScenarioRunner(object):
                 logger.info(getattr(self.module_aw_agent, agent_class_name))
                 self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
                     env_config
-                )
+                )  # agent init function
                 route_config.agent = self.aw_agent
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
                 logger.error("Could not setup required agent due to {}".format(e))
                 self._cleanup()
-                return False
+                result = False
+                return
 
         ego.prepare_ego()
 
         logger.info("Loading route...")
 
-        try:
+        try:  # the route gets sent to the agent here
             scenario = RouteScenario(
                 world=self.carla_world,
                 config=route_config,
@@ -169,23 +179,43 @@ class AWScenarioRunner(object):
         except Exception:
             logger.info("Could not load Route Scenario")
             traceback.print_exc()
-            return False
+
+        # need to tick autoware and CARLA
+        # a determined number of times
+        # to allow it to plan the route
+        # assign a 'tick' budget
+        # exceeding budget = failure
+        # call agent init function or something...
+        # no need to tick scenario, just CARLA
 
         logger.info("Starting scenario...")
         try:
-            recorder_name = f"{self.results_manager.last_scenario}/recording.log"
-            self.client.start_recorder(recorder_name, True)
+            # recorder_name = f"{self.results_manager.last_scenario}/recording.log"
+            # self.carla_client.start_recorder(recorder_name, True)
 
             self.scenario_manager.load_scenario(scenario, self.aw_agent)
             self.scenario_manager.run_scenario()
 
-            self.client.stop_recorder()
+            # self.carla_client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
-            logger.info("It doesn't work")
+            logger.info(
+                "Could not load scenario. Please check if the agent class is loading correctly."
+            )
             result = False
-        return result
+
+        # analyse the scenario
+        criteria = self._output_criteria(
+            self.scenario_manager.scenario.get_criteria(),  # type: ignore
+            f"{self.results_manager.last_scenario}/{scenario_name}.json",
+        )
+
+        # update multipprocessing queue
+        result_dict = result_.get()
+        result_dict["status"] = result
+        result_dict["criteria"] = criteria
+        result_.put(result_dict)
 
     def run(self) -> None:
         """The Scenario loop. Read the scenario configuration from the parsed XML files,
@@ -208,25 +238,18 @@ class AWScenarioRunner(object):
             sys.exit(1)
 
         # load the algorithm instance
-        alg_class_name = self.module_algorithm.__name__.title().replace("_", "")
-        logger.info(
-            f"Loading the algorithm class: f{getattr(self.module_algorithm, alg_class_name)}"
-        )
-        self.algorithm = getattr(self.module_algorithm, alg_class_name)(
-            self._scenario_config["algorithm"]["args"]
-        )
+        if not self.DEV_MODE:
+            alg_class_name = self.module_algorithm.__name__.title().replace("_", "")
+            logger.info(
+                f"Loading the algorithm class: f{getattr(self.module_algorithm, alg_class_name)}"
+            )
+            self.algorithm = getattr(self.module_algorithm, alg_class_name)(
+                self._scenario_config["algorithm"]["args"]
+            )
 
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
-            CARLAManager.start_carla()
-
-            logger.info("Connecting to CARLA...")
-            self.carla_client = carla.Client(
-                self._carla_config["host"], int(self._carla_config["port"])
-            )
-
-            self.carla_client.set_timeout(self._carla_config["timeout"])
-            CarlaDataProvider.set_client(self.carla_client)
+            # CARLAManager.start_carla()
 
             self.curr_iteration = iteration
             logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
@@ -247,22 +270,39 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[self._scenario_config["route_id"]]
 
-            scenario_status = self.run_scenario(route_config, env_config)
-            logger.info(
-                f"Scenario iteration {self.curr_iteration} has concluded with the status of {'Success' if scenario_status else 'Failure'}"
+            logger.info("Starting scenario in new process...")
+
+            result_dict = {"status": False, "criteria": {}}
+            scenario_result = multiprocessing.Queue()
+            scenario_result.put(result_dict)
+
+            scenario_process = multiprocessing.Process(
+                target=self.run_scenario,
+                args=(
+                    route_config,
+                    env_config,
+                    scenario_name,
+                    scenario_result,
+                ),
             )
 
-            criteria = self._output_criteria(
-                self.scenario_manager.scenario.get_criteria(),  # type: ignore
-                f"{self.results_manager.last_scenario}/{scenario_name}.json",
-            )
+            scenario_process.start()
+            scenario_process.join()
+            logger.info(f"Scenario iteration {self.curr_iteration} has concluded")
 
-            driving_score = self._calculate_driving_score(criteria)
+            result = scenario_result.get()
+
+            # kill the scenario process
+            if scenario_process.is_alive():
+                scenario_process.kill()
+
+            driving_score = self._calculate_driving_score(result["criteria"])
 
             # read the scenario definition
-            self.json_definition = self.algorithm._scenario_callback(
-                self.json_definition, driving_score
-            )
+            if not self.DEV_MODE:
+                self.json_definition = self.algorithm._scenario_callback(
+                    self.json_definition, driving_score
+                )
 
     def _output_criteria(
         self, criteria, file_name: str, save_file: bool = True

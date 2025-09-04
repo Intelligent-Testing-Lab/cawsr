@@ -1,4 +1,6 @@
-class BasicAlgorithm(object):
+from algorithms.basic_algorithm import BasicAlgorithm
+
+class TestAlg(BasicAlgorithm):
     def __init__(self, args: dict) -> None:
         self._args = args
 
