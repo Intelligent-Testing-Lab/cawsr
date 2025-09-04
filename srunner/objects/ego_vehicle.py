@@ -21,7 +21,6 @@ class EgoVehicle(object):
         self.ego_model = self._env.ego_model
         self.ego_name = self._env.ego_name
         self.ego_spawn = self._env.ego_spawn
-        self.sensor_config = self._env.sensor_config
 
         self._actor = None
 
