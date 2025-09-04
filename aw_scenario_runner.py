@@ -13,7 +13,6 @@ import json
 import multiprocessing
 
 import carla
-import time
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
@@ -27,7 +26,6 @@ from srunner.scenarioconfigs.route_scenario_configuration import (
 )
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
-from srunner.tools.CARLA_manager import CARLAManager
 
 logger = logging.getLogger("scenario-runner")
 
@@ -105,17 +103,21 @@ class AWScenarioRunner(object):
                 raise RuntimeError("Scenario Timeout")
 
     def run_scenario(
-        self, route_config: RouteScenarioConfiguration, env_config: EnvironmentConfig, scenario_name: str, result_
+        self,
+        route_config: RouteScenarioConfiguration,
+        env_config: EnvironmentConfig,
+        scenario_name: str,
+        result_,
     ) -> None:
         logger.info("Connecting to client...")
         self.carla_client = carla.Client(
-                self._carla_config["host"], int(self._carla_config["port"])
-            )
+            self._carla_config["host"], int(self._carla_config["port"])
+        )
         self.carla_client.set_timeout(self._carla_config["timeout"])
         CarlaDataProvider.set_client(self.carla_client)
 
         logger.info("Fetching current world...")
-        
+
         self.carla_world = self.carla_client.get_world()
         logger.info("Updating map...")
         self.carla_client.load_world(env_config.town)
@@ -148,10 +150,6 @@ class AWScenarioRunner(object):
 
         self.carla_world.tick()  # client must tick to spawn actors
 
-        #logger.info("Setting up sensor configuration...")
-        #ego.setup_sensors()
-        #self.carla_world.tick()
-
         if not self.DEV_MODE:
             logger.info("Loading Autoware agent")
             agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
@@ -159,19 +157,19 @@ class AWScenarioRunner(object):
                 logger.info(getattr(self.module_aw_agent, agent_class_name))
                 self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
                     env_config
-                )
+                )  # agent init function
                 route_config.agent = self.aw_agent
             except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
                 logger.error("Could not setup required agent due to {}".format(e))
                 self._cleanup()
                 result = False
                 return
-            
+
         ego.prepare_ego()
 
         logger.info("Loading route...")
 
-        try:
+        try:  # the route gets sent to the agent here
             scenario = RouteScenario(
                 world=self.carla_world,
                 config=route_config,
@@ -182,33 +180,42 @@ class AWScenarioRunner(object):
             logger.info("Could not load Route Scenario")
             traceback.print_exc()
 
+        # need to tick autoware and CARLA
+        # a determined number of times
+        # to allow it to plan the route
+        # assign a 'tick' budget
+        # exceeding budget = failure
+        # call agent init function or something...
+        # no need to tick scenario, just CARLA
+
         logger.info("Starting scenario...")
         try:
-            recorder_name = f"{self.results_manager.last_scenario}/recording.log"
-            #self.carla_client.start_recorder(recorder_name, True)
+            # recorder_name = f"{self.results_manager.last_scenario}/recording.log"
+            # self.carla_client.start_recorder(recorder_name, True)
 
             self.scenario_manager.load_scenario(scenario, self.aw_agent)
             self.scenario_manager.run_scenario()
 
-            #self.carla_client.stop_recorder()
+            # self.carla_client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
-            logger.info("Could not load scenario. Please check if the agent class is loading correctly.")
+            logger.info(
+                "Could not load scenario. Please check if the agent class is loading correctly."
+            )
             result = False
-            
+
         # analyse the scenario
         criteria = self._output_criteria(
-                self.scenario_manager.scenario.get_criteria(),  # type: ignore
-                f"{self.results_manager.last_scenario}/{scenario_name}.json",
+            self.scenario_manager.scenario.get_criteria(),  # type: ignore
+            f"{self.results_manager.last_scenario}/{scenario_name}.json",
         )
-        
+
         # update multipprocessing queue
         result_dict = result_.get()
-        result_dict['status'] = result
-        result_dict['criteria'] = criteria
+        result_dict["status"] = result
+        result_dict["criteria"] = criteria
         result_.put(result_dict)
-        
 
     def run(self) -> None:
         """The Scenario loop. Read the scenario configuration from the parsed XML files,
@@ -238,12 +245,12 @@ class AWScenarioRunner(object):
             )
             self.algorithm = getattr(self.module_algorithm, alg_class_name)(
                 self._scenario_config["algorithm"]["args"]
-        )
+            )
 
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
-            #CARLAManager.start_carla()
-            
+            # CARLAManager.start_carla()
+
             self.curr_iteration = iteration
             logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
 
@@ -264,32 +271,32 @@ class AWScenarioRunner(object):
             )[self._scenario_config["route_id"]]
 
             logger.info("Starting scenario in new process...")
-            
-            result_dict = {
-                "status": False,
-                "criteria": {}
-            }
+
+            result_dict = {"status": False, "criteria": {}}
             scenario_result = multiprocessing.Queue()
             scenario_result.put(result_dict)
-            
+
             scenario_process = multiprocessing.Process(
-                target=self.run_scenario, args=(route_config, env_config, scenario_name, scenario_result,)
+                target=self.run_scenario,
+                args=(
+                    route_config,
+                    env_config,
+                    scenario_name,
+                    scenario_result,
+                ),
             )
-            
+
             scenario_process.start()
             scenario_process.join()
-            logger.info(
-                f"Scenario iteration {self.curr_iteration} has concluded"
-            )
+            logger.info(f"Scenario iteration {self.curr_iteration} has concluded")
 
             result = scenario_result.get()
 
             # kill the scenario process
             if scenario_process.is_alive():
                 scenario_process.kill()
-            
-            
-            driving_score = self._calculate_driving_score(result['criteria'])
+
+            driving_score = self._calculate_driving_score(result["criteria"])
 
             # read the scenario definition
             if not self.DEV_MODE:
