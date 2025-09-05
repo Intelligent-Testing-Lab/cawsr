@@ -60,6 +60,10 @@ class AutowareAgent(AutonomousAgent):
 
         self.publish_sensor_state()
 
+        self.setup_tick_service()
+
+        self.setup_route()
+
     def publish_sensor_state(self) -> None:
         # publish sensor information to the bridge
         # wait for it to return the correct message
@@ -78,7 +82,7 @@ class AutowareAgent(AutonomousAgent):
         # big performance diminishment here
         while not self.autoware_state.bridge_ready:
             logger.info("Sending Sensor state to Agent...")
-            time.sleep(5) # DO NOT CHANGE THIS IS A MAGIC NUMBER
+            time.sleep(5)  # DO NOT CHANGE THIS IS A MAGIC NUMBER
             self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def set_route(self) -> None:
@@ -123,7 +127,7 @@ class AutowareAgent(AutonomousAgent):
         self.counter += 1
         if self.counter % 20 == 0:
             logger.info("Ticked 1 second")
-        
+
         if not self.agent_set_route:
             self.set_route()
 
@@ -152,4 +156,4 @@ class AutowareAgent(AutonomousAgent):
 
         # check if the current route is set
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
-           self.autoware_node.publish_engage(True)
+            self.autoware_node.publish_engage(True)
