@@ -25,6 +25,7 @@ class AutowareAgent(AutonomousAgent):
     timestamp = None
     agent_set_route = False
     counter = 0
+    last_tick = time.perf_counter_ns()
 
     def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
@@ -136,7 +137,10 @@ class AutowareAgent(AutonomousAgent):
         """Tick method containing all logic based on autoware state"""
         self.counter += 1
         if self.counter % 20 == 0:
-            logger.info("Ticked 1 second")
+            logger.info(
+                f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
+            )
+            self.last_tick = time.perf_counter_ns()
 
         if not self.agent_set_route:
             self.set_route()

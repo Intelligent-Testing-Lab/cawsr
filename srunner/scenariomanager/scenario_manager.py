@@ -11,7 +11,6 @@ It must not be modified and is for reference only!
 """
 
 from __future__ import print_function
-import sys
 import time
 
 import py_trees
@@ -159,6 +158,9 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
+            if self._sync_mode and self._watchdog.get_status():
+                CarlaDataProvider.get_world().tick()
+
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
@@ -169,16 +171,8 @@ class ScenarioManager(object):
             # Tick scenario
             self.scenario_tree.tick_once()
 
-            
-            print("\n")
-            py_trees.display.print_ascii_tree(self.scenario_tree, show_status=True)
-            sys.stdout.flush()
-
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
-
-        if self._sync_mode and self._running and self._watchdog.get_status():
-            CarlaDataProvider.get_world().tick()
 
     def get_running_status(self):
         """
