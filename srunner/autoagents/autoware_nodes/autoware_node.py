@@ -15,25 +15,18 @@ from srunner.autoagents.agent_state import autoware_state
 
 
 class AutowareNode(Node):
-    engage_topic = "/autoware/engage"  # Renamed for clarity as it's a topic
-    localize_service = (
-        "/api/localization/initialize"  # Renamed for clarity as it's a service
-    )
+    engage_topic = "/autoware/engage"
+    localize_service = "/api/localization/initialize"
 
-    def __init__(
-        self, autoware_state_instance: autoware_state.AutowareState
-    ):  # Renamed arg for clarity
-        super().__init__("autoware_node")  # Initialize the Node with a unique name
+    def __init__(self, autoware_state_instance: autoware_state.AutowareState):
+        super().__init__("autoware_node")
 
-        # This is correct: Engage is a message type for a topic
         self.engage_publisher = self.create_publisher(Engage, self.engage_topic, 10)
 
-        # FIX: Create a service client, not a publisher, for InitializeLocalization
         self.localize_client = self.create_client(
             InitializeLocalization, self.localize_service
         )
 
-        # marker publisher
         self.marker_publisher = self.create_publisher(
             Marker, "visulaization_marker", 10
         )
@@ -77,24 +70,15 @@ class AutowareNode(Node):
         """
         self.get_logger().info("Sending localization initialization request...")
 
-        # Create a request object for the InitializeLocalization service
-        request = (
-            InitializeLocalization_Request()
-        )  # InitializeLocalization() would also work
-
+        request = InitializeLocalization_Request()
         if global_pose:
             # Populate the request with the provided pose
             # Assuming the service definition has a field named 'pose' of type PoseWithCovarianceStamped
             request.pose = global_pose
         else:
-            # If no pose is provided, send an empty request (as per Autoware behavior)
-            # The 'pose' field of the request message would default to its empty state.
             self.get_logger().info(
                 "No initial global_pose provided, sending empty localization request."
             )
-            # If the service requires 'pose' to always be set, even to a default,
-            # you'd need to explicitly set a default PoseWithCovarianceStamped here.
-            # Example: request.pose = PoseWithCovarianceStamped() # Creates an empty message
 
         # Call the service asynchronously
         future = self.localize_client.call_async(request)
