@@ -4,6 +4,7 @@ from srunner.autoagents.autoware_nodes.autoware_types import waypoint
 from srunner.autoagents.autoware_nodes import autoware_node
 from srunner.autoagents.autoware_nodes import route_node
 from srunner.autoagents.autoware_nodes import state_node
+from srunner.autoagents.autoware_nodes import tick_node
 
 from srunner.autoagents.agent_state import autoware_state
 
@@ -62,8 +63,6 @@ class AutowareAgent(AutonomousAgent):
 
         self.setup_tick_service()
 
-        self.setup_route()
-
     def publish_sensor_state(self) -> None:
         # publish sensor information to the bridge
         # wait for it to return the correct message
@@ -84,6 +83,17 @@ class AutowareAgent(AutonomousAgent):
             logger.info("Sending Sensor state to Agent...")
             time.sleep(5)  # DO NOT CHANGE THIS IS A MAGIC NUMBER
             self.state_node.ego_config_publisher.publish(ego_config_msg)
+
+    def setup_tick_service(self):
+        self.tick_node = tick_node.TickNode()
+        self._tick_executor = rclpy.executors.SingleThreadedExecutor()
+
+        self._tick_executor.add_node(self.tick_node)
+
+        self._executor_thread = threading.Thread(
+            target=self._tick_executor.spin, daemon=True
+        )
+        self._executor_thread.start()
 
     def set_route(self) -> None:
         self.agent_set_route = True
@@ -150,10 +160,12 @@ class AutowareAgent(AutonomousAgent):
             n_waypoints = len(waypoints)
             segment_size = int(n_waypoints / 3)
 
-            # self.route_node.request_route(goal_pose, waypoints[0::segment_size])
             self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
             self.sent_route = True
 
         # check if the current route is set
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
+
+        # tick autoware
+        self.tick_node.autoware_tick()
