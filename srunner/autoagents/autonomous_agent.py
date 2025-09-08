@@ -57,6 +57,15 @@ class AutonomousAgent(object):
 
         return sensors
 
+    def run_step_init(self):
+        """
+        Override
+        Initialisation loop / parameters
+
+        :return: status (ready or not)
+        """
+        return
+
     def run_step(self):
         """
         Override

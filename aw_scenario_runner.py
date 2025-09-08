@@ -14,6 +14,8 @@ import multiprocessing
 
 import carla
 
+import time
+
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
 from srunner.scenarios.route_scenario import RouteScenario
@@ -24,8 +26,11 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
+from srunner.tools import route_manipulation
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
+
+from srunner.tools.CARLA_manager import CARLAManager
 
 logger = logging.getLogger("scenario-runner")
 
@@ -131,15 +136,6 @@ class AWScenarioRunner(object):
 
         logger.info(f"{settings.__str__()}")
 
-        if self._tm_config["active"]:
-            logger.info("Loading Traffic Manager...")
-            tm_port = int(self._tm_config["port"])  # type: ignore
-            CarlaDataProvider.set_traffic_manager_port(tm_port)
-            tm = self.carla_client.get_trafficmanager(tm_port)
-
-            tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
-            tm.set_synchronous_mode(self._tm_config["sync"])
-
         # update the world
         CarlaDataProvider.set_world(self.carla_world)
 
@@ -149,6 +145,12 @@ class AWScenarioRunner(object):
         logger.info("Spawned ego...")
 
         self.carla_world.tick()  # client must tick to spawn actors
+
+        ego.prepare_ego()
+
+        self.carla_world.tick()
+
+        logger.info("Initialising Autoware...")
 
         if not self.DEV_MODE:
             logger.info("Loading Autoware agent")
@@ -165,9 +167,34 @@ class AWScenarioRunner(object):
                 result = False
                 return
 
-        ego.prepare_ego()
-
         logger.info("Loading route...")
+
+        gps_route, route = route_manipulation.interpolate_trajectory(
+            route_config.keypoints
+        )
+        route_config.agent.set_global_plan(gps_route, route)  # set agent route
+
+        logger.info("Initialising agent route...")
+
+        # allow the agent to localise and set the route
+        budget = int(self._scenario_config["initialisation_budget"])
+        status = False  # completion status
+        for tick in range(0, budget):
+            self.carla_world.tick()
+            status = route_config.agent.run_step_init()  # type: ignore
+
+            if status:
+                logger.info(f"Successfully initialised agent in {tick} ticks")
+                break
+
+        if self._tm_config["active"]:
+            logger.info("Loading Traffic Manager...")
+            tm_port = int(self._tm_config["port"])  # type: ignore
+            CarlaDataProvider.set_traffic_manager_port(tm_port)
+            tm = self.carla_client.get_trafficmanager(tm_port)
+
+            tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
+            tm.set_synchronous_mode(self._tm_config["sync"])
 
         try:  # the route gets sent to the agent here
             scenario = RouteScenario(
@@ -175,18 +202,11 @@ class AWScenarioRunner(object):
                 config=route_config,
                 debug_mode=self.DEBUG,
                 ego_vehicle=ego._actor,
+                route=route,
             )
         except Exception:
             logger.info("Could not load Route Scenario")
             traceback.print_exc()
-
-        # need to tick autoware and CARLA
-        # a determined number of times
-        # to allow it to plan the route
-        # assign a 'tick' budget
-        # exceeding budget = failure
-        # call agent init function or something...
-        # no need to tick scenario, just CARLA
 
         logger.info("Starting scenario...")
         try:
@@ -249,7 +269,8 @@ class AWScenarioRunner(object):
 
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
-            # CARLAManager.start_carla()
+            CARLAManager.restart_carla()
+            time.sleep(5)
 
             self.curr_iteration = iteration
             logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
@@ -400,6 +421,8 @@ def main():
 
     logger.addHandler(fh)
     logger.addHandler(sh)
+
+    CARLAManager._load_config(config["carla"])
 
     # reload world and sync must be present when running agent-based route scenarios
     scenario_runner = None

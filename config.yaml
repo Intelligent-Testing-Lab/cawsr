@@ -4,7 +4,8 @@ log:
   log_format: '[%(levelname)s] [%(asctime)s] [%(message)s] [%(filename)s]:[%(lineno)d]'
 carla:
   host: 127.0.0.1
-  port: 3000
+  fidelity: 'Low'
+  port: 2000
   timeout: 20
   sync: true
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
@@ -19,6 +20,7 @@ scenario_runner:
   json: ./example_scenario.json
   route_id: 0
   agent: srunner/autoagents/autoware_agent
+  initialisation_budget: 300 # ticks
   algorithm:
     iterations: 10
     path: algorithms/test_alg # relative path

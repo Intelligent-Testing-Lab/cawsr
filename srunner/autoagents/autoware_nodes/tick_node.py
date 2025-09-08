@@ -15,7 +15,7 @@ class TickNode(Node):
     tick_service = "autoware_tick"
 
     def __init__(self, exec_time: bool = False, debug: bool = False) -> None:
-        super().__init__("")
+        super().__init__("tick_node_client")
         self._exec_time = exec_time
         self.debug = debug
 
@@ -37,9 +37,10 @@ class TickNode(Node):
         # send to service - blocking call
         res = self.tick_client.call(self.req)
 
-        self.get_logger().info(
-            f"Service {self.tick_service} responded with delta of {res.delta / 1e6}ms"
-        )
+        if self.debug:
+            self.get_logger().info(
+                f"Service {self.tick_service} responded with delta of {res.delta}ms"
+            )
         if res.delta == 0.0:
             self.get_logger().info(
                 f"Service {self.tick_service} responded with invalid time-delta. Is CARLA running?"

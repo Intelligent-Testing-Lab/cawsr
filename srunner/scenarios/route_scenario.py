@@ -46,7 +46,6 @@ from srunner.scenariomanager.scenarioatomics.atomic_criteria import (
 )
 
 from srunner.scenarios.basic_scenario import BasicScenario
-from srunner.scenarios.background_activity import BackgroundBehavior
 from srunner.scenariomanager.weather_sim import RouteWeatherBehavior
 from srunner.scenariomanager.lights_sim import RouteLightsBehavior
 from srunner.scenariomanager.timer import RouteTimeoutBehavior
@@ -76,13 +75,15 @@ class RouteScenario(BasicScenario):
         criteria_enable=True,
         timeout=300,
         ego_vehicle=None,
+        route=None,
     ):
         """
         Setup all relevant parameters and create scenarios along route
         """
 
         self.config = config
-        self.route = self._get_route(config)
+        self.route = self._get_route(config) if not route else route
+
         sampled_scenario_definitions = self._filter_scenarios(config.scenario_configs)
 
         if not ego_vehicle:
@@ -380,11 +381,11 @@ class RouteScenario(BasicScenario):
         )  # Tick the ScenarioTriggerer before the scenarios
 
         # Add the Background Activity
-        #behavior.add_child(
+        # behavior.add_child(
         #    BackgroundBehavior(
         #        self.ego_vehicles[0], self.route, name="BackgroundActivity"
         #    )
-        #)
+        # )
 
         behavior.add_children(scenario_behaviors)
         return behavior
