@@ -17,10 +17,11 @@ traffic_manager:
 scenario_runner:
   debug: false
   dev_mode: false
+  follow_ego: false # camera to follow ego vehicle
   json: ./example_scenario.json
   route_id: 0
   agent: srunner/autoagents/autoware_agent
-  initialisation_budget: 300 # ticks
+  initialisation_budget: 200 # ticks
   algorithm:
     iterations: 10
     path: algorithms/test_alg # relative path

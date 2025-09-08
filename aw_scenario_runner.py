@@ -184,7 +184,6 @@ class AWScenarioRunner(object):
 
             if status:
                 logger.info(f"Successfully initialised agent in {tick} ticks")
-                break
 
         if self._tm_config["active"]:
             logger.info("Loading Traffic Manager...")
@@ -211,8 +210,9 @@ class AWScenarioRunner(object):
         try:
             # recorder_name = f"{self.results_manager.last_scenario}/recording.log"
             # self.carla_client.start_recorder(recorder_name, True)
-
-            self.scenario_manager.load_scenario(scenario, self.aw_agent)
+            self.scenario_manager.load_scenario(
+                scenario, self.aw_agent, follow_ego=self._scenario_config["follow_ego"]
+            )
             self.scenario_manager.run_scenario()
 
             # self.carla_client.stop_recorder()
