@@ -44,22 +44,10 @@ class EgoVehicle(object):
 
         return self._actor
 
-    def setup_sensors(self) -> None:
-        """Spawns and attatches the necessary sensors to the EgoVehcicle."""
-        if self._actor is None:
-            logger.error(
-                "EgoVehicle has no carla.Actor, it probably failed to spawn. Check the spawn coordinates, and ensure you call EgoVehicle.spawn() first."
-            )
-
-        bp_library = CarlaDataProvider.get_world().get_blueprint_library()
-
-        for sensor in self._env.sensor_config:
-            sensor._spawn(bp_library, self._actor)
-            logger.info(f"Spawned {sensor.type} attatched to {self.ego_name}")
-
-    def prepare_ego(self) -> None:
+    def prepare_ego(self, route_loc: carla.Transform) -> None:
         """Reset the position and velocity of the ego. Register the actor"""
-        self._actor.set_transform(self._env.ego_spawn)
+        route_loc.location.z += 0.5
+        self._actor.set_transform(route_loc)
         self._actor.set_target_velocity(carla.Vector3D())
         self._actor.set_target_angular_velocity(carla.Vector3D())
 

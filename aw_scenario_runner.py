@@ -146,10 +146,6 @@ class AWScenarioRunner(object):
 
         self.carla_world.tick()  # client must tick to spawn actors
 
-        ego.prepare_ego()
-
-        self.carla_world.tick()
-
         logger.info("Initialising Autoware...")
 
         if not self.DEV_MODE:
@@ -174,6 +170,9 @@ class AWScenarioRunner(object):
         )
         route_config.agent.set_global_plan(gps_route, route)  # set agent route
 
+        ego.prepare_ego(route[0][0])  # set location to first waypoint
+
+        self.carla_world.tick()
         logger.info("Initialising agent route...")
 
         # allow the agent to localise and set the route
@@ -399,9 +398,6 @@ class AWScenarioRunner(object):
 
 
 def main():
-    # single argument of configuration file
-
-    # configure logger
     config = None
     with open("config.yaml", "r") as stream:
         config = yaml.safe_load(stream)

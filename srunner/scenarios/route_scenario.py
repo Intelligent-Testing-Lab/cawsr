@@ -88,8 +88,7 @@ class RouteScenario(BasicScenario):
 
         if not ego_vehicle:
             ego_vehicle = self._spawn_ego_vehicle()
-        else:
-            self._update_ego_pos(ego_vehicle)
+
         self.timeout = self._estimate_route_timeout()
 
         if debug_mode:
@@ -170,13 +169,6 @@ class RouteScenario(BasicScenario):
         )
 
         return ego_vehicle
-
-    def _update_ego_pos(self, ego: carla.Actor) -> None:
-        """Moves the ego vehicle to the start position"""
-        elevate_transform = self.route[0][0]
-        elevate_transform.location.z += 0.5
-
-        ego.set_transform(elevate_transform)
 
     def _estimate_route_timeout(self):
         """
