@@ -46,6 +46,7 @@ from srunner.scenariomanager.scenarioatomics.atomic_criteria import (
 )
 
 from srunner.scenarios.basic_scenario import BasicScenario
+from srunner.scenarios.background_activity import BackgroundBehavior
 from srunner.scenariomanager.weather_sim import RouteWeatherBehavior
 from srunner.scenariomanager.lights_sim import RouteLightsBehavior
 from srunner.scenariomanager.timer import RouteTimeoutBehavior
@@ -62,10 +63,6 @@ class RouteScenario(BasicScenario):
     Implementation of a RouteScenario, i.e. a scenario that consists of driving along a pre-defined route,
     along which several smaller scenarios are triggered
     """
-
-    # fix route scenario
-    # take in a pre-spawned ego vehicle
-    # position it at the first waypoint in the route
 
     def __init__(
         self,
@@ -373,11 +370,11 @@ class RouteScenario(BasicScenario):
         )  # Tick the ScenarioTriggerer before the scenarios
 
         # Add the Background Activity
-        # behavior.add_child(
-        #    BackgroundBehavior(
-        #        self.ego_vehicles[0], self.route, name="BackgroundActivity"
-        #    )
-        # )
+        behavior.add_child(
+            BackgroundBehavior(
+                self.ego_vehicles[0], self.route, name="BackgroundActivity"
+            )
+        )
 
         behavior.add_children(scenario_behaviors)
         return behavior

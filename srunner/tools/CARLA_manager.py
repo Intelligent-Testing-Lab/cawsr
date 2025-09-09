@@ -58,6 +58,25 @@ class CARLAManager(object):
             CARLAManager.container_id = None
 
     @staticmethod
+    def fetch_file(path: str, dest: str):
+        if CARLAManager.container_id is not None:
+            env = os.environ.copy()
+            result = subprocess.run(
+                f"docker cp {CARLAManager.container_id}:{path} {dest}",
+                shell=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            logger.info(
+                f"Copying... {path} from container {CARLAManager.container_id} to {dest}"
+            )
+            logger.info(f"docker cp {CARLAManager.container_id}:{path} {dest}")
+
+            if not result.returncode == 0:
+                logger.info(f"Failed to copy {path} to {dest}")
+
+    @staticmethod
     def restart_carla():
         if CARLAManager.container_id is not None:
             env = os.environ.copy()

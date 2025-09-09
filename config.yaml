@@ -1,7 +1,7 @@
 log:
   path: 'logs/'
   clear_old_logs: true
-  log_format: '[%(levelname)s] [%(asctime)s] [%(message)s] [%(filename)s]:[%(lineno)d]'
+  log_format: '[%(levelname)s] [%(created)f] [%(filename)s] %(message)s'
 carla:
   host: 127.0.0.1
   fidelity: 'Low'
@@ -10,20 +10,21 @@ carla:
   sync: true
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
 traffic_manager:
-  active: false
+  active: true
   sync: true # must be the same as carla sync
   seed: 0
   port: 8001
 scenario_runner:
   debug: false
   dev_mode: false
-  follow_ego: false # camera to follow ego vehicle
+  follow_ego: true
   json: ./example_scenario.json
   route_id: 0
   agent: srunner/autoagents/autoware_agent
   initialisation_budget: 200 # ticks
   algorithm:
     iterations: 10
-    path: algorithms/test_alg # relative path
+    path: algorithms/test_alg
     args: # will be passed into the algorithm class as a dict
-      test_arg: 10
+      lanelet_path: /autoware_scenario_runner/algorithms/resources/Town01.osm
+      radius: 10

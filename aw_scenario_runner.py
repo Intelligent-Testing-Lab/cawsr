@@ -34,6 +34,15 @@ from srunner.tools.CARLA_manager import CARLAManager
 
 logger = logging.getLogger("scenario-runner")
 
+infractions_dict = {
+    "OutsideRouteLanesTest": 0.3,
+    "CollisionTest": 1.0,
+    "RunningRedLightTest": 0.4,
+    "RunningStopTest": 0.25,
+}
+
+terminations_dict = {"AgentBlockedTest": 0.0}
+
 
 class AWScenarioRunner(object):
     # flags
@@ -50,6 +59,7 @@ class AWScenarioRunner(object):
     definition_manager = None
 
     aw_agent = None
+    host_volume = os.environ["SR_HOST_VOLUME"]
 
     def __init__(self, config: dict) -> None:
         """
@@ -178,12 +188,14 @@ class AWScenarioRunner(object):
         # allow the agent to localise and set the route
         budget = int(self._scenario_config["initialisation_budget"])
         status = False  # completion status
-        for tick in range(0, budget):
+        for tick in range(1, budget + 1):
             self.carla_world.tick()
             status = route_config.agent.run_step_init()  # type: ignore
 
-            if status:
-                logger.info(f"Successfully initialised agent in {tick} ticks")
+        if not status:
+            logger.info("Agent failed to initialise route.")
+        else:
+            logger.info("Successfully initialised agent; route set.")
 
         if self._tm_config["active"]:
             logger.info("Loading Traffic Manager...")
@@ -194,7 +206,7 @@ class AWScenarioRunner(object):
             tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
             tm.set_synchronous_mode(self._tm_config["sync"])
 
-        try:  # the route gets sent to the agent here
+        try:
             scenario = RouteScenario(
                 world=self.carla_world,
                 config=route_config,
@@ -208,14 +220,12 @@ class AWScenarioRunner(object):
 
         logger.info("Starting scenario...")
         try:
-            # recorder_name = f"{self.results_manager.last_scenario}/recording.log"
-            # self.carla_client.start_recorder(recorder_name, True)
+            self.carla_client.start_recorder("/home/carla/recording.log", True)
             self.scenario_manager.load_scenario(
                 scenario, self.aw_agent, follow_ego=self._scenario_config["follow_ego"]
             )
             self.scenario_manager.run_scenario()
-
-            # self.carla_client.stop_recorder()
+            self.carla_client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
@@ -269,7 +279,7 @@ class AWScenarioRunner(object):
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
-            time.sleep(5)
+            time.sleep(5)  # allow CARLA to load
 
             self.curr_iteration = iteration
             logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
@@ -297,7 +307,7 @@ class AWScenarioRunner(object):
             scenario_result.put(result_dict)
 
             scenario_process = multiprocessing.Process(
-                target=self.run_scenario,
+                target=self.run_scenario,  # need to catch connection exception
                 args=(
                     route_config,
                     env_config,
@@ -316,7 +326,18 @@ class AWScenarioRunner(object):
             if scenario_process.is_alive():
                 scenario_process.kill()
 
+            # copy over the recording from CARLA container if env variable is setup
+            if self.host_volume is not None:
+                CARLAManager.fetch_file(
+                    "/home/carla/recording.log",
+                    f"{self.host_volume}/{self.results_manager.last_scenario}/recording.log",
+                )
+
+            logger.info("Calculating driving score...")
             driving_score = self._calculate_driving_score(result["criteria"])
+            logger.info(
+                f"Scenario iteration {iteration} achieved a score of {driving_score}"
+            )
 
             # read the scenario definition
             if not self.DEV_MODE:
@@ -352,8 +373,31 @@ class AWScenarioRunner(object):
         return criteria_dict
 
     def _calculate_driving_score(self, criteria: dict) -> float:
-        # to be implemented
-        return 0.0
+        driving_score = 0.0
+
+        for key in terminations_dict.keys():
+            if not criteria[key]["success_value"] == criteria[key]["actual_value"]:
+                logger.info(f"Found terminal condition {key}.")
+                return 0.0  # hit a termination condition, driving score of 0.0
+
+        completed_route = float(criteria["RouteCompletionTest"]["actual_value"]) / 100
+        logger.info(f"Agent route completion: {completed_route * 100}%")
+
+        logger.info("Checking penality conditions...")
+        penalties = 1
+        for infraction, penalty in infractions_dict.items():
+            delta_penalty = float(criteria[infraction]["actual_value"] * penalty)
+
+            if delta_penalty:
+                logger.info(
+                    f"Condition {infraction}: Breached {criteria[infraction]['actual_value']} times"
+                )
+                logger.info(f"Applying penalty of {delta_penalty}")
+            else:
+                logger.info(f"Condition {infraction}: Found zero breaches")
+
+        driving_score = completed_route * (1 / penalties)
+        return driving_score
 
     def destroy(self) -> None:
         """Deletes instances of all classes related to CARLA"""
