@@ -348,7 +348,7 @@ class AWScenarioRunner(object):
             if self.host_volume is not None:
                 CARLAManager.fetch_file(
                     "/home/carla/recording.log",
-                    f"{self.host_volume}/{self.results_manager.last_scenario_host}/recording.log",
+                    f"{self.host_volume}/{self.results_manager.last_scenario_host}",
                 )
 
             logger.info("Calculating driving score...")

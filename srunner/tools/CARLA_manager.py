@@ -58,11 +58,33 @@ class CARLAManager(object):
             CARLAManager.container_id = None
 
     @staticmethod
+    def update_permission(path: str) -> None:
+        """Updates the permissions of a folder to allow non-root users to copy
+
+        Args:
+            path (str): file to modify
+        """
+        env = os.environ.copy()
+        result = subprocess.run(
+            f"chmod -R 777 {path}",
+            shell=True,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+        if not result.returncode == 0:
+            logger.error(f"Failed to update permissions for {path}")
+        else:
+            logger.info(f"Successfully changed {path} ownership")
+
+    @staticmethod
     def fetch_file(path: str, dest: str):
         if CARLAManager.container_id is not None:
             env = os.environ.copy()
+            # ensure everyone has permission to copy to dest
             result = subprocess.run(
-                f"docker cp {CARLAManager.container_id}:{path} {dest}",
+                f"chmod -R 777 {dest} && docker cp {CARLAManager.container_id}:{path} {dest}",
                 shell=True,
                 text=True,
                 capture_output=True,
