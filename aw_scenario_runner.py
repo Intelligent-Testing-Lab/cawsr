@@ -40,9 +40,8 @@ infractions_dict = {
     "CollisionTest": 1.0,
     "RunningRedLightTest": 0.4,
     "RunningStopTest": 0.25,
+    "AgentBlockedTest": 0.4,
 }
-
-terminations_dict = {"AgentBlockedTest": 0.0}
 
 metrics_collected = {
     "timestamp": 0.0,  # when tick started
@@ -396,11 +395,6 @@ class AWScenarioRunner(object):
 
     def _calculate_driving_score(self, criteria: dict) -> float:
         driving_score = 0.0
-
-        for key in terminations_dict.keys():
-            if not criteria[key]["success_value"] == criteria[key]["actual_value"]:
-                logger.info(f"Found terminal condition {key}.")
-                return 0.0  # hit a termination condition, driving score of 0.0
 
         completed_route = float(criteria["RouteCompletionTest"]["actual_value"]) / 100
         logger.info(f"Agent route completion: {completed_route * 100}%")
