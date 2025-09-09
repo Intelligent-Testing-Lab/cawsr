@@ -1,1 +1,0 @@
-[{"timestamp": 4567.247525948, "value": 1},{"timestamp": 4568.253647252, "value": 2},{"timestamp": 4569.259156654, "value": 3},{"timestamp": 4570.26535354, "value": 4},{"timestamp": 4571.271072756, "value": 5},{"timestamp": 4572.277276641, "value": 6},{"timestamp": 4573.28347915, "value": 7},{"timestamp": 4574.289774352, "value": 8},{"timestamp": 4575.29519866, "value": 9},]
