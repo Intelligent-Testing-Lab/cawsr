@@ -1,11 +1,12 @@
 from basic_algorithm import BasicAlgorithm
 import lanelet2
 import random
+import json
 
 from math import sqrt, pow
 
 
-class Hill_Climb(BasicAlgorithm):
+class HillClimb(BasicAlgorithm):
     def __init__(self, args: dict) -> None:
         super(BasicAlgorithm).__init__()
         self.radius = args["radius"]
@@ -20,7 +21,7 @@ class Hill_Climb(BasicAlgorithm):
         self, scenario_definition: dict, driving_score: float
     ) -> dict:
         # pass in route id
-        waypoints = scenario_definition["routes"][0]["waypoints"]
+        waypoints = scenario_definition["routes"][0]["route"]["waypoints"]
 
         if self.prev_ds is not None:
             if not driving_score >= self.prev_ds:
@@ -78,9 +79,24 @@ class Hill_Climb(BasicAlgorithm):
         centerline_points = []
         for lanelet in list(lanelets):
             for points in lanelet.centerline:
-                centerline_points += (points.x, points.y)
+                centerline_points.append((points.x, points.y))
 
         return set(centerline_points)
 
     def __euclidian_distance(self, point1, point2) -> float:
-        return sqrt(pow(point1.x - point2.x, 2) + pow(point2.y - point1.x, 2))
+        return sqrt(pow(point1[0] - point2[0], 2) + pow(point2[1] - point1[1], 2))
+
+
+def main():  # debug
+    scenario = "/autoware_scenario_runner/example_scenario_default.json"
+
+    json_scenario = None
+    with open(scenario, "r") as f:
+        json_scenario = json.load(f)
+
+    radius = 10
+    lanelet2_path = "/autoware_scenario_runner/algorithms/resources/Town01.osm"
+    args = {"radius": radius, "lanelet_path": lanelet2_path}
+
+    climb = HillClimb(args)
+    climb._scenario_callback(json_scenario, 0.0)

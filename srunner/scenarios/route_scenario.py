@@ -64,10 +64,6 @@ class RouteScenario(BasicScenario):
     along which several smaller scenarios are triggered
     """
 
-    # fix route scenario
-    # take in a pre-spawned ego vehicle
-    # position it at the first waypoint in the route
-
     def __init__(
         self,
         world,
@@ -76,19 +72,20 @@ class RouteScenario(BasicScenario):
         criteria_enable=True,
         timeout=300,
         ego_vehicle=None,
+        route=None,
     ):
         """
         Setup all relevant parameters and create scenarios along route
         """
 
         self.config = config
-        self.route = self._get_route(config)
+        self.route = self._get_route(config) if not route else route
+
         sampled_scenario_definitions = self._filter_scenarios(config.scenario_configs)
 
         if not ego_vehicle:
             ego_vehicle = self._spawn_ego_vehicle()
-        else:
-            self._update_ego_pos(ego_vehicle)
+
         self.timeout = self._estimate_route_timeout()
 
         if debug_mode:
@@ -169,13 +166,6 @@ class RouteScenario(BasicScenario):
         )
 
         return ego_vehicle
-
-    def _update_ego_pos(self, ego: carla.Actor) -> None:
-        """Moves the ego vehicle to the start position"""
-        elevate_transform = self.route[0][0]
-        elevate_transform.location.z += 0.5
-
-        ego.set_transform(elevate_transform)
 
     def _estimate_route_timeout(self):
         """
@@ -380,11 +370,11 @@ class RouteScenario(BasicScenario):
         )  # Tick the ScenarioTriggerer before the scenarios
 
         # Add the Background Activity
-        #behavior.add_child(
-        #    BackgroundBehavior(
-        #        self.ego_vehicles[0], self.route, name="BackgroundActivity"
-        #    )
-        #)
+        behavior.add_child(
+            BackgroundBehavior(
+                self.ego_vehicles[0], self.route, name="BackgroundActivity"
+            )
+        )
 
         behavior.add_children(scenario_behaviors)
         return behavior

@@ -11,10 +11,11 @@ It must not be modified and is for reference only!
 """
 
 from __future__ import print_function
-import sys
 import time
 
 import py_trees
+
+import carla
 
 from srunner.autoagents.agent_wrapper import AgentWrapper
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
@@ -48,6 +49,7 @@ class ScenarioManager(object):
         self.scenario = None
         self.scenario_tree = None
         self.ego_vehicles = None
+        self.follow_ego = None
         self.other_actors = None
 
         self._debug_mode = debug_mode
@@ -93,7 +95,7 @@ class ScenarioManager(object):
 
         CarlaDataProvider.cleanup()
 
-    def load_scenario(self, scenario, agent=None):
+    def load_scenario(self, scenario, agent=None, follow_ego=False):
         """
         Load a new scenario
         """
@@ -104,14 +106,13 @@ class ScenarioManager(object):
         self.scenario = scenario
         self.scenario_tree = self.scenario.scenario_tree
         self.ego_vehicles = scenario.ego_vehicles
+        self.follow_ego = follow_ego
         self.other_actors = scenario.other_actors
 
-        # To print the scenario tree uncomment the next line
-        # py_trees.display.render_dot_tree(self.scenario_tree)
-
-        # no need to setup sensors, done by autoware bridge
-        # if self._agent is not None:
-        #    self._agent.setup_sensors(self.ego_vehicles[0], self._debug_mode)
+        if follow_ego:
+            self.world_cam = CarlaDataProvider.get_world().get_spectator()
+            self._camera_offset = carla.Location(x=-5, y=0, z=15)
+            self._camera_pitch = -60.0  # degrees
 
     def run_scenario(self):
         """
@@ -159,6 +160,9 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
+            if self._sync_mode and self._watchdog.get_status():
+                CarlaDataProvider.get_world().tick()
+
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
@@ -169,16 +173,24 @@ class ScenarioManager(object):
             # Tick scenario
             self.scenario_tree.tick_once()
 
-            
-            print("\n")
-            py_trees.display.print_ascii_tree(self.scenario_tree, show_status=True)
-            sys.stdout.flush()
+            if self.follow_ego:
+                self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
 
-        if self._sync_mode and self._running and self._watchdog.get_status():
-            CarlaDataProvider.get_world().tick()
+    def _tick_spectator_cam(self, ego: carla.Actor) -> None:
+        """Ticks the spectator camera for the chosen ego"""
+        vehicle_transform = ego.get_transform()
+        delta_spec_loc = vehicle_transform.location + self._camera_offset
+
+        delta_spec_trans = carla.Transform(
+            delta_spec_loc,
+            carla.Rotation(
+                pitch=self._camera_pitch, yaw=vehicle_transform.rotation.yaw, roll=0
+            ),
+        )
+        self.world_cam.set_transform(delta_spec_trans)
 
     def get_running_status(self):
         """

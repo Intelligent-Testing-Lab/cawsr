@@ -4,6 +4,7 @@ from srunner.autoagents.autoware_nodes.autoware_types import waypoint
 from srunner.autoagents.autoware_nodes import autoware_node
 from srunner.autoagents.autoware_nodes import route_node
 from srunner.autoagents.autoware_nodes import state_node
+from srunner.autoagents.autoware_nodes import tick_node
 
 from srunner.autoagents.agent_state import autoware_state
 
@@ -24,6 +25,7 @@ class AutowareAgent(AutonomousAgent):
     timestamp = None
     agent_set_route = False
     counter = 0
+    last_tick = time.perf_counter_ns()
 
     def setup(self, config: EnvironmentConfig | None = None) -> None:
         """Setup the Autoware Agent.
@@ -62,11 +64,7 @@ class AutowareAgent(AutonomousAgent):
 
         self.setup_tick_service()
 
-        self.setup_route()
-
     def publish_sensor_state(self) -> None:
-        # publish sensor information to the bridge
-        # wait for it to return the correct message
         ego_config_msg = EgoConfig()
         ego_config_msg.ego_name = self.config.ego_name  # type: ignore
         ego_config_msg.ego_model = self.config.ego_model  # type: ignore
@@ -84,6 +82,17 @@ class AutowareAgent(AutonomousAgent):
             logger.info("Sending Sensor state to Agent...")
             time.sleep(5)  # DO NOT CHANGE THIS IS A MAGIC NUMBER
             self.state_node.ego_config_publisher.publish(ego_config_msg)
+
+    def setup_tick_service(self):
+        self.tick_node = tick_node.TickNode()
+        self._tick_executor = rclpy.executors.SingleThreadedExecutor()
+
+        self._tick_executor.add_node(self.tick_node)
+
+        self._executor_thread = threading.Thread(
+            target=self._tick_executor.spin, daemon=True
+        )
+        self._executor_thread.start()
 
     def set_route(self) -> None:
         self.agent_set_route = True
@@ -122,12 +131,13 @@ class AutowareAgent(AutonomousAgent):
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
 
-    def run_step(self) -> None:
-        """Tick method containing all logic based on autoware state"""
-        self.counter += 1
-        if self.counter % 20 == 0:
-            logger.info("Ticked 1 second")
+    def run_step_init(self) -> bool:
+        """Route Initialisation loop
 
+        Ticks CARLA and Autoware, allowing the agent to localise and plan the route.
+        Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
+
+        """
         if not self.agent_set_route:
             self.set_route()
 
@@ -150,10 +160,28 @@ class AutowareAgent(AutonomousAgent):
             n_waypoints = len(waypoints)
             segment_size = int(n_waypoints / 3)
 
-            # self.route_node.request_route(goal_pose, waypoints[0::segment_size])
             self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
             self.sent_route = True
+
+        # check if the current route is set and we are able to send engage
+        if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
+            return True
+
+        self.tick_node.autoware_tick()
+        return False
+
+    def run_step(self) -> None:
+        """Tick method containing all logic based on autoware state"""
+        self.counter += 1
+        if self.counter % 20 == 0:
+            logger.info(
+                f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
+            )
+            self.last_tick = time.perf_counter_ns()
 
         # check if the current route is set
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
+
+        # tick autoware
+        self.tick_node.autoware_tick()
