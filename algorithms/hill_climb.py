@@ -70,7 +70,7 @@ class HillClimb(BasicAlgorithm):
         else:
             random_point = random.choice(points_in_radius)
 
-        return {"positions": {"x": random_point[0], "y": random_point[1]}}
+        return {"position": {"x": random_point[0], "y": random_point[1], "z": 0.0}}
 
     def __get_all_lanelet_points(self) -> set[tuple[int, int]]:
         map = lanelet2.io.load(self.lanelet_path, lanelet2.io.Origin(0, 0))
