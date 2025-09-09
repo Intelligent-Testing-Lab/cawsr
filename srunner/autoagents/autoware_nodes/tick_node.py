@@ -3,6 +3,7 @@
 from rclpy.node import Node
 
 from autoware_carla_interface_msgs.srv import AutowareTick
+from srunner.tools.metrics_collector import MetricsCollector
 
 
 class TickNode(Node):
@@ -41,6 +42,9 @@ class TickNode(Node):
             self.get_logger().info(
                 f"Service {self.tick_service} responded with delta of {res.delta}ms"
             )
+
+        MetricsCollector.update_key("agent_time", res.delta)
+
         if res.delta == 0.0:
             self.get_logger().info(
                 f"Service {self.tick_service} responded with invalid time-delta. Is CARLA running?"

@@ -22,6 +22,7 @@ from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.result_writer import ResultOutputProvider
 from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
+from srunner.tools.metrics_collector import MetricsCollector
 
 
 class ScenarioManager(object):
@@ -127,6 +128,7 @@ class ScenarioManager(object):
         self._running = True
 
         while self._running:
+            _tick_start = time.perf_counter()
             timestamp = None
             world = CarlaDataProvider.get_world()
             if world:
@@ -135,6 +137,21 @@ class ScenarioManager(object):
                     timestamp = snapshot.timestamp
             if timestamp:
                 self._tick_scenario(timestamp)
+
+            MetricsCollector.update_key("timestamp", _tick_start)
+            MetricsCollector.update_key("total_tick", time.perf_counter() - _tick_start)
+
+            # calculate latency
+            _state = MetricsCollector.fetch_state()
+            latency = (
+                _state["total_tick"]
+                - _state["scenario_runner_time"]
+                - _state["agent_time"]
+                - _state["carla_time"]
+            )
+
+            MetricsCollector.update_key("latency", latency)
+            MetricsCollector.save_state()
 
         self.cleanup()
 
@@ -160,8 +177,12 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
+            _tick_carla_start = time.perf_counter()
             if self._sync_mode and self._watchdog.get_status():
                 CarlaDataProvider.get_world().tick()
+            MetricsCollector.update_key(
+                "carla_time", time.perf_counter() - _tick_carla_start
+            )
 
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
@@ -171,7 +192,11 @@ class ScenarioManager(object):
                 self._agent()  # pylint: disable=not-callable
 
             # Tick scenario
+            _scenario_tick_start = time.perf_counter()
             self.scenario_tree.tick_once()
+            MetricsCollector.update_key(
+                "scenario_runner_time", time.perf_counter() - _scenario_tick_start
+            )
 
             if self.follow_ego:
                 self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore

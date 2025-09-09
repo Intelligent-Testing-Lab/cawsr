@@ -29,6 +29,7 @@ from srunner.scenarioconfigs.route_scenario_configuration import (
 from srunner.tools import route_manipulation
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
+from srunner.tools.metrics_collector import MetricsCollector
 
 from srunner.tools.CARLA_manager import CARLAManager
 
@@ -42,6 +43,15 @@ infractions_dict = {
 }
 
 terminations_dict = {"AgentBlockedTest": 0.0}
+
+metrics_collected = {
+    "timestamp": 0.0,  # when tick started
+    "total_tick": 0.0,
+    "scenario_runner_time": 0.0,
+    "agent_time": 0.0,
+    "latency": 0.0,
+    "carla_time": 0.0,
+}
 
 
 class AWScenarioRunner(object):
@@ -300,6 +310,15 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[self._scenario_config["route_id"]]
 
+            logger.info("Starting the MetricsCollector thread...")
+
+            MetricsCollector.reset()
+            MetricsCollector.init_state(
+                metrics_collected,
+                os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
+                include=False,
+            )
+
             logger.info("Starting scenario in new process...")
 
             result_dict = {"status": False, "criteria": {}}
@@ -330,7 +349,7 @@ class AWScenarioRunner(object):
             if self.host_volume is not None:
                 CARLAManager.fetch_file(
                     "/home/carla/recording.log",
-                    f"{self.host_volume}/{self.results_manager.last_scenario}/recording.log",
+                    f"{self.host_volume}/{self.results_manager.last_scenario_host}/recording.log",
                 )
 
             logger.info("Calculating driving score...")
