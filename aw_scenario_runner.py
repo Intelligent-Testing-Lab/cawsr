@@ -68,7 +68,6 @@ class AWScenarioRunner(object):
     definition_manager = None
 
     aw_agent = None
-    host_volume = os.environ["SR_HOST_VOLUME"]
 
     def __init__(self, config: dict) -> None:
         """
@@ -345,11 +344,10 @@ class AWScenarioRunner(object):
                 scenario_process.kill()
 
             # copy over the recording from CARLA container if env variable is setup
-            if self.host_volume is not None:
-                CARLAManager.fetch_file(
-                    "/home/carla/recording.log",
-                    f"{self.host_volume}/{self.results_manager.last_scenario_host}",
-                )
+            CARLAManager.fetch_file(
+                "/home/carla/recording.log",
+                self.results_manager.last_scenario,
+            )
 
             logger.info("Calculating driving score...")
             driving_score = self._calculate_driving_score(result["criteria"])

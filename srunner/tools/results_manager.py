@@ -62,13 +62,9 @@ class ScenarioDefinitionManager(object):
 
         os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.last_scenario = full_path
-        self.last_scenario_host = os.path.join(
-            os.path.split(results_folder)[1], iteration
-        )  # relative path on host
 
         # update permissions
         CARLAManager.update_permission(self.last_scenario)
-
         return full_path
 
     def parse_json(

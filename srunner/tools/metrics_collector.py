@@ -1,4 +1,4 @@
-from queue import Queue
+from queue import Queue, Empty
 from typing import Any
 
 import threading
@@ -44,7 +44,6 @@ class MetricsCollector:
         cls.state = {}
         cls._file_target = ""
         cls._thread = None
-        cls._running = False
 
     @classmethod
     def update_key(cls, key: str, value: Any) -> None:
@@ -91,15 +90,21 @@ class MetricsCollector:
 
     @classmethod
     def _thread_target(cls) -> None:
-        with open(cls._file_target, "w") as f:  # open the file for reading
-            f.write("[")  # first character of json array
-            while cls._running:
+        f = open(cls._file_target, "w")
+
+        f.write("[")
+        while cls._running:
+            try:
                 state = cls.state_queue.get(
-                    block=True
-                )  # block thread until there is an object in queue
+                    block=True, timeout=0.05
+                )  # can't block thread as it will never finish
                 serialized_json = json.dumps(state)
                 f.write(serialized_json + ",")
-            f.write("]")  # last json character
+            except Empty:
+                pass
+
+        f.write("]")  # last json character
+        f.close()
 
 
 if __name__ == "__main__":
@@ -107,6 +112,7 @@ if __name__ == "__main__":
     target = "test_buffer.txt"
 
     state = {"timestamp": time.perf_counter(), "value": 0}
+    start = time.perf_counter()
 
     MetricsCollector.init_state(state, target, include=False)
 
@@ -118,4 +124,7 @@ if __name__ == "__main__":
         MetricsCollector.update_key("value", i)
         MetricsCollector.save_state()
 
+    print(f"Took {time.perf_counter() - start} to push.")
+
     MetricsCollector.stop_thread()
+    print(f"Took {time.perf_counter() - start} to join.")
