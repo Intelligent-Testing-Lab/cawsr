@@ -339,6 +339,9 @@ class AWScenarioRunner(object):
                 f"Scenario iteration {iteration} achieved a score of {driving_score}"
             )
 
+            # clean up - delete XML files
+            self.results_manager.cleanup_xml()
+
             # read the scenario definition
             if not self.DEV_MODE:
                 self.json_definition = self.algorithm._scenario_callback(

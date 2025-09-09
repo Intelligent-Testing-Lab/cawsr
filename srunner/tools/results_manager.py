@@ -17,7 +17,7 @@ class ScenarioDefinitionManager(object):
         self.results_path = ""
         self._scenario_decoder = XMLToFiles()
 
-    def _create_run_folder(self, base_path: str = ""):
+    def _create_run_folder(self, scenario: str, base_path: str = ""):
         """Creates a experiment folder under base_path. The naming convention is as follows
         ```
         run-{yy-mm-dd-h-m-s}
@@ -33,15 +33,15 @@ class ScenarioDefinitionManager(object):
             base_path = self.output_dir
 
         now = datetime.datetime.now()
-        full_path = os.path.join(base_path, f"run-{now.strftime('%Y-%m-%d-%H-%M-%S')}")  # type: ignore
+        full_path = os.path.join(
+            base_path, f"{scenario}-{now.strftime('%Y-%m-%d-%H-%M-%S')}"
+        )  # type: ignore
 
         os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.results_path = full_path
         return full_path
 
-    def _create_scenario_folder(
-        self, scenario: str, iteration: str, results_folder: str
-    ):
+    def _create_scenario_folder(self, iteration: str, results_folder: str):
         """Creates a folder to hold the results of a individual scenario execution.
         The naming convention is as follows
         ```
@@ -57,7 +57,7 @@ class ScenarioDefinitionManager(object):
             _type_: _description_
         """
 
-        full_path = os.path.join(results_folder, f"{scenario}-{iteration}")
+        full_path = os.path.join(results_folder, f"{iteration}")
 
         os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.last_scenario = full_path
@@ -75,9 +75,9 @@ class ScenarioDefinitionManager(object):
         """
 
         if not self.results_path:
-            self._create_run_folder()
+            self._create_run_folder(scenario)
 
-        self._create_scenario_folder(scenario, iteration, self.results_path)
+        self._create_scenario_folder(iteration, self.results_path)
 
         # save the definition as a new file
         if save_def and isinstance(json_, dict):
@@ -87,3 +87,14 @@ class ScenarioDefinitionManager(object):
                 json.dump(json_, f)
 
         self._scenario_decoder.parse_scenario(json_, self.last_scenario)
+
+    def cleanup_xml(self) -> None:
+        """Cleanup the .xml files left over by the scenario execution."""
+
+        full_paths = [
+            f"{self.last_scenario}/route.xml",
+            f"{self.last_scenario}/scenario.xml",
+        ]
+
+        for path in full_paths:
+            os.remove(path)

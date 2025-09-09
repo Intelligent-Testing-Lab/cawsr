@@ -24,7 +24,7 @@ scenario_runner:
   initialisation_budget: 200 # ticks
   algorithm:
     iterations: 10
-    path: algorithms/test_alg
+    path: algorithms/hill_climb
     args: # will be passed into the algorithm class as a dict
       lanelet_path: /autoware_scenario_runner/algorithms/resources/Town01.osm
       radius: 10
