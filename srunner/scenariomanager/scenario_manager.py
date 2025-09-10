@@ -128,7 +128,7 @@ class ScenarioManager(object):
         self._running = True
 
         while self._running:
-            _tick_start = time.perf_counter()
+            _tick_start = time.perf_counter_ns() / 1e6
             timestamp = None
             world = CarlaDataProvider.get_world()
             if world:
@@ -139,7 +139,9 @@ class ScenarioManager(object):
                 self._tick_scenario(timestamp)
 
             MetricsCollector.update_key("timestamp", _tick_start)
-            MetricsCollector.update_key("total_tick", time.perf_counter() - _tick_start)
+            MetricsCollector.update_key(
+                "total_tick", (time.perf_counter_ns() / 1e6) - _tick_start
+            )
 
             # calculate latency
             _state = MetricsCollector.fetch_state()
@@ -177,11 +179,11 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
-            _tick_carla_start = time.perf_counter()
+            _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
                 CarlaDataProvider.get_world().tick()
             MetricsCollector.update_key(
-                "carla_time", time.perf_counter() - _tick_carla_start
+                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )
 
             # Update game time and actor information
@@ -192,10 +194,11 @@ class ScenarioManager(object):
                 self._agent()  # pylint: disable=not-callable
 
             # Tick scenario
-            _scenario_tick_start = time.perf_counter()
+            _scenario_tick_start = time.perf_counter_ns() / 1e6
             self.scenario_tree.tick_once()
             MetricsCollector.update_key(
-                "scenario_runner_time", time.perf_counter() - _scenario_tick_start
+                "scenario_runner_time",
+                (time.perf_counter_ns() / 1e6) - _scenario_tick_start,
             )
 
             if self.follow_ego:

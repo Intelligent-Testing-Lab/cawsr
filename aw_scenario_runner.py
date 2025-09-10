@@ -134,7 +134,6 @@ class AWScenarioRunner(object):
     ) -> None:
         logger.info("Starting the MetricsCollector thread...")
 
-        MetricsCollector.reset()
         MetricsCollector.init_state(
             metrics_collected,
             os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
@@ -250,6 +249,9 @@ class AWScenarioRunner(object):
                 "Could not load scenario. Please check if the agent class is loading correctly."
             )
             result = False
+
+        # stop the MetricsCollector thread
+        MetricsCollector.reset()
 
         # analyse the scenario
         criteria = self._output_criteria(
