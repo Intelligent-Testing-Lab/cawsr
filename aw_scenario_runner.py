@@ -97,11 +97,7 @@ class AWScenarioRunner(object):
             self.module_algorithm = importlib.import_module(alg_module)
 
         # main class to execute scenarios
-        self.scenario_manager = ScenarioManager(
-            self.DEBUG,
-            self._carla_config["sync"],
-            self._carla_config["timeout"],
-        )
+        self.scenario_manager = None
 
         self.results_manager = ScenarioDefinitionManager()
 
@@ -132,6 +128,13 @@ class AWScenarioRunner(object):
         scenario_name: str,
         result_,
     ) -> None:
+        logger.info("Initialising Scenario Manager...")
+        self.scenario_manager = ScenarioManager(
+            self.DEBUG,
+            self._carla_config["sync"],
+            self._carla_config["timeout"],
+        )
+
         logger.info("Starting the MetricsCollector thread...")
 
         MetricsCollector.init_state(
