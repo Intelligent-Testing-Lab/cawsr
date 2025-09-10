@@ -80,7 +80,7 @@ class MetricsCollector:
     @classmethod
     def _start_thread(cls) -> None:
         cls._running = True
-        cls._thread = threading.Thread(target=cls._thread_target, daemon=True)
+        cls._thread = threading.Thread(target=cls._thread_target)
         cls._thread.start()
 
     @classmethod

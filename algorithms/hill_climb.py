@@ -23,10 +23,10 @@ class HillClimb(BasicAlgorithm):
         # pass in route id
         waypoints = scenario_definition["routes"][0]["route"]["waypoints"]
 
-        if self.prev_ds is not None:
-            if not driving_score >= self.prev_ds:
-                if self.waypoint_index == 0:
-                    previouse_index = len(waypoints)
+        if self.prev_ds is not None:  # not first run
+            if not driving_score >= self.prev_ds:  # worse DS
+                if self.waypoint_index == 0:  # if spawn point
+                    previouse_index = len(waypoints) - 1  # pick last point
                 else:
                     previouse_index = self.waypoint_index - 1
                 waypoints[previouse_index] = self.prev_waypoints
@@ -40,7 +40,7 @@ class HillClimb(BasicAlgorithm):
 
         self.prev_waypoints = waypoints[self.waypoint_index]
 
-        if self.waypoint_index + 1 > len(waypoints):
+        if self.waypoint_index + 1 >= len(waypoints):
             self.waypoint_index = 0
         else:
             self.waypoint_index += 1
@@ -70,7 +70,7 @@ class HillClimb(BasicAlgorithm):
         else:
             random_point = random.choice(points_in_radius)
 
-        return {"positions": {"x": random_point[0], "y": random_point[1]}}
+        return {"position": {"x": random_point[0], "y": random_point[1], "z": 0.0}}
 
     def __get_all_lanelet_points(self) -> set[tuple[int, int]]:
         map = lanelet2.io.load(self.lanelet_path, lanelet2.io.Origin(0, 0))
