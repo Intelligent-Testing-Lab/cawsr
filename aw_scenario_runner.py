@@ -410,6 +410,8 @@ class AWScenarioRunner(object):
             else:
                 logger.info(f"Condition {infraction}: Found zero breaches")
 
+            penalties += delta_penalty
+
         driving_score = completed_route * (1 / penalties)
         return driving_score
 
