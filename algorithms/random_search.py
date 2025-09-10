@@ -5,7 +5,7 @@ import numpy as np
 
 
 class RandomSearch(BasicAlgorithm):
-    def _init__(self, args: dict) -> None:
+    def __init__(self, args: dict) -> None:
         self._args = args
 
         self.lanelet2 = args["lanelet2"]

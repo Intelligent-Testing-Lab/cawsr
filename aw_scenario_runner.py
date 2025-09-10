@@ -132,6 +132,15 @@ class AWScenarioRunner(object):
         scenario_name: str,
         result_,
     ) -> None:
+        logger.info("Starting the MetricsCollector thread...")
+
+        MetricsCollector.reset()
+        MetricsCollector.init_state(
+            metrics_collected,
+            os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
+            include=False,
+        )
+
         logger.info("Connecting to client...")
         self.carla_client = carla.Client(
             self._carla_config["host"], int(self._carla_config["port"])
@@ -307,15 +316,6 @@ class AWScenarioRunner(object):
             route_config = RouteParser.parse_routes_file(
                 self.results_manager.last_scenario, env_config
             )[self._scenario_config["route_id"]]
-
-            logger.info("Starting the MetricsCollector thread...")
-
-            MetricsCollector.reset()
-            MetricsCollector.init_state(
-                metrics_collected,
-                os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
-                include=False,
-            )
 
             logger.info("Starting scenario in new process...")
 

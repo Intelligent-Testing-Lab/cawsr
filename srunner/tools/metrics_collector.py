@@ -125,15 +125,12 @@ class MetricsCollector:
                         json.dump(state, f)
                         is_first_item = False
 
-                        print("Pushed")
                         _pos += 1
 
                         if _pos % cls._flush_freq == 0:
-                            print("Flushing buffer")
-                            start = time.perf_counter()
                             f.flush()
                             os.fsync(f.fileno())
-                            print(f"Flushing took {time.perf_counter() - start}ms")
+
                     except Empty:
                         # Queue was empty, just continue the loop to check cls._running again
                         pass
