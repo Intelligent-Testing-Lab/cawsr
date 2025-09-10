@@ -33,7 +33,10 @@ class RandomSearch(BasicAlgorithm):
             if self.bounds[0] < self._dist(spawn, checkpoint) < self.bounds[1]:
                 valid = True
 
-        scenario_definition["routes"][0]["route"]["waypoints"] = [spawn, checkpoint]
+        scenario_definition["routes"][0]["route"]["waypoints"] = [
+            self._np_to_json(spawn),
+            self._np_to_json(checkpoint),
+        ]
         return scenario_definition
 
     def _np_to_json(self, p1: np.ndarray) -> dict:

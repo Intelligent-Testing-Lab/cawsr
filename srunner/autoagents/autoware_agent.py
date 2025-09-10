@@ -100,6 +100,13 @@ class AutowareAgent(AutonomousAgent):
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
+        # autoware cannot handle many waypoints, becomes unreliable
+        n_waypoints = len(self.waypoints_world)
+        segment_size = int(n_waypoints / 3)
+
+        if segment_size > 1:
+            self.waypoints_world = self.waypoints_world[0::segment_size]
+
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
 
@@ -156,11 +163,7 @@ class AutowareAgent(AutonomousAgent):
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
                 )
 
-            # autoware cannot handle many waypoints, becomes unreliable
-            n_waypoints = len(waypoints)
-            segment_size = int(n_waypoints / 3)
-
-            self.route_node.publish_route(goal_pose, waypoints[0::segment_size])
+            self.route_node.publish_route(goal_pose, waypoints)
             self.sent_route = True
 
         # check if the current route is set and we are able to send engage
