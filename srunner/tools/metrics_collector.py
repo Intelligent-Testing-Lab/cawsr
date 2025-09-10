@@ -4,6 +4,11 @@ from typing import Any
 import threading
 import json
 import time
+import os
+import logging
+
+logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class MetricsCollector:
@@ -15,6 +20,9 @@ class MetricsCollector:
     _file_target = ""
     _thread = None
     _running = False
+    state_queue = Queue(maxsize=0)
+    _state_lock = threading.Lock()
+    _flush_freq = 100
 
     @classmethod
     def init_state(cls, state: dict, file_target: str, include: bool = False) -> None:
@@ -25,8 +33,8 @@ class MetricsCollector:
             file_target (str): target file
             include (bool, optional): write the initial state. Defaults to False.
         """
-        cls.state = state.copy()
-        cls.state_queue = Queue(maxsize=0)  # infinite queue
+        with cls._state_lock:
+            cls.state = state.copy()
 
         if include:
             cls.state_queue.put_nowait(state.copy())
@@ -37,13 +45,14 @@ class MetricsCollector:
     @classmethod
     def reset(cls) -> None:
         """Resets the state of the class. Must be initialised again."""
-        if cls._running and cls._thread is not None:
-            cls._running = False
-            cls._thread.join()
+        if cls._running:
+            cls.stop_thread()
 
-        cls.state = {}
+        with cls._state_lock:
+            cls.state = {}
         cls._file_target = ""
         cls._thread = None
+        cls.state_queue = Queue(maxsize=0)
 
     @classmethod
     def update_key(cls, key: str, value: Any) -> None:
@@ -54,57 +63,83 @@ class MetricsCollector:
             key (str): dict key
             value (Any): value
         """
-
-        if key in cls.state.keys():
-            cls.state[key] = value
+        with cls._state_lock:
+            if key in cls.state:
+                cls.state[key] = value
 
     @classmethod
     def save_state(cls) -> None:
         """Push the current state into the Queue"""
         if cls._running:
-            state_cp = cls.state.copy()
+            with cls._state_lock:
+                state_cp = cls.state.copy()
             cls.state_queue.put_nowait(state_cp)
 
     @classmethod
     def fetch_key(cls, key: str) -> Any:
         """Get the value of a key if it exists"""
-        if cls._running and key in cls.state.keys():
-            return cls.state[key]
+        if cls._running:
+            with cls._state_lock:
+                if key in cls.state:
+                    return cls.state[key]
+        return None
 
     @classmethod
     def fetch_state(cls) -> Any:
         """Return the current state"""
         if cls._running:
-            return cls.state.copy()
+            with cls._state_lock:
+                return cls.state.copy()
+        return {}
 
     @classmethod
     def _start_thread(cls) -> None:
-        cls._running = True
-        cls._thread = threading.Thread(target=cls._thread_target)
-        cls._thread.start()
+        if not cls._running:
+            cls._running = True
+            cls._thread = threading.Thread(target=cls._thread_target)
+            cls._thread.start()
 
     @classmethod
     def stop_thread(cls) -> None:
-        cls._running = False
-        cls._thread.join()  # type: ignore
+        """Signals the thread to stop and waits for it to finish."""
+        if cls._running and cls._thread is not None:
+            cls._running = False
+            cls._thread.join()
 
     @classmethod
     def _thread_target(cls) -> None:
-        f = open(cls._file_target, "w")
+        # flush every 100 pushes
+        _pos = 0
+        try:
+            with open(cls._file_target, "w") as f:
+                f.write("[")
+                is_first_item = True
 
-        f.write("[")
-        while cls._running:
-            try:
-                state = cls.state_queue.get(
-                    block=True, timeout=0.05
-                )  # can't block thread as it will never finish
-                serialized_json = json.dumps(state)
-                f.write(serialized_json + ",")
-            except Empty:
-                pass
+                while cls._running or not cls.state_queue.empty():
+                    try:
+                        state = cls.state_queue.get(block=True, timeout=0.05)
 
-        f.write("]")  # last json character
-        f.close()
+                        if not is_first_item:
+                            f.write(",")
+
+                        json.dump(state, f)
+                        is_first_item = False
+
+                        print("Pushed")
+                        _pos += 1
+
+                        if _pos % cls._flush_freq == 0:
+                            print("Flushing buffer")
+                            start = time.perf_counter()
+                            f.flush()
+                            os.fsync(f.fileno())
+                            print(f"Flushing took {time.perf_counter() - start}ms")
+                    except Empty:
+                        # Queue was empty, just continue the loop to check cls._running again
+                        pass
+                f.write("]")
+        except Exception as e:
+            logger.error(f"Error in MetricsCollector thread: {e}")
 
 
 if __name__ == "__main__":
@@ -116,11 +151,12 @@ if __name__ == "__main__":
 
     MetricsCollector.init_state(state, target, include=False)
 
-    iterations = 10
+    iterations = 1000
     for i in range(1, iterations + 1):
-        time.sleep(1)  # 1 second intervals
+        time.sleep(0.01)  # 1 second intervals
         # update state
         MetricsCollector.update_key("timestamp", time.perf_counter())
+        state = MetricsCollector.fetch_state()
         MetricsCollector.update_key("value", i)
         MetricsCollector.save_state()
 
