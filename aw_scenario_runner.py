@@ -47,7 +47,13 @@ metrics_collected = {
     "timestamp": 0.0,  # when tick started
     "total_tick": 0.0,
     "scenario_runner_time": 0.0,
-    "agent_time": 0.0,
+    "agent_time": {
+        "snapshot": 0.0,
+        "state": 0.0,
+        "sensor": 0.0,
+        "control": 0.0,
+        "agent_total": 0.0,
+    },
     "latency": 0.0,
     "carla_time": 0.0,
 }

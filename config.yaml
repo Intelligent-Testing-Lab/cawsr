@@ -23,10 +23,8 @@ scenario_runner:
   agent: srunner/autoagents/autoware_agent
   initialisation_budget: 200 # ticks
   algorithm:
-    iterations: 10
+    iterations: 50
     path: algorithms/random_search
-    args: # will be passed into the algorithm class as a dict
+    seed: 10
+    args:
       lanelet2: /autoware_scenario_runner/algorithms/resources/Town01.osm
-      seed: 10
-      lower_bound: 20
-      upper_bound: 150

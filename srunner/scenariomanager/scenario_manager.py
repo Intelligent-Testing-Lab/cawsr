@@ -94,8 +94,6 @@ class ScenarioManager(object):
             self._watchdog.stop()
             self._watchdog = None
 
-        CarlaDataProvider.cleanup()
-
     def load_scenario(self, scenario, agent=None, follow_ego=False):
         """
         Load a new scenario
@@ -148,7 +146,7 @@ class ScenarioManager(object):
             latency = (
                 _state["total_tick"]
                 - _state["scenario_runner_time"]
-                - _state["agent_time"]
+                - _state["agent_time"]["agent_total"]
                 - _state["carla_time"]
             )
 

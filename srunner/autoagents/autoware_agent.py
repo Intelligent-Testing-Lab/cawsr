@@ -123,7 +123,7 @@ class AutowareAgent(AutonomousAgent):
             node=self.autoware_node,
         )
 
-    def cleanup(self) -> None:
+    def destroy(self) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
         self.state_node.reset_autoware()
@@ -137,6 +137,9 @@ class AutowareAgent(AutonomousAgent):
             self._executor_thread.join()
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
+
+    def cleanup(self) -> None:
+        self.destroy()
 
     def run_step_init(self) -> bool:
         """Route Initialisation loop
