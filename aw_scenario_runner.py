@@ -15,6 +15,7 @@ import multiprocessing
 import carla
 
 import time
+import numpy as np
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
@@ -33,15 +34,8 @@ from srunner.tools.metrics_collector import MetricsCollector
 
 from srunner.tools.CARLA_manager import CARLAManager
 
-logger = logging.getLogger("scenario-runner")
 
-infractions_dict = {
-    "OutsideRouteLanesTest": 0.3,
-    "CollisionTest": 1.0,
-    "RunningRedLightTest": 0.4,
-    "RunningStopTest": 0.25,
-    "AgentBlockedTest": 0.4,
-}
+logger = logging.getLogger("scenario-runner")
 
 metrics_collected = {
     "timestamp": 0.0,  # when tick started
@@ -132,6 +126,7 @@ class AWScenarioRunner(object):
         route_config: RouteScenarioConfiguration,
         env_config: EnvironmentConfig,
         scenario_name: str,
+        seed: int,
         result_,
     ) -> None:
         logger.info("Initialising Scenario Manager...")
@@ -212,7 +207,7 @@ class AWScenarioRunner(object):
 
         # allow the agent to localise and set the route
         budget = int(self._scenario_config["initialisation_budget"])
-        status = False  # completion status
+        status = False  # completion statusz
         for tick in range(1, budget + 1):
             self.carla_world.tick()
             status = route_config.agent.run_step_init()  # type: ignore
@@ -267,11 +262,22 @@ class AWScenarioRunner(object):
             self.scenario_manager.scenario.get_criteria(),  # type: ignore
             f"{self.results_manager.last_scenario}/{scenario_name}.json",
         )
+        logger.info("Calculating driving score...")
+        driving_score = self._calculate_driving_score(criteria)
+
+        # read the scenario definition
+        if not self.DEV_MODE:
+            self.algorithm._update_generator(seed)
+
+            definition = self.algorithm._scenario_callback(
+                self.json_definition, driving_score
+            )
 
         # update multipprocessing queue
         result_dict = result_.get()
         result_dict["status"] = result
-        result_dict["criteria"] = criteria
+        result_dict["definition"] = definition
+        result_dict["driving_score"] = driving_score
         result_.put(result_dict)
 
     def run(self) -> None:
@@ -304,6 +310,8 @@ class AWScenarioRunner(object):
                 self._scenario_config["algorithm"]["args"]
             )
 
+        self._rng = np.random.default_rng(self._scenario_config["algorithm"]["seed"])
+
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
@@ -334,12 +342,16 @@ class AWScenarioRunner(object):
             scenario_result = multiprocessing.Queue()
             scenario_result.put(result_dict)
 
+            seed = self._rng.integers(
+                0, sys.maxsize
+            )  # generate a random seed from the seed
             scenario_process = multiprocessing.Process(
                 target=self.run_scenario,  # need to catch connection exception
                 args=(
                     route_config,
                     env_config,
                     scenario_name,
+                    seed,
                     scenario_result,
                 ),
             )
@@ -359,21 +371,19 @@ class AWScenarioRunner(object):
                 "/home/carla/recording.log",
                 self.results_manager.last_scenario,
             )
-
-            logger.info("Calculating driving score...")
-            driving_score = self._calculate_driving_score(result["criteria"])
-            logger.info(
-                f"Scenario iteration {iteration} achieved a score of {driving_score}"
-            )
-
             # clean up - delete XML files
             self.results_manager.cleanup_xml()
 
-            # read the scenario definition
-            if not self.DEV_MODE:
-                self.json_definition = self.algorithm._scenario_callback(
-                    self.json_definition, driving_score
-                )
+            status = result["status"]
+            driving_score = result["driving_score"]
+            self.json_definition = result["definition"]
+
+            logger.info(
+                f"Scenario iteration {iteration} achieved a score of {driving_score}"
+            )
+            logger.info(
+                f"Scenario iteration {iteration} ended with status {'SUCCESS' if status else 'FAILURE'}"
+            )
 
     def _output_criteria(
         self, criteria, file_name: str, save_file: bool = True
@@ -403,6 +413,14 @@ class AWScenarioRunner(object):
         return criteria_dict
 
     def _calculate_driving_score(self, criteria: dict) -> float:
+        infractions_dict = {
+            "OutsideRouteLanesTest": 0.3,
+            "CollisionTest": 1.0,
+            "RunningRedLightTest": 0.4,
+            "RunningStopTest": 0.25,
+            "AgentBlockedTest": 0.4,
+        }
+
         driving_score = 0.0
 
         completed_route = float(criteria["RouteCompletionTest"]["actual_value"]) / 100
