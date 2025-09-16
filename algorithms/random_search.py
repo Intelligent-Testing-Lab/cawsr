@@ -25,9 +25,7 @@ class RandomSearch(BasicAlgorithm):
             spawn = self._rng.choice(self.all_points)
             goalpose = self._rng.choice(self.all_points)
 
-            valid = self._valid_route([spawn, goalpose]) and self._not_same_lane_check(
-                spawn, goalpose
-            )
+            valid = self._valid_route([spawn, goalpose])
 
         scenario_definition["routes"][0]["route"]["waypoints"] = [
             self._np_to_json(spawn),
@@ -51,21 +49,23 @@ class RandomSearch(BasicAlgorithm):
         return {"position": {"x": p1[0], "y": p1[1], "z": 0.0}}
 
     def __get_all_lanelet_points(self) -> np.ndarray:
-        map = lanelet2.io.load(self.lanelet2, lanelet2.io.Origin(0, 0))
-        lanelets = map.laneletLayer
-        self.lanelet_map = lanelets
+        laneletmap_ = lanelet2.io.load(self.lanelet2, lanelet2.io.Origin(0, 0))
+        self.laneletmap_ = laneletmap_
 
         centerline_points = []
-        for lanelet in list(lanelets):
+        for lanelet in list(self.laneletmap_.laneletLayer):
             for points in lanelet.centerline:
                 centerline_points.append(np.asarray([points.x, points.y]))
 
         return np.asarray(centerline_points)  # convert to numpy array
 
     def _not_same_lane_check(self, p1, p2):
+        p1 = lanelet2.core.BasicPoint2d(p1[0], p1[1])
+        p2 = lanelet2.core.BasicPoint2d(p2[0], p2[1])
+
         lanelets = [
-            lanelet2.geometry.findWithin(self.lanelet_map, p1, 0),
-            lanelet2.geometry.findWithin(self.lanelet_map, p2, 0),
+            lanelet2.geometry.findNearest(self.laneletmap_.laneletLayer, p1, 1),
+            lanelet2.geometry.findNearest(self.laneletmap_.laneletLayer, p2, 1),
         ]
 
         lanelet_ids = [
@@ -73,7 +73,7 @@ class RandomSearch(BasicAlgorithm):
             {ll.id for dist, ll in lanelets[1]},
         ]
         common_lanes = lanelet_ids[0].intersection(lanelet_ids[1])
-        return common_lanes == 0  # 0 means no shared lanes
+        return not common_lanes
 
     def _dist(self, p1: np.ndarray, p2: np.ndarray) -> np.floating:
         return np.linalg.norm(p1 - p2)
