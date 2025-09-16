@@ -4,7 +4,7 @@ log:
   log_format: '[%(levelname)s] [%(created)f] [%(filename)s] %(message)s'
 carla:
   host: 127.0.0.1
-  fidelity: 'High'
+  fidelity: 'Low'
   port: 2000
   timeout: 20
   sync: true
@@ -18,13 +18,13 @@ scenario_runner:
   debug: false
   dev_mode: false
   follow_ego: true
-  route_id: 0
   json: ./example_scenario.json
+  route_id: 0
   agent: srunner/autoagents/autoware_agent
   initialisation_budget: 200 # ticks
   algorithm:
-    iterations: 50
-    path: algorithms/random_search
-    seed: 10
-    args:
-      lanelet2: /autoware_scenario_runner/algorithms/resources/Town01.osm
+    iterations: 10
+    path: algorithms/hill_climb
+    args: # will be passed into the algorithm class as a dict
+      lanelet_path: /autoware_scenario_runner/algorithms/resources/Town01.osm
+      radius: 10

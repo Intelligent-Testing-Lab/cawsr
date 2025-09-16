@@ -28,7 +28,7 @@ class HillClimb(BasicAlgorithm):
                 if self.waypoint_index == 0:  # if spawn point
                     previouse_index = len(waypoints) - 1  # pick last point
                 else:
-                    previouse_index = self.waypoint_index - 1
+                    previouse_index = self.waypoint_index - 1  # else pick previous
                 waypoints[previouse_index] = self.prev_waypoints
         else:
             self.prev_ds = driving_score
@@ -53,9 +53,11 @@ class HillClimb(BasicAlgorithm):
             current_point["position"]["y"],
         )
 
-        all_points = self.__get_all_lanelet_points()
+        all_points = (
+            self.__get_all_lanelet_points()
+        )  # get all lanelet 2 points (centerline)
         self.visited_points.add(current_point_)
-        all_points.difference(self.visited_points)
+        all_points.difference(self.visited_points)  # find unvisited points
 
         points_in_radius = []
         for point in all_points:

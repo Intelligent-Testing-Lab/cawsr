@@ -40,12 +40,21 @@ class TickNode(Node):
 
         if self.debug:
             self.get_logger().info(
-                f"Service {self.tick_service} responded with delta of {res.delta}ms"
+                f"Service {self.tick_service} responded with delta of {res.agent_total}ms"
             )
 
-        MetricsCollector.update_key("agent_time", res.delta)
+        MetricsCollector.update_key(
+            "agent_time",
+            {
+                "snapshot": res.snapshot,
+                "state": res.state,
+                "sensor": res.sensor,
+                "control": res.control,
+                "agent_total": res.agent_total,
+            },
+        )
 
-        if res.delta == 0.0:
+        if res.agent_total == 0.0:
             self.get_logger().info(
                 f"Service {self.tick_service} responded with invalid time-delta. Is CARLA running?"
             )

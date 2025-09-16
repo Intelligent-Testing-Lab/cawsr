@@ -47,7 +47,13 @@ metrics_collected = {
     "timestamp": 0.0,  # when tick started
     "total_tick": 0.0,
     "scenario_runner_time": 0.0,
-    "agent_time": 0.0,
+    "agent_time": {
+        "snapshot": 0.0,
+        "state": 0.0,
+        "sensor": 0.0,
+        "control": 0.0,
+        "agent_total": 0.0,
+    },
     "latency": 0.0,
     "carla_time": 0.0,
 }
@@ -97,11 +103,7 @@ class AWScenarioRunner(object):
             self.module_algorithm = importlib.import_module(alg_module)
 
         # main class to execute scenarios
-        self.scenario_manager = ScenarioManager(
-            self.DEBUG,
-            self._carla_config["sync"],
-            self._carla_config["timeout"],
-        )
+        self.scenario_manager = None
 
         self.results_manager = ScenarioDefinitionManager()
 
@@ -132,6 +134,21 @@ class AWScenarioRunner(object):
         scenario_name: str,
         result_,
     ) -> None:
+        logger.info("Initialising Scenario Manager...")
+        self.scenario_manager = ScenarioManager(
+            self.DEBUG,
+            self._carla_config["sync"],
+            self._carla_config["timeout"],
+        )
+
+        logger.info("Starting the MetricsCollector thread...")
+
+        MetricsCollector.init_state(
+            metrics_collected,
+            os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
+            include=False,
+        )
+
         logger.info("Connecting to client...")
         self.carla_client = carla.Client(
             self._carla_config["host"], int(self._carla_config["port"])
@@ -242,6 +259,9 @@ class AWScenarioRunner(object):
             )
             result = False
 
+        # stop the MetricsCollector thread
+        MetricsCollector.reset()
+
         # analyse the scenario
         criteria = self._output_criteria(
             self.scenario_manager.scenario.get_criteria(),  # type: ignore
@@ -307,15 +327,6 @@ class AWScenarioRunner(object):
             route_config = RouteParser.parse_routes_file(
                 self.results_manager.last_scenario, env_config
             )[self._scenario_config["route_id"]]
-
-            logger.info("Starting the MetricsCollector thread...")
-
-            MetricsCollector.reset()
-            MetricsCollector.init_state(
-                metrics_collected,
-                os.path.join(self.results_manager.last_scenario, "execution_time.txt"),
-                include=False,
-            )
 
             logger.info("Starting scenario in new process...")
 
@@ -409,6 +420,8 @@ class AWScenarioRunner(object):
                 logger.info(f"Applying penalty of {delta_penalty}")
             else:
                 logger.info(f"Condition {infraction}: Found zero breaches")
+
+            penalties += delta_penalty
 
         driving_score = completed_route * (1 / penalties)
         return driving_score

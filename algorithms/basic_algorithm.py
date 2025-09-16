@@ -1,6 +1,11 @@
+import numpy as np
+
+
 class BasicAlgorithm(object):
     def __init__(self, args: dict) -> None:
         self._args = args
+
+        self._rng = None
 
     def _scenario_callback(
         self, scenario_definition: dict, driving_score: float
@@ -11,3 +16,7 @@ class BasicAlgorithm(object):
 
         """
         raise NotImplementedError("This function should be implemented by the user")
+
+    def _update_generator(self, seed: int) -> None:
+        """Update the random seeded BitGenerator with a new seed"""
+        self._rng = np.random.default_rng(seed)
