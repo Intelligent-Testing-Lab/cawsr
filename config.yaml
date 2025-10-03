@@ -11,7 +11,7 @@ carla:
   fixed_delta_seconds: 0.05 # update rate 1 / FPS
 traffic_manager:
   active: true
-  sync: true # must be the same as carla sync
+  sync: true # must be the same as carla
   seed: 0
   port: 8001
 scenario_runner:
