@@ -20,7 +20,6 @@ class HillClimb(BasicAlgorithm):
     def _scenario_callback(
         self, scenario_definition: dict, driving_score: float
     ) -> dict:
-        # pass in route id
         waypoints = scenario_definition["routes"][0]["route"]["waypoints"]
 
         if self.prev_ds is not None:  # not first run
