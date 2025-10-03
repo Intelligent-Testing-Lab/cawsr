@@ -110,8 +110,8 @@ class ScenarioManager(object):
 
         if follow_ego:
             self.world_cam = CarlaDataProvider.get_world().get_spectator()
-            self._camera_offset = carla.Location(x=-5, y=0, z=15)
-            self._camera_pitch = -60.0  # degrees
+            self._camera_offset = carla.Location(x=0, y=0, z=50)
+            self._camera_pitch = -90.0  # degrees
 
     def run_scenario(self):
         """

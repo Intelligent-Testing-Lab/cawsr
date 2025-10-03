@@ -21,7 +21,7 @@ scenario_runner:
   route_id: 0
   json: ./example_scenario.json
   agent: srunner/autoagents/autoware_agent
-  initialisation_budget: 200 # ticks
+  initialisation_budget: 500 # ticks
   algorithm:
     iterations: 50
     path: algorithms/random_search
