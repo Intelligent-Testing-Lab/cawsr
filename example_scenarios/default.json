@@ -47,19 +47,7 @@
                         }
                     }
                 ],
-                "scenarios": [
-                    {
-                        "scenario": {
-                            "name": "PedestrianCrossing_1",
-                            "type": "PedestrianCrossing",
-                            "trigger_point": {
-                                "x": 160.0,
-                                "y": 133.5,
-                                "z": 0.0
-                            }
-                        }
-                    }
-                ]
+                "scenarios": []
             }
         },
         {

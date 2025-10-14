@@ -7,7 +7,6 @@ import signal
 import sys
 import logging
 import datetime
-import yaml
 import json
 
 import multiprocessing
@@ -488,16 +487,17 @@ class AWScenarioRunner(object):
 
 def main():
     config = None
-    with open("config.yaml", "r") as stream:
-        config = yaml.safe_load(stream)
-
-    log_config = config["log"]
+    log_config = {
+        "path": os.getenv("LOG_PATH"),
+    }
 
     logger.setLevel(logging.INFO)
 
-    log_formatter = logging.Formatter(log_config["log_format"])
+    log_formatter = logging.Formatter(
+        "[%(levelname)s] [%(created)f] [%(filename)s] %(message)s"
+    )
 
-    log_path = LogUtil.create_log_file(log_config["path"])
+    log_path = LogUtil.create_log_file(log_config["path"])  # type: ignore
     fh = logging.FileHandler(log_path, encoding="utf-8")
     sh = logging.StreamHandler(sys.stdout)
 

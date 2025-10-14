@@ -110,7 +110,7 @@ class ScenarioManager(object):
 
         if follow_ego:
             self.world_cam = CarlaDataProvider.get_world().get_spectator()
-            self._camera_offset = carla.Location(x=0, y=0, z=50)
+            self._camera_offset = carla.Location(z=50)
             self._camera_pitch = -90.0  # degrees
 
     def run_scenario(self):
@@ -208,15 +208,12 @@ class ScenarioManager(object):
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""
         vehicle_transform = ego.get_transform()
-        delta_spec_loc = vehicle_transform.location + self._camera_offset
-
-        delta_spec_trans = carla.Transform(
-            delta_spec_loc,
-            carla.Rotation(
-                pitch=self._camera_pitch, yaw=vehicle_transform.rotation.yaw, roll=0
-            ),
+        self.world_cam.set_transform(
+            carla.Transform(
+                vehicle_transform.location + self._camera_offset,
+                carla.Rotation(pitch=self._camera_pitch),
+            )
         )
-        self.world_cam.set_transform(delta_spec_trans)
 
     def get_running_status(self):
         """

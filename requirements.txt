@@ -14,3 +14,4 @@ simple-watchdog-timer
 antlr4-python3-runtime==4.10
 graphviz
 lanelet2
+python-dotenv

@@ -1,0 +1,219 @@
+{
+    "routes": [
+        {
+            "route": {
+                "id": 0,
+                "weathers": [
+                    {
+                        "weather": {
+                            "route_percentage": 0.0,
+                            "precipitation": 100.0,
+                            "cloudiness": 0.0,
+                            "precipitation_deposits": 100.0,
+                            "wetness": 100.0,
+                            "wind_intensity": 100.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    },
+                    {
+                        "weather": {
+                            "route_percentage": 100.0,
+                            "precipitation": 0.0,
+                            "cloudiness": 0.0,
+                            "precipitation_deposits": 0.0,
+                            "wetness": 0.0,
+                            "wind_intensity": 0.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    }
+                ],
+                "waypoints": [
+                    {
+                        "position": {
+                            "x": 88.4,
+                            "y": 82.2,
+                            "z": 0.0
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 230.0,
+                            "y": 133.5,
+                            "z": 0.0
+                        }
+                    }
+                ],
+                "scenarios": [
+                    {
+                        "scenario": {
+                            "name": "PedestrianCrossing_1",
+                            "type": "PedestrianCrossing",
+                            "trigger_point": {
+                                "x": 160.0,
+                                "y": 133.5,
+                                "z": 0.0,
+                                "yaw": 0.0
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "route": {
+                "id": 1,
+                "weathers": [
+                    {
+                        "weather": {
+                            "route_percentage": 0.0,
+                            "cloudiness": 0.0,
+                            "precipitation": 100.0,
+                            "precipitation_deposits": 100.0,
+                            "wetness": 100.0,
+                            "wind_intensity": 100.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    },
+                    {
+                        "weather": {
+                            "route_percentage": 50.0,
+                            "cloudiness": 50.0,
+                            "precipitation": 0.0,
+                            "precipitation_deposits": 0.0,
+                            "wetness": 0.0,
+                            "wind_intensity": 0.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 2.0
+                        }
+                    },
+                    {
+                        "weather": {
+                            "route_percentage": 100.0,
+                            "cloudiness": 100.0,
+                            "precipitation": 0.0,
+                            "precipitation_deposits": 0.0,
+                            "wetness": 0.0,
+                            "wind_intensity": 0.0,
+                            "sun_azimuth_angle": -1.0,
+                            "sun_altitude_angle": 90.0,
+                            "fog_density": 3.0
+                        }
+                    }
+                ],
+                "waypoints": [
+                    {
+                        "position": {
+                            "x": 983.5,
+                            "y": 5382.2,
+                            "z": 371
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 1234,
+                            "y": 5.2,
+                            "z": 3123471
+                        }
+                    },
+                    {
+                        "position": {
+                            "x": 123412343.5,
+                            "y": 512341234.2,
+                            "z": 3712341234
+                        }
+                    }
+                ],
+                "scenarios": {}
+            }
+        }
+    ],
+    "scenarios": [
+        {
+            "scenario": {
+                "town": "Town01",
+                "ego_vehicle": {
+                    "x": 312,
+                    "y": 129,
+                    "z": 0,
+                    "yaw": 180,
+                    "model": "vehicle.toyota.prius",
+                    "name": "ego_vehicle",
+                    "sensor_configuration": [
+                        {
+                            "sensor": {
+                                "type": "sensor.camera.rgb",
+                                "id": "rgb_front",
+                                "spawn_point": {
+                                    "x": 0.7,
+                                    "y": 0.0,
+                                    "z": 1.6,
+                                    "roll": 0.0,
+                                    "pitch": 0.0,
+                                    "yaw": 0.0
+                                },
+                                "image_size_x": 1920,
+                                "image_size_y": 1080,
+                                "fov": 90.0
+                            }
+                        },
+                        {
+                            "sensor": {
+                                "type": "sensor.lidar.ray_cast",
+                                "id": "top",
+                                "spawn_point": {
+                                    "x": 0.0,
+                                    "y": 0.0,
+                                    "z": 3.1,
+                                    "roll": 0.0,
+                                    "pitch": 0.0,
+                                    "yaw": 0.0
+                                },
+                                "range": 100,
+                                "channels": 64,
+                                "points_per_second": 300000,
+                                "upper_fov": 10.0,
+                                "lower_fov": -30.0,
+                                "rotation_frequency": 20
+                            }
+                        },
+                        {
+                            "sensor": {
+                                "type": "sensor.other.gnss",
+                                "id": "gnss",
+                                "spawn_point": {
+                                    "x": 0.0,
+                                    "y": 0.0,
+                                    "z": 1.6,
+                                    "roll": 0.0,
+                                    "pitch": 0.0,
+                                    "yaw": 0.0
+                                }
+                            }
+                        },
+                        {
+                            "sensor": {
+                                "type": "sensor.other.imu",
+                                "id": "imu",
+                                "spawn_point": {
+                                    "x": 0.0,
+                                    "y": 0.0,
+                                    "z": 1.6,
+                                    "roll": 0.0,
+                                    "pitch": 0.0,
+                                    "yaw": 0.0
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
