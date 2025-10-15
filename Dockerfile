@@ -17,10 +17,10 @@ RUN mkdir /ros_workspace/ &&  \
     rm -rf /ros_workspace/autoware_cawsr_msgs.tar.xz && \
     source /opt/ros/humble/setup.bash && \
     apt install -y ros-humble-rmw-cyclonedds-cpp ros-humble-tf-transformations && \
-    rosdep install -i --from-path /ros_workspace/autoware_msgs/src --rosdistro humble -y &&  cd autoware_msgs && \
+    rosdep install -i --from-path /ros_workspace/autoware_cawsr_msgs/src --rosdistro humble -y &&  cd autoware_cawsr_msgs && \
     colcon build
 
-ENV AUTOWARE_MSG_PKG="/ros_workspace/autoware_msgs/install/setup.bash"
+ENV AUTOWARE_MSG_PKG="/ros_workspace/autoware_cawsr_msgs/install/setup.bash"
 ENV ROS_PKG="/opt/ros/${ROS_DISTRO}/setup.bash"
 
 # install docker inside container
