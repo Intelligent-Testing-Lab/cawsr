@@ -2,7 +2,7 @@
 
 from rclpy.node import Node
 
-from autoware_carla_interface_msgs.srv import AutowareTick
+from autoware_cawsr_msgs.srv import AutowareTick
 from srunner.tools.metrics_collector import MetricsCollector
 
 
@@ -46,8 +46,6 @@ class TickNode(Node):
         MetricsCollector.update_key(
             "agent_time",
             {
-                "snapshot": res.snapshot,
-                "state": res.state,
                 "sensor": res.sensor,
                 "control": res.control,
                 "agent_total": res.agent_total,

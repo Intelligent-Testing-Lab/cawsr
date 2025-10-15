@@ -42,8 +42,6 @@ metrics_collected = {
     "total_tick": 0.0,
     "scenario_runner_time": 0.0,
     "agent_time": {
-        "snapshot": 0.0,
-        "state": 0.0,
         "sensor": 0.0,
         "control": 0.0,
         "agent_total": 0.0,

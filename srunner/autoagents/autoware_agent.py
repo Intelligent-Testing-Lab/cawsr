@@ -10,8 +10,6 @@ from srunner.autoagents.agent_state import autoware_state
 
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
-from autoware_carla_interface_msgs.msg import EgoConfig, SensorConfig
-
 import threading
 import rclpy
 import time
@@ -42,7 +40,7 @@ class AutowareAgent(AutonomousAgent):
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
         self.state_node = state_node.StateNode(self.autoware_state)
-        self.state_node.reset_autoware()
+        self.state_node.reset_autoware(self.config.town)
 
         self.route_node = route_node.RouteNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
@@ -60,28 +58,7 @@ class AutowareAgent(AutonomousAgent):
 
         self.sent_route = False
 
-        self.publish_sensor_state()
-
         self.setup_tick_service()
-
-    def publish_sensor_state(self) -> None:
-        ego_config_msg = EgoConfig()
-        ego_config_msg.ego_name = self.config.ego_name  # type: ignore
-        ego_config_msg.ego_model = self.config.ego_model  # type: ignore
-        ego_config_msg.sensors = []
-
-        for sensor_config in self.config.sensor_config:  # type: ignore
-            sensor_config_msg = SensorConfig()
-            sensor_config_msg.sensor_type = sensor_config.type
-            sensor_config_msg.sensor_id = sensor_config.id
-            ego_config_msg.sensors.append(sensor_config_msg)
-
-        # keep publishing ego_sensor config until the bridge is ready
-        # big performance diminishment here
-        while not self.autoware_state.bridge_ready:
-            logger.info("Sending Sensor state to Agent...")
-            time.sleep(5)  # DO NOT CHANGE THIS IS A MAGIC NUMBER
-            self.state_node.ego_config_publisher.publish(ego_config_msg)
 
     def setup_tick_service(self):
         self.tick_node = tick_node.TickNode()
@@ -126,7 +103,7 @@ class AutowareAgent(AutonomousAgent):
     def destroy(self) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
-        self.state_node.reset_autoware()
+        self.state_node.reset_autoware(self.config.town)
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
