@@ -68,9 +68,11 @@ class StateNode(Node):
         self.autoware_state.localize_state = localize_state_msg.state
         logger.info(f"Localization state: {self.autoware_state.localize_state}")
 
-    def reset_autoware(self, carla_map: str):
+    def reset_autoware(self, carla_map: str, ego_name: str):
         """Publishes an empty message to reset autoware."""
+
         msg = AutowareRestart()
-        msg.carla_map = carla_map
+        msg.carla_map = str(carla_map)
+        msg.ego_name = str(ego_name)
 
         self.restart_autoware_pub.publish(msg)

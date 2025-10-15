@@ -40,7 +40,7 @@ class AutowareAgent(AutonomousAgent):
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
         self.state_node = state_node.StateNode(self.autoware_state)
-        self.state_node.reset_autoware(self.config.town)
+        self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
         self.route_node = route_node.RouteNode(self.autoware_state)
         self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
@@ -103,7 +103,7 @@ class AutowareAgent(AutonomousAgent):
     def destroy(self) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
-        self.state_node.reset_autoware(self.config.town)
+        self.state_node.reset_autoware(self.config.town, self.config.ego_name)
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
