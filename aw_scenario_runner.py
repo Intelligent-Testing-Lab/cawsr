@@ -490,7 +490,7 @@ class AWScenarioRunner(object):
 
 
 def main():
-    config_env = os.getenv("CAWSR_CONFIG", "configs/example_algorithm")
+    config_env = os.getenv("CAWSR_CONFIG", "configs/example_algorithm.sjon")
 
     config = None
     with open(config_env, "r") as stream:
