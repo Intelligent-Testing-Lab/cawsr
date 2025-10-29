@@ -337,7 +337,7 @@ class AWScenarioRunner(object):
 
             route_config = RouteParser.parse_routes_file(
                 self.results_manager.last_scenario, env_config
-            )[self._scenario_config["route_id"]]
+            )[self._scenario_config["route_id"]]  # remove
 
             logger.info("Starting scenario in new process...")
 
@@ -490,17 +490,19 @@ class AWScenarioRunner(object):
 
 
 def main():
-    config = None
-    with open("config.yaml", "r") as stream:
-        config = yaml.safe_load(stream)
+    config_env = os.getenv("CAWSR_CONFIG", "configs/example_algorithm")
 
-    log_config = config["log"]
+    config = None
+    with open(config_env, "r") as stream:
+        config = yaml.safe_load(stream)
 
     logger.setLevel(logging.INFO)
 
-    log_formatter = logging.Formatter(log_config["log_format"])
+    log_formatter = logging.Formatter(
+        "[%(levelname)s] [%(created)f] [%(filename)s] %(message)s"
+    )
 
-    log_path = LogUtil.create_log_file(log_config["path"])
+    log_path = LogUtil.create_log_file("logs/")
     fh = logging.FileHandler(log_path, encoding="utf-8")
     sh = logging.StreamHandler(sys.stdout)
 
