@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 from basic_algorithm import BasicAlgorithm
 import lanelet2
 import random

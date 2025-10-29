@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 import carla
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from visualization_msgs.msg import Marker

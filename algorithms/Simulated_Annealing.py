@@ -1,6 +1,9 @@
-# Resources used
-# https://colab.research.google.com/github/bnsreenu/python_for_microscopists/blob/master/319_what_is_simulated_annealing.ipynb#scrollTo=5SSQpSpHeUZh
-# https://en.wikipedia.org/wiki/Simulated_annealing
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
 
 from BasicAlgorithm import BasicAlgorithm
 import lanelet2

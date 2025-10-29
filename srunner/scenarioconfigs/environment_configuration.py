@@ -1,6 +1,17 @@
-from srunner.objects.sensors import DefaultSensor
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
 
 import carla
+
+from srunner.objects.sensors import DefaultSensor
+
+"""
+This module provides support to configure the environment for the scenario loop
+"""
 
 
 class EnvironmentConfig(object):

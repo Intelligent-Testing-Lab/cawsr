@@ -1,12 +1,17 @@
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 from rclpy.node import Node
-from std_msgs.msg import Header
 from geometry_msgs.msg import Pose
 
 # Import the service types directly
 from autoware_adapi_v1_msgs.srv import SetRoutePoints, ClearRoute
 
 # You might explicitly import the Request types for clarity, though not strictly necessary
-from autoware_adapi_v1_msgs.srv._set_route_points import SetRoutePoints_Request
 from autoware_adapi_v1_msgs.srv._clear_route import ClearRoute_Request
 from geometry_msgs.msg import PoseStamped
 

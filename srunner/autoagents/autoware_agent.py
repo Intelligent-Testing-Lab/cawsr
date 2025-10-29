@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 from srunner.autoagents.autonomous_agent import AutonomousAgent
 
 from srunner.autoagents.autoware_nodes.autoware_types import waypoint

@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 import traceback
 import os
 import importlib
@@ -38,7 +43,7 @@ from srunner.tools.CARLA_manager import CARLAManager
 logger = logging.getLogger("scenario-runner")
 
 metrics_collected = {
-    "timestamp": 0.0,  # when tick started
+    "timestamp": 0.0,
     "total_tick": 0.0,
     "scenario_runner_time": 0.0,
     "agent_time": {

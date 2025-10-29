@@ -1,3 +1,10 @@
+#!/bin/bash
+
+# Copyright (c) 2025 University of Sheffield
+#
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT>.
+
 from rclpy.node import Node
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
