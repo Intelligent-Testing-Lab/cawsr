@@ -268,19 +268,20 @@ class AWScenarioRunner(object):
         logger.info("Calculating driving score...")
         driving_score = self._calculate_driving_score(criteria)
 
+        result_dict = result_.get()
+        result_dict["status"] = result
+        result_dict["driving_score"] = driving_score
+
         # read the scenario definition
-        if not self.DEV_MODE:
+        if self._scenario_config["algorithm"]["enabled"]:
             self.algorithm._update_generator(seed)
 
             definition = self.algorithm._scenario_callback(
                 self.json_definition, driving_score
             )
+            result_dict["definition"] = definition
 
         # update multipprocessing queue
-        result_dict = result_.get()
-        result_dict["status"] = result
-        result_dict["definition"] = definition
-        result_dict["driving_score"] = driving_score
         result_.put(result_dict)
 
     def run(self) -> None:
@@ -314,6 +315,9 @@ class AWScenarioRunner(object):
             )
 
         self._rng = np.random.default_rng(self._scenario_config["algorithm"]["seed"])
+
+        if not self._scenario_config["algorithm"]["enabled"]:
+            self.iterations = 1
 
         for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
@@ -378,8 +382,10 @@ class AWScenarioRunner(object):
             self.results_manager.cleanup_xml()
 
             status = result["status"]
-            driving_score = result["driving_score"]
-            self.json_definition = result["definition"]
+            driving_score = result["driving_score"]  #
+
+            if self._scenario_config["algorithm"]["enabled"]:
+                self.json_definition = result["definition"]
 
             logger.info(
                 f"Scenario iteration {iteration} achieved a score of {driving_score}"
