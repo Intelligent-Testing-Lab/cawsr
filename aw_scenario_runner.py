@@ -13,6 +13,8 @@ import sys
 import logging
 import datetime
 import yaml
+import pathlib
+import random
 import json
 
 import multiprocessing
@@ -20,7 +22,9 @@ import multiprocessing
 import carla
 
 import time
-import numpy as np
+import numpy as np  # type: ignore
+
+from typing import Optional, Union, Callable
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
 from srunner.tools.results_manager import ScenarioDefinitionManager
@@ -36,9 +40,10 @@ from srunner.tools import route_manipulation
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
 from srunner.tools.metrics_collector import MetricsCollector
-
+from srunner.scenarioconfigs.carla_config import CARLA
 from srunner.tools.CARLA_manager import CARLAManager
 
+from algorithms.basic_algorithm import BasicAlgorithm
 
 logger = logging.getLogger("scenario-runner")
 
@@ -57,55 +62,35 @@ metrics_collected = {
 
 
 class AWScenarioRunner(object):
-    # flags
-    DEV_MODE = False
-    DEBUG = False
-
     # global class instances
-    ego_vehicles = []
-
-    carla_world = None
-    carla_client = None
-
-    scenario_manager = None
-    definition_manager = None
 
     aw_agent = None
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, cawsr_config: dict, carla_conf: CARLA) -> None:
         """
         Setup Scenario Manager and the Carla client
         """
+        self.DEBUG = cawsr_config["debug"]
+        self._conf = cawsr_config
+        self._carla = carla_conf
 
-        self._carla_config = config["carla"]
-        self._tm_config = config["traffic_manager"]
-        self._scenario_config = config["scenario_runner"]
+        self.ego_vehicles = []
 
-        # Flags
-        self.DEV_MODE = self._scenario_config["dev_mode"]
-        self.DEBUG = self._scenario_config["debug"]
+        # load autoware agent module
+        autoware_agent_path = self._conf["agent"]
+        module_name = os.path.basename(autoware_agent_path).split(".")[0]
+        sys.path.insert(0, os.path.dirname(autoware_agent_path))
+        self.module_aw_agent = importlib.import_module(module_name)
 
-        self.curr_iteration = 0
-        self.iterations = int(self._scenario_config["algorithm"]["iterations"])
+        if str(self._conf["mode"]).lower() == "algorithm":
+            self._rng = np.random.default_rng(self._conf["algorithm"]["seed"])
 
-        if not self.DEV_MODE:  # only load agents and algorithms in non-dev mode
-            autoware_agent_path = self._scenario_config["agent"]
-            module_name = os.path.basename(autoware_agent_path).split(".")[0]
-            sys.path.insert(0, os.path.dirname(autoware_agent_path))
-            self.module_aw_agent = importlib.import_module(module_name)
-
-            algorithm = self._scenario_config["algorithm"]["path"]
-            alg_module = os.path.basename(algorithm).split(".")[0]
-            sys.path.insert(0, os.path.dirname(algorithm))
-            self.module_algorithm = importlib.import_module(alg_module)
-
-        # main class to execute scenarios
-        self.scenario_manager = None
-
+        # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
         #  capture SIGINT for cleanp
         self._shutdown_requested = False
+
         if sys.platform != "win32":
             signal.signal(signal.SIGHUP, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -130,13 +115,16 @@ class AWScenarioRunner(object):
         env_config: EnvironmentConfig,
         scenario_name: str,
         seed: int,
+        algorithm_mode: bool,
         result_,
+        current_definiton: Union[dict, None],
+        algorithm: Union[Callable, None],
     ) -> None:
         logger.info("Initialising Scenario Manager...")
         self.scenario_manager = ScenarioManager(
             self.DEBUG,
-            self._carla_config["sync"],
-            self._carla_config["timeout"],
+            self._carla.SYNC,
+            self._carla.TIMEOUT,
         )
 
         logger.info("Starting the MetricsCollector thread...")
@@ -148,10 +136,8 @@ class AWScenarioRunner(object):
         )
 
         logger.info("Connecting to client...")
-        self.carla_client = carla.Client(
-            self._carla_config["host"], int(self._carla_config["port"])
-        )
-        self.carla_client.set_timeout(self._carla_config["timeout"])
+        self.carla_client = carla.Client(self._carla.HOST, self._carla.PORT)
+        self.carla_client.set_timeout(self._carla.TIMEOUT)
         CarlaDataProvider.set_client(self.carla_client)
 
         logger.info("Fetching current world...")
@@ -164,7 +150,7 @@ class AWScenarioRunner(object):
         # tick asynchronously until then
         settings = self.carla_world.get_settings()
         settings.synchronous_mode = True
-        settings.fixed_delta_seconds = self._carla_config["fixed_delta_seconds"]
+        settings.fixed_delta_seconds = self._carla.FIXED_DELTA_SECONDS
         self.carla_world.apply_settings(settings)
 
         logger.info(f"{settings.__str__()}")
@@ -180,21 +166,18 @@ class AWScenarioRunner(object):
         self.carla_world.tick()  # client must tick to spawn actors
 
         logger.info("Initialising Autoware...")
-
-        if not self.DEV_MODE:
-            logger.info("Loading Autoware agent")
-            agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
-            try:
-                logger.info(getattr(self.module_aw_agent, agent_class_name))
-                self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
-                    env_config
-                )  # agent init function
-                route_config.agent = self.aw_agent
-            except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
-                logger.error("Could not setup required agent due to {}".format(e))
-                self._cleanup()
-                result = False
-                return
+        agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
+        try:
+            logger.info(getattr(self.module_aw_agent, agent_class_name))
+            self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
+                env_config
+            )  # agent init function
+            route_config.agent = self.aw_agent
+        except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
+            logger.error("Could not setup required agent due to {}".format(e))
+            self._cleanup()
+            result = False
+            return
 
         logger.info("Loading route...")
 
@@ -209,25 +192,25 @@ class AWScenarioRunner(object):
         logger.info("Initialising agent route...")
 
         # allow the agent to localise and set the route
-        budget = int(self._scenario_config["initialisation_budget"])
-        status = False  # completion statusz
+        budget = self._conf["initialisation_budget"]
+        status = False
+
         for tick in range(1, budget + 1):
             self.carla_world.tick()
             status = route_config.agent.run_step_init()  # type: ignore
 
         if not status:
-            logger.info("Agent failed to initialise route.")
+            logger.info("Agent failed to initialise route")
         else:
             logger.info("Successfully initialised agent; route set.")
 
-        if self._tm_config["active"]:
-            logger.info("Loading Traffic Manager...")
-            tm_port = int(self._tm_config["port"])  # type: ignore
-            CarlaDataProvider.set_traffic_manager_port(tm_port)
-            tm = self.carla_client.get_trafficmanager(tm_port)
+        logger.info("Loading Traffic Manager...")
+        tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
+        CarlaDataProvider.set_traffic_manager_port(tm_port)
+        tm = self.carla_client.get_trafficmanager(tm_port)
 
-            tm.set_random_device_seed(int(self._tm_config["seed"]))  # ADD TO CONFIG
-            tm.set_synchronous_mode(self._tm_config["sync"])
+        tm.set_random_device_seed(int(self._carla.TRAFFIC_MANAGER.SEED))
+        tm.set_synchronous_mode(self._carla.SYNC)
 
         try:
             scenario = RouteScenario(
@@ -245,7 +228,7 @@ class AWScenarioRunner(object):
         try:
             self.carla_client.start_recorder("/home/carla/recording.log", True)
             self.scenario_manager.load_scenario(
-                scenario, self.aw_agent, follow_ego=self._scenario_config["follow_ego"]
+                scenario, self.aw_agent, follow_ego=True
             )
             self.scenario_manager.run_scenario()
             self.carla_client.stop_recorder()
@@ -273,126 +256,228 @@ class AWScenarioRunner(object):
         result_dict["driving_score"] = driving_score
 
         # read the scenario definition
-        if self._scenario_config["algorithm"]["enabled"]:
-            self.algorithm._update_generator(seed)
+        if algorithm_mode:
+            algorithm._update_generator(seed)  # type: ignore
 
-            definition = self.algorithm._scenario_callback(
-                self.json_definition, driving_score
+            definition = algorithm._scenario_callback(  # type: ignore
+                current_definiton, driving_score
             )
             result_dict["definition"] = definition
 
-        # update multipprocessing queue
         result_.put(result_dict)
 
-    def run(self) -> None:
-        """The Scenario loop. Read the scenario configuration from the parsed XML files,
-        configure the scenario in CARLA and execute. Use the results to and parse to the algorithm callback.
-        Repeats **iterations** times, as defined in config.yaml
+    def _load_alg(self) -> type[BasicAlgorithm]:
+        """Load an algorithm instance from mounted docker volume algorithms/
 
+        Returns:
+            _type_: Callable algorithm class
         """
+        algorithm = self._conf["algorithm"]["path"]
+        alg_module = os.path.basename(algorithm).split(".")[0]
+        sys.path.insert(0, os.path.dirname(algorithm))
+        self.module_algorithm = importlib.import_module(alg_module)
 
-        logger.info("Loading the initial scenario configuration")
+        alg_class_name = self.module_algorithm.__name__.title().replace("_", "")
+        logger.info(
+            f"Loading the algorithm class: f{getattr(self.module_algorithm, alg_class_name)}"
+        )
+        return getattr(self.module_algorithm, alg_class_name)(
+            self._conf["algorithm"]["args"]
+        )
 
-        scenario_name = os.path.split(
-            os.path.splitext(self._scenario_config["json"])[0]
-        )[1]
+    def run_algorithm(self) -> None:
+        """Executes CAWSR in algorithm mode. Every scenario"""
+        # load the algorithm and scenario defintion
+        optimisation_algorithm = self._load_alg()
+        scenario = pathlib.Path(self._conf["algorithm"]["initial_definition"])
+        # add some code here
+        # if scenario = null (initial definition not given)
+        # run the algorithm to generate a new, random scenario
 
-        try:
-            with open(self._scenario_config["json"], "r", encoding="UTF-8") as raw_json:  # type: ignore
-                self.json_definition = json.loads(raw_json.read())
-        except json.JSONDecodeError:
-            logger.error("Failed to decode scenario defintion, exiting...")
-            sys.exit(1)
+        json_definition = self._load_scenario(
+            scenario_name=scenario.stem,
+            path=str(scenario.absolute()),
+            run=0,
+            save_def=True,
+            return_def=True,
+        )
 
-        # load the algorithm instance
-        if not self.DEV_MODE:
-            alg_class_name = self.module_algorithm.__name__.title().replace("_", "")
-            logger.info(
-                f"Loading the algorithm class: f{getattr(self.module_algorithm, alg_class_name)}"
-            )
-            self.algorithm = getattr(self.module_algorithm, alg_class_name)(
-                self._scenario_config["algorithm"]["args"]
-            )
+        runs = self._conf["algorithm"]["runs"]
+        for i in range(0, runs):
+            logger.info(f"Running scenario {i + 1}/{runs + 1}")
 
-        self._rng = np.random.default_rng(self._scenario_config["algorithm"]["seed"])
-
-        if not self._scenario_config["algorithm"]["enabled"]:
-            self.iterations = 1
-
-        for iteration in range(self.iterations):
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
             time.sleep(5)  # allow CARLA to load
 
-            self.curr_iteration = iteration
-            logger.info(f"Starting algorithm iteration number {self.curr_iteration}")
+            env_config = EnvironmentParser.parse_scenario_env(
+                self.results_manager.fetch_scenario_xml()
+            )
+            route_config = RouteParser.parse_routes_file(
+                self.results_manager.last_scenario, env_config
+            )[
+                0
+            ]  # route id. Multiple routes currently aren't supported, so use first route
 
-            # parse the initial scenario config
+            json_definition = self._cawsr_process(
+                route_config=route_config,
+                env_config=env_config,
+                scenario_name=scenario.stem,
+                run=i + 1,
+                algorithm_mode=True,
+                algorithm=optimisation_algorithm,
+                current_definiton=json_definition,
+            )
+
             self.results_manager.parse_json(
-                self.json_definition,
-                scenario_name,
-                str(self.curr_iteration),
+                json_definition,  # type: ignore
+                scenario.stem,
+                str(i),
+                save_def=True,
+            )
+
+    def run_benchmark(self) -> None:
+        """Executes CAWSR in benchmark mode. Scenarios are loaded from the target directory"""
+        target_dir = pathlib.Path(self._conf["benchmark"]["scenarios"])
+        scenarios = [scenario for scenario in target_dir.glob("*.json")]
+
+        runs = len(scenarios)
+        for i in range(0, runs):
+            logger.info(f"Running scenario {i + 1}/{runs + 1}")
+
+            logger.info("Starting CARLA container....")
+            CARLAManager.restart_carla()
+            time.sleep(5)  # allow CARLA to load
+
+            if self._conf["benchmark"]["random_sampling"]:
+                scenario = random.choice(scenarios)
+                scenarios.remove(scenario)  # each scenario can only be picked once
+            else:
+                scenario = scenarios[i]
+
+            self._load_scenario(
+                scenario_name=scenario.stem,
+                path=str(scenario.absolute()),
+                run=i,
                 save_def=True,
             )
 
             env_config = EnvironmentParser.parse_scenario_env(
-                os.path.join(self.results_manager.last_scenario, "scenario.xml")
+                self.results_manager.fetch_scenario_xml()
             )
-
             route_config = RouteParser.parse_routes_file(
                 self.results_manager.last_scenario, env_config
-            )[self._scenario_config["route_id"]]  # remove
+            )[
+                0
+            ]  # route id. Multiple routes currently aren't supported, so use first route
 
-            logger.info("Starting scenario in new process...")
+            self._cawsr_process(
+                route_config=route_config,
+                env_config=env_config,
+                scenario_name=scenario.stem,
+                run=i + 1,
+                algorithm_mode=False,
+            )
 
-            result_dict = {"status": False, "criteria": {}}
-            scenario_result = multiprocessing.Queue()
-            scenario_result.put(result_dict)
+    def _cawsr_process(
+        self,
+        route_config: RouteScenarioConfiguration,
+        env_config: EnvironmentConfig,
+        scenario_name: str,
+        run: int,
+        algorithm_mode: bool = False,
+        current_definiton: Union[dict, None] = None,
+        algorithm: Union[Callable, None] = None,
+    ) -> Optional[dict]:
+        scenario_result = multiprocessing.Queue()
+        scenario_result.put({"status": False, "criteria": {}})
 
+        if algorithm_mode:
             seed = self._rng.integers(
                 0, sys.maxsize
             )  # generate a random seed from the seed
-            scenario_process = multiprocessing.Process(
-                target=self.run_scenario,  # need to catch connection exception
-                args=(
-                    route_config,
-                    env_config,
-                    scenario_name,
-                    seed,
-                    scenario_result,
-                ),
-            )
+        else:
+            seed = 0
 
-            scenario_process.start()
-            scenario_process.join()
-            logger.info(f"Scenario iteration {self.curr_iteration} has concluded")
+        scenario_process = multiprocessing.Process(
+            target=self.run_scenario,  # need to catch connection exception
+            args=(
+                route_config,
+                env_config,
+                scenario_name,
+                seed,
+                algorithm_mode,
+                scenario_result,
+                current_definiton,
+                algorithm,
+            ),
+        )
+        # run scenario until finished
+        logger.info(f"Starting {scenario_name} process.")
+        scenario_process.start()
+        scenario_process.join()
 
-            result = scenario_result.get()
+        # fetch result and clean up
+        result = scenario_result.get()
 
-            # kill the scenario process
-            if scenario_process.is_alive():
-                scenario_process.kill()
+        if scenario_process.is_alive():
+            scenario_process.kill()
+        self.results_manager.cleanup_xml()
 
-            # copy over the recording from CARLA container if env variable is setup
-            CARLAManager.fetch_file(
-                "/home/carla/recording.log",
-                self.results_manager.last_scenario,
-            )
-            # clean up - delete XML files
-            self.results_manager.cleanup_xml()
+        # copy over the recording from CARLA container
+        CARLAManager.fetch_file(
+            "/home/carla/recording.log",
+            self.results_manager.last_scenario,
+        )
 
-            status = result["status"]
-            driving_score = result["driving_score"]  #
+        # fetch execution status of the scenario (failure or success)
+        status = result["status"]
+        driving_score = result["driving_score"]
 
-            if self._scenario_config["algorithm"]["enabled"]:
-                self.json_definition = result["definition"]
+        logger.info(f"Scenario iteration {run} achieved a score of {driving_score}")
+        logger.info(
+            f"Scenario iteration {run} ended with status {'SUCCESS' if status else 'FAILURE'}"
+        )
 
-            logger.info(
-                f"Scenario iteration {iteration} achieved a score of {driving_score}"
-            )
-            logger.info(
-                f"Scenario iteration {iteration} ended with status {'SUCCESS' if status else 'FAILURE'}"
-            )
+        # return new scenario definition if in alg mode
+        if algorithm_mode:
+            return result["definition"]
+
+    def _load_scenario(
+        self,
+        scenario_name: str,
+        path: str,
+        run: int,
+        save_def: bool = True,
+        return_def: bool = False,
+    ) -> Optional[dict]:
+        try:
+            with open(path, "r", encoding="UTF-8") as raw_json:  # type: ignore
+                json_definition = json.loads(raw_json.read())
+            return json_definition
+        except json.JSONDecodeError:
+            logger.error("Failed to decode scenario defintion, exiting...")
+            sys.exit(1)
+
+        # parse the config and create the results dir
+        self.results_manager.parse_json(
+            json_definition,
+            scenario_name,
+            str(run),
+            save_def=save_def,
+        )
+
+        if return_def:
+            return json_definition
+
+    def run(self) -> None:
+        """Starts the scenario loop based on the mode selected"""
+        logger.info("Loading the initial scenario configuration")
+
+        if str(self._conf["mode"]).lower() == "algorithm":
+            self.run_algorithm()
+        elif str(self._conf["mode"]).lower() == "benchmark":
+            self.run_benchmark()
 
     def _output_criteria(
         self, criteria, file_name: str, save_file: bool = True
@@ -466,12 +551,12 @@ class AWScenarioRunner(object):
 
     def _cleanup(self) -> None:
         """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA."""
-        # Simulation still running and in synchronous mode?
+
         if self.carla_world is not None:
             try:
                 # Reset to asynchronous mode
                 self.carla_client.get_trafficmanager(
-                    int(self._tm_config["port"])
+                    int(self._carla.TRAFFIC_MANAGER.PORT)
                 ).set_synchronous_mode(False)
             except RuntimeError:
                 sys.exit(-1)
@@ -495,13 +580,10 @@ class AWScenarioRunner(object):
             self.aw_agent = None
 
 
-def main():
-    config_env = os.getenv("CAWSR_CONFIG", "configs/example_algorithm.sjon")
-
-    config = None
-    with open(config_env, "r") as stream:
-        config = yaml.safe_load(stream)
-
+def init_logs() -> None:
+    """Sets up the CAWSR logging object. Can be retrieved by calling
+    `logginer.get_logger("scenario-runner")`
+    """
     logger.setLevel(logging.INFO)
 
     log_formatter = logging.Formatter(
@@ -518,12 +600,37 @@ def main():
     logger.addHandler(fh)
     logger.addHandler(sh)
 
-    CARLAManager._load_config(config["carla"])
+
+def init_config() -> dict:
+    """Load the config file from the passed env variable.
+
+    Returns:
+        dict: config dict. Empty if config failed to load
+    """
+    config_env = os.getenv("CAWSR_CONFIG", "configs/example_algorithm.json")
+
+    try:
+        with open(config_env, "r") as stream:
+            config = yaml.safe_load(stream)["cawsr"]
+        return config
+    except FileNotFoundError:
+        logger.error("Failed to load config file, does it exist?")
+        return {}
+
+
+def main():
+    """Entrypoint"""
+    init_logs()
+
+    config = init_config()
+    carla_config = CARLA()
+    carla_config._parse_dict(carla_config, config["carla"])
+    CARLAManager._load_config(carla_config)
 
     # reload world and sync must be present when running agent-based route scenarios
     scenario_runner = None
     try:
-        scenario_runner = AWScenarioRunner(config)
+        scenario_runner = AWScenarioRunner(config, carla_config)
         results = scenario_runner.run()
         logger.info(results)
     except Exception:  # NOT GOOD PRACTICE PROBABLY CHANGE

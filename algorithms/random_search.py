@@ -6,10 +6,8 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
 from basic_algorithm import BasicAlgorithm
-from srunner.tools import route_manipulation
 
 import lanelet2
-import carla
 import numpy as np
 
 
@@ -32,7 +30,7 @@ class RandomSearch(BasicAlgorithm):
             spawn = self._rng.choice(self.all_points)
             goalpose = self._rng.choice(self.all_points)
 
-            valid = self._valid_route([spawn, goalpose])
+            valid = self.valid_route([spawn, goalpose])
 
         scenario_definition["routes"][0]["route"]["waypoints"] = [
             self._np_to_json(spawn),
@@ -42,15 +40,6 @@ class RandomSearch(BasicAlgorithm):
 
     def _update_generator(self, seed: int) -> None:
         self._rng = np.random.default_rng(seed)
-
-    def _to_carla(self, point: np.ndarray) -> carla.Location:
-        return carla.Location(point[0], point[1], 0.0)
-
-    def _valid_route(self, route) -> bool:
-        carla_route = list(map(self._to_carla, route))
-
-        gps_route, route = route_manipulation.interpolate_trajectory(carla_route)
-        return not ((len(gps_route) == 1) and (len(route) == 1))
 
     def _np_to_json(self, p1: np.ndarray) -> dict:
         return {"position": {"x": p1[0], "y": p1[1], "z": 0.0}}

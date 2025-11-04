@@ -25,6 +25,9 @@ class ScenarioDefinitionManager(object):
         self.results_path = ""
         self._scenario_decoder = XMLToFiles()
 
+    def fetch_scenario_xml(self) -> str:
+        return os.path.join(self.last_scenario, "scenario.xml")
+
     def _create_run_folder(self, scenario: str, base_path: str = ""):
         """Creates a experiment folder under base_path. The naming convention is as follows
         ```
