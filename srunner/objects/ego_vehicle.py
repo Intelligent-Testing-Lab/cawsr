@@ -42,7 +42,7 @@ class EgoVehicle(object):
                 "Failed to spawn EgoVehicle. This is likely an issue with CARLA."
             )
 
-        return self._actor
+        return self._actor  # type: ignore
 
     def prepare_ego(self, route_loc: carla.Transform) -> None:
         """Reset the position and velocity of the ego. Register the actor"""

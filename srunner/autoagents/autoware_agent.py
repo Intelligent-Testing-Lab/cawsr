@@ -14,13 +14,16 @@ from srunner.autoagents.autoware_nodes import state_node
 from srunner.autoagents.autoware_nodes import tick_node
 
 from srunner.autoagents.agent_state import autoware_state
-
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
+from srunner.autoagents.autoware_carla_interface.carla_autoware import (
+    InitializeInterface,
+)
 
 import threading
 import rclpy
 import time
 import logging
+
 
 logger = logging.getLogger("scenario-runner")
 logger.propagate = False
@@ -32,7 +35,7 @@ class AutowareAgent(AutonomousAgent):
     counter = 0
     last_tick = time.perf_counter_ns()
 
-    def setup(self, config: EnvironmentConfig | None = None) -> None:
+    def setup(self, config: EnvironmentConfig) -> None:
         """Setup the Autoware Agent.
             - Initialise the state
             - Setup nodes
@@ -46,6 +49,8 @@ class AutowareAgent(AutonomousAgent):
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
+        self.carla_interface = InitializeInterface(self.config)
+
         self.state_node = state_node.StateNode(self.autoware_state)
         self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
@@ -57,6 +62,7 @@ class AutowareAgent(AutonomousAgent):
         self._multi_thread_executor.add_node(self.route_node)
         self._multi_thread_executor.add_node(self.state_node)
         self._multi_thread_executor.add_node(self.autoware_node)
+        self._multi_thread_executor.add_node(self.carla_interface.interface.ros2_node)  # type:ignore
 
         self._executor_thread = threading.Thread(
             target=self._multi_thread_executor.spin, daemon=True
@@ -65,9 +71,12 @@ class AutowareAgent(AutonomousAgent):
 
         self.sent_route = False
 
-        self.setup_tick_service()
+        self.carla_interface.load_world()
+        self.carla_interface.run_bridge()
+        # self.setup_tick_service()
 
     def setup_tick_service(self):
+        # no need to setup tick service anymore
         self.tick_node = tick_node.TickNode()
         self._tick_executor = rclpy.executors.SingleThreadedExecutor()
 
@@ -157,7 +166,7 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             return True
 
-        self.tick_node.autoware_tick()
+        self.carla_interface.tick_bridge()
         return False
 
     def run_step(self) -> None:
@@ -173,5 +182,4 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
 
-        # tick autoware
-        self.tick_node.autoware_tick()
+        self.carla_interface.tick_bridge()
