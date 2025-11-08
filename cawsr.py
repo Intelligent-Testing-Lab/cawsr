@@ -62,9 +62,7 @@ metrics_collected = {
 
 
 class AWScenarioRunner(object):
-    # global class instances
-
-    aw_agent = None
+    aw_agent = None  # autoware agent
 
     def __init__(self, cawsr_config: dict, carla_conf: CARLA) -> None:
         """
@@ -147,6 +145,7 @@ class AWScenarioRunner(object):
         self.carla_client.load_world(env_config.town)
 
         logger.info("Updating world settings:")
+
         # tick asynchronously until then
         settings = self.carla_world.get_settings()
         settings.synchronous_mode = True
@@ -160,8 +159,9 @@ class AWScenarioRunner(object):
 
         logger.info("Spawning ego...")
         ego = EgoVehicle(env_config)
-        self.ego_vehicles.append(ego.spawn())
-        logger.info("Spawned ego...")
+        actor = ego.spawn()
+        self.ego_vehicles.append(actor)
+        logger.info(f"Spawned ego with id: {actor.id}")
 
         self.carla_world.tick()  # client must tick to spawn actors
 
