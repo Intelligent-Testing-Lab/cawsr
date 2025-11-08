@@ -42,11 +42,11 @@ RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
     rm -rf PythonAPI.tar && \
-    mv /autoware_scenario_runner/docker/entrypoint.sh /autoware_scenario_runner/ && \
+    mv /autoware_scenario_runner/docker/entrypoint.sh /autoware_scenario_runner/entrypoint.sh && \
     mkdir logs
 
-    # update CYCLONE DDS Config for ROS
-    RUN mkdir /cyclonedds && \
+# update CYCLONE DDS Config for ROS
+RUN mkdir /cyclonedds && \
     mv /autoware_scenario_runner/docker/cyclonedds.xml /cyclonedds/ && \
     rm -rf /autoware_scenario_runner/docker && \
     echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc && \
