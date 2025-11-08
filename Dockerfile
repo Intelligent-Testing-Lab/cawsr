@@ -42,7 +42,6 @@ RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
     rm -rf PythonAPI.tar && \
-    mv /autoware_scenario_runner/docker/entrypoint.sh /autoware_scenario_runner/entrypoint.sh && \
     mkdir logs
 
 # update CYCLONE DDS Config for ROS
