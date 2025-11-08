@@ -37,13 +37,13 @@ RUN apt-get update -y && \
     apt-get update -y && \
     apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
-# install pip requirements and carla
-# NETWORKX has issues with collections.abc
-# switch to different versions (python 3.9+)
+# install pip packages and setup docker entrypoint
 RUN python3 -m pip install -r requirements.txt && \
     mv docker/PythonAPI.tar ./ && \
     tar -xvf PythonAPI.tar && \
     rm -rf PythonAPI.tar && \
+    mv /autoware_scenario_runner/docker/entrypoint.sh /autoware_scenario_runner/ && \
+    rm -rf /autoware_scenario_runner/docker && \
     mkdir logs
 
 # update CYCLONE DDS Config for ROS
