@@ -16,7 +16,8 @@ RUN mkdir /ros_workspace/ &&  \
     tar -xvf /ros_workspace/autoware_msgs.tar.xz && \
     rm -rf /ros_workspace/autoware_msgs.tar.xz && \
     source /opt/ros/humble/setup.bash && \
-    apt install -y ros-humble-rmw-cyclonedds-cpp ros-humble-tf-transformations && \
+    apt-get update && \
+    apt-get install -y ros-humble-rmw-cyclonedds-cpp ros-humble-tf-transformations && \
     rosdep install -i --from-path /ros_workspace/autoware_msgs/src --rosdistro humble -y &&  cd autoware_msgs && \
     colcon build
 
