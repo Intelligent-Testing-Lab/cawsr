@@ -197,7 +197,7 @@ class AWScenarioRunner(object):
 
         for tick in range(1, budget + 1):
             self.carla_world.tick()
-            status = route_config.agent.run_step_init()  # type: ignore
+            status = self.aw_agent.run_step_init()  # type: ignore
 
         if not status:
             logger.info("Agent failed to initialise route")

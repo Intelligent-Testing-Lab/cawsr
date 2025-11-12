@@ -141,6 +141,8 @@ class AutowareAgent(AutonomousAgent):
         Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
 
         """
+        self.carla_interface.tick_bridge()
+
         if not self.agent_set_route:
             self.set_route()
 
@@ -166,7 +168,6 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             return True
 
-        self.carla_interface.tick_bridge()
         return False
 
     def run_step(self) -> None:
