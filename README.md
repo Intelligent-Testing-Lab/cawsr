@@ -39,14 +39,53 @@ To allow GUI applications (like Autoware and CARLA) to run through Docker, you m
 xhost +local:docker
 ```
 
-Using the ScenarioRunner
+Using CAWSR
 ------------------------
 
-After completiting the prerequisite steps, clone the CAWSR workspace repository.
+After completiting the prerequisite steps, clone the CAWSR workspace repository. To launch CAWSR, navigate to the CAWSR workspace and run `docker compose up`.
+
+The structure of the workspace is as follows.
+```
+scenarios/ -> this folder holds all the scenario configurations
+configs/ -> this folder holds all user config files
+results/ -> results from runs are stored here
+algorithms/ -> holds all custom algorithm scripts
+```
+All folders are mounted as Docker volumes into the CAWSR container, so any changes persist between host and container.
+
+In CAWSR, there are two modes you can configure `algorithm` or `benchmark`. To set the mode, modify `mode: 'benchmark' # benchmark or algorithm` in a `config.yaml` file. You can create multiple configuration files in `configs/`. To use a specific config, modify the **CAWSR_CONFIG** ENV variable in the `docker-compose.yaml`, pointing it to the path of your config file. **All files use relative paths from the CAWSR root directory**.
+
+**Algorithm**
+Algorithm config:
+```yaml
+algorithm:
+    initial_definition: scenarios/examples/example_scenario.json # can be null
+    seed: 10
+    runs: 50
+    path: algorithms/random_search
+    args:
+      lanelet2: algorithms/resources/Town01.osm
+```
+
+Included in `algorithms/basic_algorithm.py` is the BasicAlgorithm class, from which all algorithms inherit. The algorithm is ran on every
+iteration of the scenario, modifying the defintion based on the result of the previous scenario. At beginning of every iteration, the method
+```python
+ def _scenario_callback(
+        self, scenario_definition: dict, driving_score: float
+    ) -> dict:
+```
+is called. To implement a custom algorithm, create a class than inherits from `BasicAlgorithm` and implements the function `scenario_callback`. The function must follow the signature above, returning a new scenario definition. To use outside resources, such as loading a lanelet file (see example config), pass them in via the args config variable. This gets converted into a python dictionary and passed to the algorithm class when initialised. Algorithms are run sync, so CAWSR will wait for completion.
+
+The algorithm will execute **runs** times.
+
 
 Scenario Definition
 -------------------
 
+We use a custom implementation of a scenario definition in JSON. We have included a scenario domain model, as well as plenty of examples in the CAWSR Workspace repository `scenarios/examples/`.
+
+Domain Model:
+![Domain Model](./docs/resources/scenario_domain.png)
 
 Contributing
 ------------
