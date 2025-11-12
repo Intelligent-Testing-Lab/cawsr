@@ -42,8 +42,10 @@ xhost +local:docker
 Using the ScenarioRunner
 ------------------------
 
-Please take a look at our [Getting started](Docs/getting_scenariorunner.md)
-documentation.
+After completiting the prerequisite steps, clone the CAWSR workspace repository.
+
+Scenario Definition
+-------------------
 
 
 Contributing

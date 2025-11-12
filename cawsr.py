@@ -189,20 +189,6 @@ class AWScenarioRunner(object):
         ego.prepare_ego(route[0][0])  # set location to first waypoint
 
         self.carla_world.tick()
-        logger.info("Initialising agent route...")
-
-        # allow the agent to localise and set the route
-        budget = self._conf["initialisation_budget"]
-        status = False
-
-        for tick in range(1, budget + 1):
-            self.carla_world.tick()
-            status = self.aw_agent.run_step_init()  # type: ignore
-
-        if not status:
-            logger.info("Agent failed to initialise route")
-        else:
-            logger.info("Successfully initialised agent; route set.")
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -230,6 +216,22 @@ class AWScenarioRunner(object):
             self.scenario_manager.load_scenario(
                 scenario, self.aw_agent, follow_ego=True
             )
+
+            logger.info("Initialising agent route...")
+
+            # allow the agent to localise and set the route
+            budget = self._conf["initialisation_budget"]
+            status = False
+
+            for tick in range(1, budget + 1):
+                status = self.aw_agent.run_step_init()  # type: ignore
+                self.carla_world.tick()
+
+            if not status:
+                logger.info("Agent failed to initialise route")
+            else:
+                logger.info("Successfully initialised agent; route set.")
+
             self.scenario_manager.run_scenario()
             self.carla_client.stop_recorder()
             result = True
