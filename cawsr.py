@@ -294,6 +294,7 @@ class AWScenarioRunner(object):
         # if scenario = null (initial definition not given)
         # run the algorithm to generate a new, random scenario
 
+        logger.info(str(scenario.absolute()))
         json_definition = self._load_scenario(
             scenario_name=scenario.stem,
             path=str(scenario.absolute()),
@@ -454,12 +455,15 @@ class AWScenarioRunner(object):
         try:
             with open(path, "r", encoding="UTF-8") as raw_json:  # type: ignore
                 json_definition = json.loads(raw_json.read())
-            return json_definition
+        except FileNotFoundError:
+            logger.info("JSON definition does not exist, exiting...")
+            sys.exit(1)
         except json.JSONDecodeError:
             logger.error("Failed to decode scenario defintion, exiting...")
             sys.exit(1)
 
         # parse the config and create the results dir
+        logger.info("Parsing JSON definition...")
         self.results_manager.parse_json(
             json_definition,
             scenario_name,
