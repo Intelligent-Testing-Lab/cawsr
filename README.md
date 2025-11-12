@@ -16,6 +16,8 @@ CAWSR Setup
 ---------------------------
 Setup access to the [**Github container registry**](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
+Once you have been granted access, pull the following images:
+
 
 Using the ScenarioRunner
 ------------------------

@@ -32,9 +32,11 @@ class CARLA:
         for key in keys:
             try:
                 if key == "traffic_manager":
-                    conf_dict[key] = self._parse_dict(
-                        getattr(self, key.upper()), conf_dict[key]
-                    )
+                    tm_config = TM()
+                    tm_config.PORT = conf_dict[key]["port"]
+                    tm_config.SEED = conf_dict[key]["seed"]
+
+                    conf_dict[key] = tm_config
 
                 setattr(obj, key.upper(), conf_dict[key])
             except AttributeError:

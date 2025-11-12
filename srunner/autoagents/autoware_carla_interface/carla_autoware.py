@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.sr/bin/env python
 
-import signal
 import time
-
 
 from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorReceivedNoData,
@@ -102,15 +100,3 @@ class InitializeInterface(object):
         if self.interface:
             self.interface.shutdown()
             self.interface = None
-
-
-def main():
-    carla_bridge = InitializeInterface()
-    carla_bridge.load_world()
-    signal.signal(signal.SIGINT, carla_bridge._stop_loop)
-    carla_bridge.run_bridge()
-    carla_bridge._cleanup()
-
-
-if __name__ == "__main__":
-    main()

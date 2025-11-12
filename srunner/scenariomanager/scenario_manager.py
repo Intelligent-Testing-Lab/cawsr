@@ -178,6 +178,9 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
+            if self._agent is not None:
+                self._agent()  # pylint: disable=not-callable
+
             _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
                 CarlaDataProvider.get_world().tick()
@@ -188,9 +191,6 @@ class ScenarioManager(object):
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
-
-            if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6
