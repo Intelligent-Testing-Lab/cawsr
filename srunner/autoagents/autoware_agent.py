@@ -11,7 +11,6 @@ from srunner.autoagents.autoware_nodes.autoware_types import waypoint
 from srunner.autoagents.autoware_nodes import autoware_node
 from srunner.autoagents.autoware_nodes import route_node
 from srunner.autoagents.autoware_nodes import state_node
-from srunner.autoagents.autoware_nodes import tick_node
 
 from srunner.autoagents.agent_state import autoware_state
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
@@ -70,22 +69,10 @@ class AutowareAgent(AutonomousAgent):
         self._executor_thread.start()
 
         self.sent_route = False
+        self.initialised = False
 
         self.carla_interface.load_world()
         self.carla_interface.run_bridge()
-        # self.setup_tick_service()
-
-    def setup_tick_service(self):
-        # no need to setup tick service anymore
-        self.tick_node = tick_node.TickNode()
-        self._tick_executor = rclpy.executors.SingleThreadedExecutor()
-
-        self._tick_executor.add_node(self.tick_node)
-
-        self._executor_thread = threading.Thread(
-            target=self._tick_executor.spin, daemon=True
-        )
-        self._executor_thread.start()
 
     def set_route(self) -> None:
         self.agent_set_route = True
@@ -141,7 +128,6 @@ class AutowareAgent(AutonomousAgent):
         Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
 
         """
-        self.carla_interface.tick_bridge()
 
         if not self.agent_set_route:
             self.set_route()
@@ -178,6 +164,12 @@ class AutowareAgent(AutonomousAgent):
                 f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
             )
             self.last_tick = time.perf_counter_ns()
+
+        if not self.initialised:
+            self.initialised = self.run_step_init()
+
+            if self.initialised:
+                logger.info("Set agent route!")
 
         # check if the current route is set
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:

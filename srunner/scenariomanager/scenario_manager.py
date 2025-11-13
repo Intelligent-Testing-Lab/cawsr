@@ -184,6 +184,7 @@ class ScenarioManager(object):
             _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
                 CarlaDataProvider.get_world().tick()
+
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )

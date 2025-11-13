@@ -26,7 +26,9 @@ class AgentWrapper(object):
         """
         self._agent = agent
 
-    def __call__(self):
+    def __call__(
+        self,
+    ):
         """
         Pass the call directly to the agent
         """
