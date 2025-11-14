@@ -547,22 +547,15 @@ class AWScenarioRunner(object):
         self._cleanup()
         if self.scenario_manager is not None:
             del self.scenario_manager
-        if self.carla_client is not None:
-            del self.carla_client
-        if self.carla_world is not None:
-            del self.carla_world
 
     def _cleanup(self) -> None:
         """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA."""
-
-        if self.carla_world is not None:
-            try:
-                # Reset to asynchronous mode
-                self.carla_client.get_trafficmanager(
-                    int(self._carla.TRAFFIC_MANAGER.PORT)
-                ).set_synchronous_mode(False)
-            except RuntimeError:
-                sys.exit(-1)
+        try:
+            CarlaDataProvider.get_client().get_trafficmanager(
+                int(self._carla.TRAFFIC_MANAGER.PORT)
+            ).set_synchronous_mode(False)
+        except RuntimeError:
+            sys.exit(-1)
 
         self.scenario_manager.cleanup()
 
