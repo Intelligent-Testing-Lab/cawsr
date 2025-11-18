@@ -178,8 +178,7 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
-            if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
+            
 
             _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
@@ -188,6 +187,9 @@ class ScenarioManager(object):
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )
+            
+            if self._agent is not None:
+                self._agent()  # pylint: disable=not-callable
 
             # Update game time and actor information
             GameTime.on_carla_tick(timestamp)
