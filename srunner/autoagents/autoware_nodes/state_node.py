@@ -17,31 +17,32 @@ from autoware_cawsr_msgs.msg import AutowareRestart
 logger = logging.getLogger("scenario-runner")
 
 
-class StateNode(Node):
+class StateNode():
     route_state = "/planning/mission_planning/state"
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
 
     reset_topic = "/autoware/restart"
 
-    def __init__(self, autoware_state: autoware_state.AutowareState) -> None:
+    def __init__(self, autoware_state: autoware_state.AutowareState, node) -> None:
         super().__init__("state_node")
         self.autoware_state = autoware_state
+        self.node = node
 
-        self.route_subscriber = self.create_subscription(
+        self.route_subscriber = self.node.create_subscription(
             RouteState, self.route_state, self.route_state_cb, 10
         )
-        self.motion_subscriber = self.create_subscription(
+        self.motion_subscriber = self.node.create_subscription(
             MotionState, self.motion_state, self.motion_state_cb, 10
         )
-        self.localize_state_subscriber = self.create_subscription(
+        self.localize_state_subscriber = self.node.create_subscription(
             LocalizationInitializationState,
             self.localize_state,
             self.localize_state_cb,
             10,
         )
 
-        self.restart_autoware_pub = self.create_publisher(
+        self.restart_autoware_pub = self.node.create_publisher(
             AutowareRestart, self.reset_topic, 10
         )
 

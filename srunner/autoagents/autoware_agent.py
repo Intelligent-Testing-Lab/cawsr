@@ -46,25 +46,24 @@ class AutowareAgent(AutonomousAgent):
         rclpy.init(args=None)
         self.config = config
 
+        self._node = rclpy.create_node('cawsr_bridge')
+
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
-        self.carla_interface = InitializeInterface(self.config)
+        self.carla_interface = InitializeInterface(self.config, self._node)
 
-        self.state_node = state_node.StateNode(self.autoware_state)
+        self.state_node = state_node.StateNode(self.autoware_state, self._node)
         self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
-        self.route_node = route_node.RouteNode(self.autoware_state)
-        self.autoware_node = autoware_node.AutowareNode(self.autoware_state)
+        self.route_node = route_node.RouteNode(self.autoware_state, self._node)
+        self.autoware_node = autoware_node.AutowareNode(self.autoware_state, self._node)
 
-        self._multi_thread_executor = rclpy.executors.MultiThreadedExecutor()
+        self._single_thread_executor = rclpy.executors.SingleThreadedExecutor()
 
-        self._multi_thread_executor.add_node(self.route_node)
-        self._multi_thread_executor.add_node(self.state_node)
-        self._multi_thread_executor.add_node(self.autoware_node)
-        self._multi_thread_executor.add_node(self.carla_interface.interface.ros2_node)  # type:ignore
+        self._single_thread_executor.add_node(self._node)
 
         self._executor_thread = threading.Thread(
-            target=self._multi_thread_executor.spin, daemon=True
+            target=self._single_thread_executor.spin, daemon=True
         )
         self._executor_thread.start()
 

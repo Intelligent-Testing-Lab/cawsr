@@ -20,31 +20,35 @@ from visualization_msgs.msg import Marker
 # Assuming this import path is correct for your project
 from srunner.autoagents.agent_state import autoware_state
 
+logger = logging.getLogger("scenario-runner")
 
-class AutowareNode(Node):
+
+class AutowareNode():
     engage_topic = "/autoware/engage"
     localize_service = "/api/localization/initialize"
 
-    def __init__(self, autoware_state_instance: autoware_state.AutowareState):
+    def __init__(self, autoware_state_instance: autoware_state.AutowareState, node):
         super().__init__("autoware_node")
 
-        self.engage_publisher = self.create_publisher(Engage, self.engage_topic, 10)
+        self.node = node
 
-        self.localize_client = self.create_client(
+        self.engage_publisher = self.node.create_publisher(Engage, self.engage_topic, 10)
+
+        self.localize_client = self.node.create_client(
             InitializeLocalization, self.localize_service
         )
 
-        self.marker_publisher = self.create_publisher(
+        self.marker_publisher = self.node.create_publisher(
             Marker, "visulaization_marker", 10
         )
 
         # Good practice: Wait for the service to be available
-        self.get_logger().info(f"Waiting for '{self.localize_service}' service...")
+        logger.info(f"Waiting for '{self.localize_service}' service...")
         while not self.localize_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info(
+            logger.info(
                 f"Service '{self.localize_service}' not available, waiting again..."
             )
-        self.get_logger().info(f"Service '{self.localize_service}' available.")
+        logger.info(f"Service '{self.localize_service}' available.")
 
         # Store the autoware_state instance
         self.autoware_state = autoware_state_instance
@@ -61,7 +65,7 @@ class AutowareNode(Node):
             engage_state  # Assuming this updates your state
         )
         self.engage_publisher.publish(engage_msg)
-        self.get_logger().info(f"Published engage state: {engage_state}")
+        logger.info(f"Published engage state: {engage_state}")
 
     def request_localize(
         self,
@@ -75,7 +79,7 @@ class AutowareNode(Node):
             global_pose (Optional[PoseWithCovarianceStamped]): Rough guess of current position.
                                                                If None, an empty request is sent.
         """
-        self.get_logger().info("Sending localization initialization request...")
+        logger.info("Sending localization initialization request...")
 
         request = InitializeLocalization_Request()
         if global_pose:
@@ -83,7 +87,7 @@ class AutowareNode(Node):
             # Assuming the service definition has a field named 'pose' of type PoseWithCovarianceStamped
             request.pose = global_pose
         else:
-            self.get_logger().info(
+            logger.info(
                 "No initial global_pose provided, sending empty localization request."
             )
 
@@ -99,10 +103,10 @@ class AutowareNode(Node):
             response = future.result()
             # Assuming Autoware services return a common status message in the response
             if response.status.success:
-                self.get_logger().info("Localization initialized successfully!")
+                logger.info("Localization initialized successfully!")
             else:
-                self.get_logger().warn(
+                logger.warn(
                     f"Failed to initialize localization: {response.status.message}"
                 )
         except Exception as e:
-            self.get_logger().error(f"Service call failed: {e}")
+            logger.error(f"Service call failed: {e}")
