@@ -19,8 +19,11 @@ from visualization_msgs.msg import Marker
 
 # Assuming this import path is correct for your project
 from srunner.autoagents.agent_state import autoware_state
+import logging
+
 
 logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class AutowareNode():

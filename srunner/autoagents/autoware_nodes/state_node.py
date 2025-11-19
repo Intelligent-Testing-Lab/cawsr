@@ -13,8 +13,11 @@ from srunner.autoagents.agent_state import autoware_state
 import logging
 
 from autoware_cawsr_msgs.msg import AutowareRestart
+import logging
+
 
 logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class StateNode():

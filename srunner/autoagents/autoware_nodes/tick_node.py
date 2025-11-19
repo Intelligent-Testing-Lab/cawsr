@@ -9,6 +9,11 @@ from rclpy.node import Node
 
 from autoware_cawsr_msgs.srv import AutowareTick
 from srunner.tools.metrics_collector import MetricsCollector
+import logging
+
+
+logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 
 class TickNode(Node):

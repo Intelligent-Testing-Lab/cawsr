@@ -15,8 +15,11 @@ from autoware_adapi_v1_msgs.srv import SetRoutePoints, ClearRoute
 from autoware_adapi_v1_msgs.srv._clear_route import ClearRoute_Request
 from geometry_msgs.msg import PoseStamped
 
-logger = logging.getLogger("scenario-runner")
+import logging
 
+
+logger = logging.getLogger("scenario-runner")
+logger.propagate = False
 
 class RouteNode():
     last_goal = None
