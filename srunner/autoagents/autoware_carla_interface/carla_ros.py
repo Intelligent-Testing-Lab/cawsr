@@ -92,7 +92,7 @@ class carla_ros2_interface(object):
         # Publish clock
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
-        obj_clock.clock = Time(sec=0)
+        obj_clock.clock = Time(sec=self.game_time_offset)
         self.clock_publisher.publish(obj_clock)
 
         # Sensor Config (Edit your sensor here)
@@ -171,7 +171,7 @@ class carla_ros2_interface(object):
 
     def __call__(self):
         input_data = self.sensor_interface.get_data()
-        timestamp = GameTime.get_time() - self.game_time_offset
+        timestamp = GameTime.get_time()
         control = self.run_step(input_data, timestamp)
         return control
 
