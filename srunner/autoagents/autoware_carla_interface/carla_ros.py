@@ -55,6 +55,7 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
+from srunner.tools.CARLA_manager import CARLAManager
 
 class carla_ros2_interface(object):
     def __init__(self):
@@ -84,6 +85,8 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
+        self.game_time_offset = CARLAManager.FIXED_DELTA_SECONDS * 3 # offset to account for initilisation ticks
+        
         self.ros2_node = rclpy.create_node("carla_ros2_interface")
 
         # Publish clock
@@ -168,7 +171,7 @@ class carla_ros2_interface(object):
 
     def __call__(self):
         input_data = self.sensor_interface.get_data()
-        timestamp = GameTime.get_time()
+        timestamp = GameTime.get_time() - self.game_time_offset
         control = self.run_step(input_data, timestamp)
         return control
 
