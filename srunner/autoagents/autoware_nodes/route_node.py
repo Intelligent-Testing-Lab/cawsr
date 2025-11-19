@@ -34,7 +34,6 @@ class RouteNode():
 
     def __init__(self, autoware_state, node) -> None:
         # Initialize the Node base class with a unique name
-        super().__init__("route_client_node")
 
         self.autoware_state = autoware_state
         self.node = node

@@ -44,6 +44,7 @@ class AutowareAgent(AutonomousAgent):
         """
 
         rclpy.init(args=None)
+        
         self.config = config
 
         self._node = rclpy.create_node('cawsr_bridge')

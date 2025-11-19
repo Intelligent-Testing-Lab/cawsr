@@ -31,7 +31,6 @@ class AutowareNode():
     localize_service = "/api/localization/initialize"
 
     def __init__(self, autoware_state_instance: autoware_state.AutowareState, node):
-        super().__init__("autoware_node")
 
         self.node = node
 

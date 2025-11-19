@@ -28,7 +28,6 @@ class StateNode():
     reset_topic = "/autoware/restart"
 
     def __init__(self, autoware_state: autoware_state.AutowareState, node) -> None:
-        super().__init__("state_node")
         self.autoware_state = autoware_state
         self.node = node
 
