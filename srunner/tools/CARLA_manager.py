@@ -28,6 +28,7 @@ class CARLAManager(object):
     def _load_config(config: CARLA) -> None:
         CARLAManager.port = config.PORT
         CARLAManager.fidelity = config.FIDELITY
+        CARLAManager.FIXED_DELTA_SECONDS = config.FIXED_DELTA_SECONDS 
 
         CARLAManager.run_command = [
             f'docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp carlasim/carla:0.9.15 /bin/bash -c "./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"'
