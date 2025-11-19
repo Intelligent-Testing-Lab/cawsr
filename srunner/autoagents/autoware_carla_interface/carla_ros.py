@@ -488,11 +488,6 @@ class carla_ros2_interface(object):
 
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
-        seconds = int(self.timestamp)
-        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
-        obj_clock = Clock()
-        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
-        self.clock_publisher.publish(obj_clock)
 
         # publish data of all sensors
         for key, data in input_data.items():
@@ -510,6 +505,16 @@ class carla_ros2_interface(object):
 
         # Publish ego vehicle status
         self.ego_status()
+
+        time.sleep(0.001) # small delay to ensure all data can be sent in time 
+        
+        # publish clock last to ensure all sensor data is waiting for autoware
+        seconds = int(self.timestamp)
+        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
+        obj_clock = Clock()
+        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
+        self.clock_publisher.publish(obj_clock)
+        
         return self.current_control
 
     def shutdown(self):
