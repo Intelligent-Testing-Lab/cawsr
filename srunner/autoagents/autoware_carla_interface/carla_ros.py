@@ -86,13 +86,17 @@ class carla_ros2_interface(object):
         }
 
         self.game_time_offset = CARLAManager.FIXED_DELTA_SECONDS * 3 # offset to account for initilisation ticks
+        frac, whole = math.modf(self.game_time_offset)
         
         self.ros2_node = rclpy.create_node("carla_ros2_interface")
 
         # Publish clock
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
-        obj_clock.clock = Time(sec=self.game_time_offset)
+        obj_clock.clock = Time(
+            sec=int(whole), 
+            nanosec=int(frac * 1e9)
+        )
         self.clock_publisher.publish(obj_clock)
 
         # Sensor Config (Edit your sensor here)
