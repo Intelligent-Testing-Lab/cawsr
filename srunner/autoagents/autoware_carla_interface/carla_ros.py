@@ -14,6 +14,7 @@
 
 import json
 import math
+import time
 
 # pylint: disable=import-error
 from autoware_vehicle_msgs.msg import ControlModeReport
