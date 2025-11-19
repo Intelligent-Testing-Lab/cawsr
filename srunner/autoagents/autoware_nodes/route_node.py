@@ -92,7 +92,7 @@ class RouteNode():
             goal_point (Pose): end goal position
         """
         goal = PoseStamped()
-        goal.header.stamp = self.get_clock().now().to_msg()
+        goal.header.stamp = self.node.get_clock().now().to_msg()
         goal.header.frame_id = "map"
 
         goal.pose = goal_point
@@ -105,7 +105,7 @@ class RouteNode():
             checkpoint (Pose): checkpoint position
         """
         checkpoint_msg = PoseStamped()
-        checkpoint_msg.header.stamp = self.get_clock().now().to_msg()
+        checkpoint_msg.header.stamp = self.node.get_clock().now().to_msg()
         checkpoint_msg.header.frame_id = "map"
 
         checkpoint_msg.pose = checkpoint

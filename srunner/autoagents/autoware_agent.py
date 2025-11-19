@@ -100,7 +100,7 @@ class AutowareAgent(AutonomousAgent):
             point[0].location.x,
             point[0].location.y,
             point[0].location.z,
-            node=self.autoware_node,
+            node=self._node,
         )
 
     def destroy(self) -> None:
