@@ -1,5 +1,5 @@
 ---
-title: 'CAWSR: Carla-Autoware Scenario Runner
+title: 'CAWSR: Carla-Autoware Scenario Runner'
 tags:
     - autonomous vehicles
     - autonomous driving
@@ -50,7 +50,7 @@ The current standard for scenario execution within CARLA is the CARLA Leaderboar
 # Tool Summary
 
 CAWSR is a fully synchronous testing-framework directly integrating Scenario Runner. It is built and deployed as a Docker container alongside Autoware (REFERENCE) and includes two main modes of operation. *Algorithm* mode supports the execution of custom verification strategies and algorithms implemented by the user. *Benchmark* mode includes functionality to execute and evaluate a set of scenario definitions empirically. A fully synchronous pipeline has been developed to ensure no new non-determinism is introduced, although some may exist directly within the simulator itself (OLEK PAPER REFERENCE).
-![Domain Model](./docs/resources/component_diagram.png)
+![Component Diagram](./docs/resources/component_diagram.png)
 
 To facilitate development, we introduce a new domain model for the definition of route-based scenarios within CARLA, alongside a JSON implementation. This model is based on the format introduced by Scenario Runner, facilitating support between both frameworks.
 ![Domain Model](./docs/resources/scenario_domain.png)
