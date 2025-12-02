@@ -59,4 +59,6 @@ To facilitate development, we introduce a new domain model for the definition of
 
 # Acknowledgements
 
+This work was supported by the Institute of Information & Communications Technology Planning & Evaluation(IITP) grant funded by the Korea government(MSIT) (No. RS-2025-02218761, 50%) and by the Engineering and Physical Sciences Research Council (EPSRC) [EP/Y014219/1].
+
 # References
