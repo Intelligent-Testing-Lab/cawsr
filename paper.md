@@ -2,7 +2,8 @@
 title: 'CAWSR: Carla-Autoware Scenario Runner'
 tags:
     - autonomous vehicles
-    - autonomous driving
+    - autonomous driving 
+    - autonomous driving testing
     - autonomous driving agents
     - autonomous driving system
     - testing
@@ -10,7 +11,7 @@ tags:
     - autoware
     - ros
     - scenario
-    - scenario testing
+    - scenario based testing
 authors:
   - name: David Stefan Gasinski
     orcid: 0000-0000-0000-0000
@@ -28,22 +29,26 @@ affiliations:
   - name: The University of Sheffield
     index: 1
     ror: needs filling
-date: 01 December 2025
+date: 03 December 2025
 bibliography: paper.bib
 ---
 
 # Summary
 
-CAWSR facilities the testing of the open-source autonomous driving system, Autoware, within CARLA(REFERENCE), the state-of-the-art open-source driving simulator for research. Building on existing tools, this project introduces a testing framework for the execution of complex route-based scenarios, as well as supporting a wide range of experimentally driven verification strategies for scenario generation and optimisation.
+CAWSR facilities the testing of the open-source autonomous driving system, Autoware, within CARLA [@carla_sim], the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting implementation of a wide range of verification strategies.
 
 # Statement of Need
 
-The concrete aim of this project is to address the verification challenges associated with complex autonomous driving systems (ADS) such as Autoware (REFERENCE), particularly when compared to end-to-end models like Transfuser++ (REFERENCE). CARLA is the choice of the simulator for this tool due its rich ecosystem of open-source tooling and its prominence in the domain of autonomous vehicles. Alternatives such as AWSIM (REFERENCE) have recently been rising in popularity, specifically designed for natively integrating AD systems such as Autoware. However CARLA still remains the standard in end-to-end testing of autonomous vehicles, attributed to its abundant feature set and superior performance in various fidelities (REFERENCE).
+The aim of this project is to address the technical challenges associated with verification of complex autonomous driving systems (ADS) such as Autoware [@kato2018autoware].
+<!-- particularly when compared to end-to-end models like Transfuser++ [@Jaeger2023ICCV].  -->
+CARLA is the choice of the simulator for this tool due its rich ecosystem of open-source tooling and its prominence in the domain of autonomous vehicles. Alternatives such as BeamNG [@beamngtech] or AWSIM [@tier4awsim_2025] have recently been rising in popularity, specifically designed for natively integrating AD systems such as Autoware. However CARLA still remains the standard choice in end-to-end testing of autonomous vehicles in the autonomous driving testing research community.
 
-In practice, maintaining a consistent testing environment is essential, as simulators can introduce bugs leading to non-deterministic results (OLEK PAPER REFERENCE). While support for Autoware within the CARLA simulator exists (REFERENCE), it does not currently extend to scenario-based testing, a critical component in established frameworks like the CARLA Leaderboard (REFERENCE) and its execution engine, Scenario Runner.
+In practice, maintaining a consistent testing environment is essential, as simulators can introduce unintentional nondeterminism leading to inconsistent evaluation results [@osikowicz2025empirically]. While support for Autoware within the CARLA simulator exists, it does not currently extend to scenario-based testing, a critical component in established frameworks like the CARLA Leaderboard [@carla_leaderboard] and its execution engine, Scenario Runner.
 
-By adhering to the widely used CARLA platform rather than nascent alternatives, this paper introduces a framework directly built on established projects within the CARLA community, facilitating direct comparison with previous agents tested on the CARLA Leaderboard, and ensuring that no additional non-determinism is introduced into the evaluation pipeline. The tool provides an extensible interface for algorithmic scenario generation and optimisation, supporting a wide range of experimentally driven verification strategies based on common evaluation metrics such as the driving score (REFERENCE).
+By adhering to the widely used CARLA platform rather than nascent alternatives, this paper introduces a framework directly built on established projects within the CARLA community, facilitating direct comparison with state-of-the-art driving agents evaluated on the CARLA Leaderboard, and ensuring that no additional non-determinism is introduced into the evaluation pipeline. The tool provides an extensible interface for algorithmic scenario generation and optimisation, supporting a wide range of verification strategies based on common evaluation metrics such as CARLA Leaderboard's driving score.
 
+<!-- OO: I belive this section is missing conclusion that there is no tool like cawsr, its a statement of need after all -->
+<!-- OO: Finished here -->
 # State of the Field
 
 As previously established, CARLA offers a rich ecosystem of tools and documentation. Multiple frameworks exist for supporting popular open-source AD systems, such as Apollo (apollo-carla-bridge) (REFERENCE) and Autoware (autoware-carla-bridge) (REFERNCE). These tools solve a significant key issue; transforming sensor and control data from CARLA to formats supported by the chosen system. However, native support for scenario execution engines is non-existent, restraining their use for scenario-based testing and verification. These techniques significantly reduce the effort required to validate autonomous driving systems, lowering the technical barrier of entry compared to alternative approaches such as mileage-based testing, which require high startup costs.
