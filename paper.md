@@ -15,11 +15,14 @@ authors:
   - name: David Stefan Gasinski
     orcid: 0000-0000-0000-0000
     affiliation: "1"
-  - name: Donghwan Shin
+  - name: Olek Osikowicz
+    orcid: 0009-0002-7515-7101
+    affiliation: "1"
+  - name: Gwilym Rutherford
     orcid: 0000-0000-0000-0000
     affiliation: "1"
-  - name: Olek Osikowicz
-    orcid: 0000-0000-0000-0000
+  - name: Donghwan Shin
+    orcid: 0000-0002-0840-6449
     affiliation: "1"
 affiliations:
   - name: The University of Sheffield
