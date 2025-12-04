@@ -28,7 +28,6 @@ authors:
 affiliations:
   - name: The University of Sheffield
     index: 1
-    ror: needs filling
 date: 03 December 2025
 bibliography: paper.bib
 ---
