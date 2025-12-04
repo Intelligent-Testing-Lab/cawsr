@@ -34,7 +34,7 @@ bibliography: paper.bib
 
 # Summary
 
-CAWSR facilities the testing of the open-source autonomous driving system, Autoware, within CARLA [@carla_sim], the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting implementation of a wide range of verification strategies.
+CAWSR facilitates the testing of the open-source autonomous driving system, Autoware, within CARLA [@carla_sim], the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting implementation of a wide range of verification strategies.
 
 # Statement of Need
 
