@@ -2,7 +2,7 @@
 title: 'CAWSR: Carla-Autoware Scenario Runner'
 tags:
     - autonomous vehicles
-    - autonomous driving 
+    - autonomous driving
     - autonomous driving testing
     - autonomous driving agents
     - autonomous driving system
@@ -13,14 +13,14 @@ tags:
     - scenario
     - scenario based testing
 authors:
-  - name: David Stefan Gasinski
-    orcid: 0000-0000-0000-0000
+  - name: David Gasinski
+    orcid: 0009-0008-7597-333X
     affiliation: "1"
   - name: Olek Osikowicz
     orcid: 0009-0002-7515-7101
     affiliation: "1"
   - name: Gwilym Rutherford
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0007-8820-1091
     affiliation: "1"
   - name: Donghwan Shin
     orcid: 0000-0002-0840-6449
