@@ -74,7 +74,7 @@ CAWSR (**C**ARLA-**A**uto**w**are-**S**cenario **R**unner) is a fully synchronou
 
 
 1. *Algorithm Mode:* Enables the execution of dynamically generated scenarios provided by a user-defined algorithm.
-2) *Benchmark Mode:* Allows the execution of a predefined set of scenario definitions provided by the user.
+2. *Benchmark Mode:* Allows the execution of a predefined set of scenario definitions provided by the user.
 
 The evaluation pipeline is engineered to be fully synchronous, minimizing unintentional non-determinism to facilitate reproducible results. However, it is noted that minor variations may still persist due to inherent non-determinism in upstream dependencies, such as the driving simulator or the driving agent itself.
 
