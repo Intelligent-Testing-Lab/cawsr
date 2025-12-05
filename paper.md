@@ -70,11 +70,18 @@ PCLA [@tehrani2025pcla], a framework for CARLA, addresses the topic of scenario-
 
 # Tool Summary
 
-CAWSR is a fully synchronous testing-framework directly integrating Scenario Runner. It is built and deployed as a Docker container alongside Autoware and includes two main modes of operation. *Algorithm* mode supports the execution of custom verification strategies and algorithms implemented by the user. *Benchmark* mode includes functionality to execute and evaluate a set of scenario definitions empirically. A fully synchronous pipeline has been developed to ensure no new non-determinism is introduced, although some may exist directly within the simulator itself [@osikowicz2025empirically].
+CAWSR (**C**ARLA-**A**uto**w**are-**S**cenario **R**unner) is a fully synchronous testing framework that directly integrates the CARLA simulator, Scenario Runner (as the scenario executor), and Autoware (as the System Under Test) to facilitate autonomous driving testing research. The tool is distributed as a Docker container designed and currently supports two modes of operation:
+
+
+1. *Algorithm Mode:* Enables the execution of dynamically generated scenarios provided by a user-defined algorithm.
+2) *Benchmark Mode:* Allows the execution of a predefined set of scenario definitions provided by the user.
+
+The evaluation pipeline is engineered to be fully synchronous, minimizing unintentional non-determinism to facilitate reproducible results. However, it is noted that minor variations may still persist due to inherent non-determinism in upstream dependencies, such as the driving simulator or the driving agent itself.
+
 
 ![Internal component diagram of CAWSR.](./docs/resources/component_diagram.pdf)
 
-To facilitate development, we introduce a new domain model for the definition of route-based scenarios within CARLA, alongside a JSON implementation. This model is based on the format introduced by Scenario Runner, facilitating support between both frameworks.
+To facilitate development, we introduce a new domain model for the definition of route-based scenarios within CARLA, alongside a `JSON` implementation. This model is based on the format introduced by Scenario Runner, facilitating support between both frameworks.
 
 ![Scenario definition domain model.](./docs/resources/scenario_domain.pdf)
 
@@ -82,4 +89,5 @@ To facilitate development, we introduce a new domain model for the definition of
 
 This work was supported by the Institute of Information & Communications Technology Planning & Evaluation(IITP) grant funded by the Korea government(MSIT) (No. RS-2025-02218761, 50%) and by the Engineering and Physical Sciences Research Council (EPSRC) [EP/Y014219/1].
 
+<!-- Should there be a conclusion / summary? -->
 # References
