@@ -34,21 +34,26 @@ bibliography: paper.bib
 
 # Summary
 
-CAWSR facilitates the testing of the open-source autonomous driving system, Autoware, within CARLA [@carla_sim], the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting implementation of a wide range of verification strategies.
+CAWSR facilitates the testing of the open-source autonomous driving system, Autoware, within CARLA, the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting 
+implementation of a wide range of verification strategies.
 
 # Statement of Need
 
-The aim of this project is to address the technical challenges associated with verification of complex autonomous driving systems (ADS) such as Autoware [@kato2018autoware] or Baidu's Apollo [@ap].
-<!-- particularly when compared to end-to-end models like Transfuser++ [@Jaeger2023ICCV].  -->
-CARLA is the choice of the simulator for this tool due its rich ecosystem of open-source tooling and its prominence in the domain of autonomous vehicles. Alternatives such as BeamNG [@beamngtech] or AWSIM [@tier4awsim_2025] have recently been rising in popularity, specifically designed for natively integrating AD systems such as Autoware. However CARLA still remains the standard choice in end-to-end testing of autonomous vehicles in the autonomous driving testing research community.
+The aim of this project is to address the technical challenges associated with the verification of state-of-the-art Autonomous Driving Systems (ADS) in virtual environments. Industry-grade systems, such as Autoware [@kato2018autoware] or Apollo [@apollo], are inherently complex, requiring extensive configuration and are typically integrated into specialized simulators like AWSIM [@tier4awsim_2025] or the Apollo Game Engine Based Simulator [@apollow_sim], respectively.
 
-In practice, maintaining a consistent testing environment is essential, as simulators can introduce unintentional nondeterminism leading to inconsistent evaluation results [@osikowicz2025empirically]. While support for Autoware within the CARLA simulator exists, it does not currently extend to scenario-based testing, a critical component in established frameworks like the CARLA Leaderboard [@carla_leaderboard] and its execution engine, Scenario Runner.
+Conversely, CARLA [@carla_sim] has emerged as the de facto standard within the ADS research community. It holds a prominent position in the autonomous vehicle domain due to its rich ecosystem of open-source tooling. While alternatives such as BeamNG.tech [@beamngtech] and AWSIM have recently gained traction, they are often designed for narrower applications. For instance, BeamNG.tech utilizes a soft-body physics engine to simulate high-fidelity vehicle dynamics, whereas AWSIM is tailored specifically for integrating a single AD system (Autoware).
+Despite these alternatives, CARLA remains the preferred choice for end-to-end testing in the research community, due to its support for a wide variety of driving systems, extensive testing benchmarks, and utility tools.
 
-By adhering to the widely used CARLA platform rather than nascent alternatives, this paper introduces a framework directly built on established projects within the CARLA community, facilitating direct comparison with state-of-the-art driving agents evaluated on the CARLA Leaderboard, and ensuring that no additional non-determinism is introduced into the evaluation pipeline. The tool provides an extensible interface for algorithmic scenario generation and optimisation, supporting a wide range of verification strategies based on common evaluation metrics such as CARLA Leaderboard's driving score.
+While a basic support for communication between Autoware and CARLA exists, it does not currently form a executable scenario-based testing framework, a leading approach for ADS verification.
 
-Despite the increasing use of Autoware, there is still exists a clear lack of tooling for the testing and verification of the system in complex road scenarios. CAWSR aims to address this, enabling researchers to test Autoware in programmatically defined road scenarios, evaluating its safety and capability as an ADS.
+This work bridges the gap by enabling the evaluation of Autoware in complex driving scenarios within CARLA.
+Adhering to the widely used CARLA platform rather than nascent alternatives, this work introduces a framework built directly upon the established CARLA ecosystem, facilitating direct comparison with the state-of-the-art driving agents evaluated on the CARLA Leaderboard.
 
-<!-- OO: Finished here -->
+The effective ADS verification requires the ability to systematically explore the operational design domain. To support this, the tool provides an extensible interface for algorithmic scenario generation and prioritization, facilitating a wide range of verification strategies based on common evaluation metrics such as the CARLA Leaderboard’s driving score [@carla_leaderboard].
+
+Lastly, maintaining a consistent testing environment is essential, as simulators can introduce unintentional nondeterminism that leads to inconsistent evaluation results [@osikowicz2025empirically]. Therefore, this framework seeks to minimize the introduction of additional nondeterminism into the evaluation pipeline.
+
+
 # State of the Field
 
 As previously established, CARLA offers a rich ecosystem of tools and documentation. Multiple frameworks alreadty exist for supporting popular open-source AD systems, such as *apollo-carla-bridge* [@guardstrikelab_2023_carla] for Apollo and *autoware-carla-bridge* [@carlaautowarebridge] for Autoware. These tools solve a key issue; transforming sensor and control data from CARLA to formats supported by the each system. However, native support for scenario execution engines is non-existent, restraining their use for scenario-based testing and verification. These techniques significantly reduce the effort required to validate autonomous driving systems, lowering the technical barrier of entry compared to alternative approaches such as mileage-based testing, which require high startup costs.
