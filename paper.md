@@ -34,14 +34,14 @@ bibliography: paper.bib
 
 # Summary
 
-CAWSR facilitates the testing of the open-source autonomous driving system, Autoware, within CARLA, the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting 
+CAWSR facilitates the testing of the open-source autonomous driving system, Autoware, within CARLA, the state-of-the-art open-source driving simulator. Building on existing tools, this project introduces a research-oriented testing framework for the execution of complex driving scenarios, as well as supporting
 implementation of a wide range of verification strategies.
 
 # Statement of Need
 
 The aim of this project is to address the technical challenges associated with the verification of state-of-the-art Autonomous Driving Systems (ADS) in virtual environments. Industry-grade systems, such as Autoware [@kato2018autoware] or Apollo [@apollo], are inherently complex, requiring extensive configuration and are typically integrated into specialized simulators like AWSIM [@tier4awsim_2025] or the Apollo Game Engine Based Simulator [@apollow_sim], respectively.
 
-Conversely, CARLA [@carla_sim] has emerged as the de facto standard within the ADS research community. 
+Conversely, CARLA [@carla_sim] has emerged as the de facto standard within the ADS research community.
 It holds a prominent position in the autonomous vehicle domain due to its rich ecosystem of open-source tooling. While alternatives such as BeamNG.tech [@beamngtech] and AWSIM have recently gained traction, they are often designed for narrower applications. For instance, BeamNG.tech utilizes a soft-body physics engine to simulate high-fidelity vehicle dynamics, whereas AWSIM is tailored specifically for integrating a single AD system (Autoware).
 Despite these alternatives, CARLA remains the preferred choice for end-to-end testing in the research community, due to its support for a wide variety of driving systems, extensive testing benchmarks, and utility tools.
 
@@ -57,13 +57,13 @@ Lastly, maintaining a consistent testing environment is essential, as simulators
 
 # State of the Field
 
-As previously established, CARLA offers a rich ecosystem of tools and documentation. 
-Multiple communication bridges already exist for supporting popular open-source AD systems, such as *apollo-carla-bridge* [@guardstrikelab_2023_carla] for Apollo and *autoware-carla-bridge* [@carlaautowarebridge] for Autoware. 
-These tools solve a key issue; transforming sensor and control data from CARLA to formats supported by the each system. 
+As previously established, CARLA offers a rich ecosystem of tools and documentation.
+Multiple communication bridges already exist for supporting popular open-source AD systems, such as *apollo-carla-bridge* [@guardstrikelab_2023_carla] for Apollo and *autoware-carla-bridge* [@carlaautowarebridge] for Autoware.
+These tools solve a key issue; transforming sensor and control data from CARLA to formats supported by the each system.
 However, native support for scenario execution engines does not exist, restraining their use for scenario-based testing, a dominant approach for end-to-end driving verification [@tang2023survey].
 
-The current standard for ADS evaluation within CARLA is the CARLA Leaderboard and its scenario execution engine, Scenario Runner (SR) [@carla_scenario_runner_2025]. 
-A common use cases of these frameworks include testing end-to-end black-box driving agents, such as those based on VLM (Vision Language Models) or Reinforcement Learning. 
+The current standard for ADS evaluation within CARLA is the CARLA Leaderboard and its scenario execution engine, Scenario Runner (SR) [@carla_scenario_runner_2025].
+A common use cases of these frameworks include testing end-to-end black-box driving agents, such as those based on VLM (Vision Language Models) or Reinforcement Learning.
 <!-- OO: I believe this is wrong: ROS is just a communication layer, it doesn't tell much about the internal architecture of neural networks. I can imange end-to-end driving system that is communicating via ROS  -->
 <!-- No support is included for testing ROS based AD systems, which focus on a modular approach to autonomous driving, rather than end-to-end.  -->
 PCLA [@tehrani2025pcla], a framework for CARLA, addresses the topic of scenario-based testing by creating a clear deployment pipeline for autonomous agents / systems into CARLA, including Autoware. However, their approach focuses on the simplification of agent implementation and abstraction of setup across various CARLA versions. While this allows for quick use and evaluation without relying on external codebases (such as the CARLA Leaderboard), there is a clear gap on deep integration between the agent and simulator, limiting the execution of complex route-based scenarios.
@@ -89,5 +89,8 @@ To facilitate development, we introduce a new domain model for the definition of
 
 This work was supported by the Institute of Information & Communications Technology Planning & Evaluation(IITP) grant funded by the Korea government(MSIT) (No. RS-2025-02218761, 50%) and by the Engineering and Physical Sciences Research Council (EPSRC) [EP/Y014219/1].
 
-<!-- Should there be a conclusion / summary? -->
+# Conclusion
+
+CAWSR offers the ADS community a standardized method to evaluate Autoware within the rich ecosystem of CARLA. We hope that this tool enables the development of new verification strategies, as well as leads to improvements in ADS architecture. Future work can focus on integration other industry-grade systems, such as Apollo, to create a unified testing environment.
+
 # References
