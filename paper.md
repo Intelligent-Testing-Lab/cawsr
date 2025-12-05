@@ -91,8 +91,7 @@ This work was supported by the Institute of Information & Communications Technol
 
 # Conclusion
 
-CAWSR offers the ADS community a standardized method to evaluate Autoware within the rich ecosystem of CARLA.
-We hope that this tool enables the development of new verification strategies, as well as leads to improvements in ADS architecture.
-Future work can focus on integration other industry-grade systems, such as Apollo, to create a unified testing environment.
+To summarize, CAWSR provides ADS testing research community an easy to use Autoware evaluation pipeline.
+We hope that this work can facilitate the evaluation of new testing approaches on a state of the art driving system.
 
 # References
