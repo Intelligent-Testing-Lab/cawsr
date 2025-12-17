@@ -27,3 +27,12 @@ srunner/osc2
 srunner/osc2_dm
 srunner/osc2_stdlib
 metrics_manager.py
+docker-compose.yml
+paper.bib
+paper.md
+paper.pdf
+
+
+jats
+paper
+logs
