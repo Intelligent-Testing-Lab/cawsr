@@ -27,7 +27,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
-import rclpy
 import datetime
 import pathlib
 from rosgraph_msgs.msg import Clock
@@ -58,6 +57,7 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
 
 from srunner.tools.CARLA_manager import CARLAManager
 
+
 class carla_ros2_interface(object):
     def __init__(self, node):
         self.sensor_interface = SensorInterface()
@@ -86,18 +86,17 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
-        self.game_time_offset = CARLAManager.FIXED_DELTA_SECONDS * 3 # offset to account for initilisation ticks
+        self.game_time_offset = (
+            CARLAManager.FIXED_DELTA_SECONDS * 3
+        )  # offset to account for initilisation ticks
         frac, whole = math.modf(self.game_time_offset)
-        
+
         self.ros2_node = node
 
-        # Publish clock
-        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
+        # Publish clock with larger queue to prevent drops
+        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 50)
         obj_clock = Clock()
-        obj_clock.clock = Time(
-            sec=int(whole), 
-            nanosec=int(frac * 1e9)
-        )
+        obj_clock.clock = Time(sec=int(whole), nanosec=int(frac * 1e9))
         self.clock_publisher.publish(obj_clock)
 
         # Sensor Config (Edit your sensor here)
@@ -120,35 +119,33 @@ class carla_ros2_interface(object):
 
         self.current_control = carla.VehicleControl()
 
-        # Direct data publishing from CARLA for Autoware
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
-            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
+            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 10
         )
         self.pub_vel_state = self.ros2_node.create_publisher(
-            VelocityReport, "/vehicle/status/velocity_status", 1
+            VelocityReport, "/vehicle/status/velocity_status", 10
         )
         self.pub_steering_state = self.ros2_node.create_publisher(
-            SteeringReport, "/vehicle/status/steering_status", 1
+            SteeringReport, "/vehicle/status/steering_status", 10
         )
         self.pub_ctrl_mode = self.ros2_node.create_publisher(
-            ControlModeReport, "/vehicle/status/control_mode", 1
+            ControlModeReport, "/vehicle/status/control_mode", 10
         )
         self.pub_gear_state = self.ros2_node.create_publisher(
-            GearReport, "/vehicle/status/gear_status", 1
+            GearReport, "/vehicle/status/gear_status", 10
         )
         self.pub_actuation_status = self.ros2_node.create_publisher(
-            ActuationStatusStamped, "/vehicle/status/actuation_status", 1
+            ActuationStatusStamped, "/vehicle/status/actuation_status", 10
         )
 
-        # Create Publisher for each Physical Sensors
         for sensor in self.sensors["sensors"]:
             self.id_to_sensor_type_map[sensor["id"]] = sensor["type"]
             if sensor["type"] == "sensor.camera.rgb":
                 self.pub_camera = self.ros2_node.create_publisher(
-                    Image, "/sensing/camera/traffic_light/image_raw", 1
+                    Image, "/sensing/camera/traffic_light/image_raw", 10
                 )
                 self.pub_camera_info = self.ros2_node.create_publisher(
-                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
+                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 10
                 )
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
@@ -163,7 +160,7 @@ class carla_ros2_interface(object):
                     )
             elif sensor["type"] == "sensor.other.imu":
                 self.pub_imu = self.ros2_node.create_publisher(
-                    Imu, "/sensing/imu/tamagawa/imu_raw", 1
+                    Imu, "/sensing/imu/tamagawa/imu_raw", 10
                 )
             else:
                 self.ros2_node.get_logger().info(
@@ -490,6 +487,17 @@ class carla_ros2_interface(object):
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
 
+        # Publish clock FIRST to update transform system before sensor data arrives
+        # This prevents "extrapolation into the future" errors
+        seconds = int(self.timestamp)
+        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
+        obj_clock = Clock()
+        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
+        self.clock_publisher.publish(obj_clock)
+
+        # Small delay to allow clock to propagate to transform system
+        time.sleep(0.005)
+
         # publish data of all sensors
         for key, data in input_data.items():
             sensor_type = self.id_to_sensor_type_map[key]
@@ -507,15 +515,9 @@ class carla_ros2_interface(object):
         # Publish ego vehicle status
         self.ego_status()
 
-        time.sleep(0.001) # small delay to ensure all data can be sent in time 
-        
-        # publish clock last to ensure all sensor data is waiting for autoware
-        seconds = int(self.timestamp)
-        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
-        obj_clock = Clock()
-        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
-        self.clock_publisher.publish(obj_clock)
-        
+        # Small delay to ensure large messages (LiDAR) are fully transmitted
+        time.sleep(0.005)
+
         return self.current_control
 
     def shutdown(self):
