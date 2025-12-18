@@ -77,39 +77,29 @@ Therefore, `CAWSR` is designed to minimise such nondeterminism throughout the ev
 
 The evaluation pipeline is engineered to be fully synchronous, minimising unintentional non-determinism to facilitate reproducible results. However, it is noted that minor variations may still persist due to inherent non-determinism in upstream dependencies, such as the driving simulator or the driving agent itself [@9793395; @osikowicz2025empirically].
 
-![Internal component diagram of CAWSR.](./docs/resources/component_diagram.pdf)
+![Internal component diagram of CAWSR.\label{fig:components}](./docs/resources/component_diagram.pdf)
 
-Figure 1 shows architecture of `CAWSR` with the fundamental components of the framework. **CarlaClient**, a native CARLA PythonAPI class, establishes a TCP connection to the simulator via a host *IP* and *port*. As the framework’s sole communication link with CARLA, it allows `CAWSR` modules to extract data and spawn entities by interacting with the internal server.
+\autoref{fig:components} illustrates the `CAWSR` architecture and its fundamental components. The framework operates through four primary modules:
 
-**JSON parser** translates *scenario_definition* into a Behavior Tree (BT) by extracting the route and its associated trigger events. These trees are constructed using Scenario Runner’s `Atomic Behaviours` and `Atomic Conditions`. Serving as the framework's building blocks, these elements represent discrete CARLA actions and variables—such as spawning a pedestrian—to define the scenario's logic.
+- CarlaClient: A native CARLA PythonAPI class that establishes a TCP connection (via host IP and port). It serves as the framework's exclusive interface for extracting simulation data and spawning entities.
 
-**ScenarioManager** manages the setup and execution loop, using **CarlaClient** to spawn entities. During each loop, it executes the behavior tree to update actor states and evaluate conditions. It then triggers a simulation tick, advancing CARLA’s internal clock and generating a snapshot. This snapshot is passed to **Agent**, which monitors Autoware’s internal state and route data. Upon initialisation, Agent connects to Autoware via ROS2. Subsequently, at each step, **CarlaBridge** [@carlaautowarebridge] extracts snapshot data, transforms sensor inputs into Autoware’s coordinate system, and publishes them. Finally, Autoware processes this data and issues control commands, which are applied to the ego vehicle.
+- JSON Parser: Translates the *scenario_definition* (see \autoref{fig:scenario_domain}) into a Behavior Tree (BT). It utilises Scenario Runner's *Atomic Behaviours* and *Atomic Conditions* as modular primitives to define discrete actions (e.g., spawning pedestrians) and logic triggers.
 
-The internal loop within ScenarioManager continues executing until one of the following termination conditions is met, as defined by the CARLA Leaderboard evaluation criteria [@carla_leaderboard], shown in Table 1.
+- ScenarioManager: Orchestrates the simulation loop by evaluating the BT to update actor states and triggering CARLA simulation ticks. Execution terminates based on CARLA Leaderboard criteria [@carla_leaderboard], as summarised in \autoref{tab:termination_criteria}. Post-execution, the module calculates the Driving Score (DS) according to the official leaderboard metrics.
+
+- Agent and CarlaBridge: The Agent manages the ROS2 connection to Autoware. At each timestep, the CarlaBridge [@carlaautowarebridge] transforms CARLA snapshots and sensor data into the Autoware coordinate system. Autoware processes these inputs to issue control commands, which the Agent then applies to the ego vehicle.
 
 | Termination Criteria | Description                                       |
 |----------------------|---------------------------------------------------|
 | Route_Completion     | Agent reached the end of the route.               |
 | Actor_Blocked        | Agent is blocked, not moving for 180s.            |
 | Simulation_Timeout   | No client-server communication established (30s). |
-: Termination Criteria of each scenario within CAWSR.
+: Termination Criteria of each scenario within CAWSR.\label{tab:termination_criteria}
 
-The same set of standard evalutaion critera is employed to calculate the driving score (DS) for each scenario execution, shown in Table 2.
-
-| Evaluation Criteria                   |
-|---------------------------------------|
-| Collisions_with_pedestrians           |
-| Collisions_with_other_vehicles        |
-| Collisions_with_static_elements       |
-| Running_a_red_light                   |
-| Failure_to_yield_to_emergency_vehicle |
-| Running_a_stop_sign                   |
-: Evaluation Criteria of each scenario within CAWSR, per the CARLA Leaderboard [@carla_leaderboard]. Each criteria applies a fixed penality to the DS.
-
-![Scenario definition domain model.](./docs/resources/scenario_domain.pdf)
-
-To facilitate development, we introduce a new domain model for the definition of route-based scenarios within CARLA, described in Figure 4, alongside a `JSON` implementation.
+To facilitate development, we introduce a new domain model for the definition of route-based scenarios within CARLA, described in \autoref{fig:scenario_domain}, alongside a `JSON` implementation.
 This model is based on the format introduced by Scenario Runner, facilitating support between both frameworks.
+
+![Scenario definition domain model.\label{fig:scenario_domain}](./docs/resources/scenario_domain.pdf)
 
 # Conclusion
 
