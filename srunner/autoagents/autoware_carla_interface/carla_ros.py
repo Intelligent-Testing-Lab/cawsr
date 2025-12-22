@@ -55,8 +55,6 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
-from srunner.tools.CARLA_manager import CARLAManager
-
 
 class carla_ros2_interface(object):
     def __init__(self, node):
@@ -86,26 +84,26 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
-        self.game_time_offset = (
-            CARLAManager.FIXED_DELTA_SECONDS * 3
-        )  # offset to account for initilisation ticks
-        frac, whole = math.modf(self.game_time_offset)
+        # old code, to be removed -> currently tested
+        # self.game_time_offset = (
+        #    CARLAManager.FIXED_DELTA_SECONDS * 3
+        # )  # offset to account for initilisation ticks
+        # frac, whole = math.modf(self.game_time_offset)
 
         self.ros2_node = node
 
-        # Publish clock with larger queue to prevent drops
+        # publish clock with larger queue to prevent drops
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 50)
         obj_clock = Clock()
-        obj_clock.clock = Time(sec=int(whole), nanosec=int(frac * 1e9))
+        obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
 
-        # Sensor Config (Edit your sensor here)
+        # load sensor config and create publishers
         sensors_config = pathlib.Path(
             "srunner/autoagents/autoware_carla_interface/objects/sensors.json"
         )
         self.sensors = json.load(open(sensors_config.absolute()))
 
-        # Subscribing Autoware Control messages and converting to CARLA control
         self.sub_control = self.ros2_node.create_subscription(
             ActuationCommandStamped,
             "/control/command/actuation_cmd",
@@ -167,9 +165,6 @@ class carla_ros2_interface(object):
                     f"No Publisher for {sensor['type']} Sensor"
                 )
                 pass
-
-        # add to multi threaded executor instead
-        # self.spin_thread = threading.Thread(target=rclpy.spin, args=(self.ros2_node,))
 
     def __call__(self):
         input_data = self.sensor_interface.get_data()
@@ -487,16 +482,13 @@ class carla_ros2_interface(object):
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
 
-        # Publish clock FIRST to update transform system before sensor data arrives
-        # This prevents "extrapolation into the future" errors
         seconds = int(self.timestamp)
         nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
         obj_clock = Clock()
         obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
         self.clock_publisher.publish(obj_clock)
 
-        # Small delay to allow clock to propagate to transform system
-        time.sleep(0.005)
+        time.sleep(0.05)
 
         # publish data of all sensors
         for key, data in input_data.items():
@@ -512,10 +504,7 @@ class carla_ros2_interface(object):
             else:
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
-        # Publish ego vehicle status
         self.ego_status()
-
-        # Small delay to ensure large messages (LiDAR) are fully transmitted
         time.sleep(0.005)
 
         return self.current_control

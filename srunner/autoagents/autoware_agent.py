@@ -44,10 +44,10 @@ class AutowareAgent(AutonomousAgent):
         """
 
         rclpy.init(args=None)
-        
+
         self.config = config
 
-        self._node = rclpy.create_node('cawsr_bridge')
+        self._node = rclpy.create_node("cawsr_bridge")
 
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
 
@@ -171,7 +171,7 @@ class AutowareAgent(AutonomousAgent):
             if self.initialised:
                 logger.info("Set agent route!")
 
-        # check if the current route is set
+        # check if the current route is set and we can publish engage
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
 
