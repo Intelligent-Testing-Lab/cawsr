@@ -25,8 +25,9 @@ docker pull ghcr.io/intelligent-testing-lab/autoware:latest
 
 Autoware and ROS use a custom messaging interface for communcation, known as DDS. They support various implementations, but they all rely on specific network settings to enable maximum data transfer. Save the following command in `setup.sh`, allow it to be executable `chmod +x setup.sh` and run.
 ```bash
-# Increase the maximum receive buffer size for network packets
+# Increase the maximum receive and send buffer size for network packets, allowing our containers to communicate
 sudo sysctl -w net.core.rmem_max=2147483647  # 2 GiB, default is 208 KiB
+sudo sysctl -w net.core.rmem_max=2147483647
 
 # IP fragmentation settings
 sudo sysctl -w net.ipv4.ipfrag_time=3  # in seconds, default is 30 s
@@ -85,7 +86,7 @@ Scenario Definition
 We use a custom implementation of a scenario definition in JSON. We have included a scenario domain model, as well as plenty of examples in the CAWSR Workspace repository `scenarios/examples/`.
 
 Domain Model:
-![Domain Model](./docs/resources/scenario_domain.png)
+![Domain Model](./docs/resources/scenario_domain.pdf)
 
 Contributing
 ------------

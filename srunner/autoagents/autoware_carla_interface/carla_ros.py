@@ -118,32 +118,32 @@ class carla_ros2_interface(object):
         self.current_control = carla.VehicleControl()
 
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
-            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 10
+            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
         )
         self.pub_vel_state = self.ros2_node.create_publisher(
-            VelocityReport, "/vehicle/status/velocity_status", 10
+            VelocityReport, "/vehicle/status/velocity_status", 1
         )
         self.pub_steering_state = self.ros2_node.create_publisher(
-            SteeringReport, "/vehicle/status/steering_status", 10
+            SteeringReport, "/vehicle/status/steering_status", 1
         )
         self.pub_ctrl_mode = self.ros2_node.create_publisher(
-            ControlModeReport, "/vehicle/status/control_mode", 10
+            ControlModeReport, "/vehicle/status/control_mode", 1
         )
         self.pub_gear_state = self.ros2_node.create_publisher(
-            GearReport, "/vehicle/status/gear_status", 10
+            GearReport, "/vehicle/status/gear_status", 1
         )
         self.pub_actuation_status = self.ros2_node.create_publisher(
-            ActuationStatusStamped, "/vehicle/status/actuation_status", 10
+            ActuationStatusStamped, "/vehicle/status/actuation_status", 1
         )
 
         for sensor in self.sensors["sensors"]:
             self.id_to_sensor_type_map[sensor["id"]] = sensor["type"]
             if sensor["type"] == "sensor.camera.rgb":
                 self.pub_camera = self.ros2_node.create_publisher(
-                    Image, "/sensing/camera/traffic_light/image_raw", 10
+                    Image, "/sensing/camera/traffic_light/image_raw", 1
                 )
                 self.pub_camera_info = self.ros2_node.create_publisher(
-                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 10
+                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
                 )
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
@@ -158,7 +158,7 @@ class carla_ros2_interface(object):
                     )
             elif sensor["type"] == "sensor.other.imu":
                 self.pub_imu = self.ros2_node.create_publisher(
-                    Imu, "/sensing/imu/tamagawa/imu_raw", 10
+                    Imu, "/sensing/imu/tamagawa/imu_raw", 1
                 )
             else:
                 self.ros2_node.get_logger().info(
