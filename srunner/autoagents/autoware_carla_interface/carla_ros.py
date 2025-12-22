@@ -84,16 +84,9 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
-        # old code, to be removed -> currently tested
-        # self.game_time_offset = (
-        #    CARLAManager.FIXED_DELTA_SECONDS * 3
-        # )  # offset to account for initilisation ticks
-        # frac, whole = math.modf(self.game_time_offset)
-
         self.ros2_node = node
 
-        # publish clock with larger queue to prevent drops
-        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 50)
+        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
         obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
@@ -150,7 +143,7 @@ class carla_ros2_interface(object):
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
                         PointCloud2,
                         f"/sensing/lidar/{sensor['id']}/pointcloud_before_sync",
-                        10,
+                        5,  # lower qos depth as using best_reliability
                     )
                 else:
                     self.ros2_node.get_logger().info(
@@ -488,7 +481,7 @@ class carla_ros2_interface(object):
         obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
         self.clock_publisher.publish(obj_clock)
 
-        time.sleep(0.05)
+        time.sleep(0.005)
 
         # publish data of all sensors
         for key, data in input_data.items():
@@ -505,8 +498,6 @@ class carla_ros2_interface(object):
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
         self.ego_status()
-        time.sleep(0.005)
-
         return self.current_control
 
     def shutdown(self):

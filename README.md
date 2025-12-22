@@ -27,7 +27,7 @@ Autoware and ROS use a custom messaging interface for communcation, known as DDS
 ```bash
 # Increase the maximum receive and send buffer size for network packets, allowing our containers to communicate
 sudo sysctl -w net.core.rmem_max=2147483647  # 2 GiB, default is 208 KiB
-sudo sysctl -w net.core.rmem_max=2147483647
+sudo sysctl -w net.core.wmem_max=2147483647
 
 # IP fragmentation settings
 sudo sysctl -w net.ipv4.ipfrag_time=3  # in seconds, default is 30 s
