@@ -9,10 +9,14 @@
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Internal>
-      <SocketReceiveBufferSize min="10MB"/>
+      <SocketReceiveBufferSize min="32MB"/>
+      <SocketSendBufferSize min="8MB"/>
       <Watermarks>
-        <WhcHigh>500kB</WhcHigh>
+        <WhcHigh>1MB</WhcHigh>
       </Watermarks>
     </Internal>
+    <Tracing>
+      <Verbosity>warning</Verbosity>
+    </Tracing>
   </Domain>
 </CycloneDDS>

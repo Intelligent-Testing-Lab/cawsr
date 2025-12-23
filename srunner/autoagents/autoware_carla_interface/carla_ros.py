@@ -27,7 +27,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
-import rclpy
 import datetime
 import pathlib
 from rosgraph_msgs.msg import Clock
@@ -56,7 +55,6 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
-from srunner.tools.CARLA_manager import CARLAManager
 
 class carla_ros2_interface(object):
     def __init__(self, node):
@@ -86,27 +84,19 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
-        self.game_time_offset = CARLAManager.FIXED_DELTA_SECONDS * 3 # offset to account for initilisation ticks
-        frac, whole = math.modf(self.game_time_offset)
-        
         self.ros2_node = node
 
-        # Publish clock
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
-        obj_clock.clock = Time(
-            sec=int(whole), 
-            nanosec=int(frac * 1e9)
-        )
+        obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
 
-        # Sensor Config (Edit your sensor here)
+        # load sensor config and create publishers
         sensors_config = pathlib.Path(
             "srunner/autoagents/autoware_carla_interface/objects/sensors.json"
         )
         self.sensors = json.load(open(sensors_config.absolute()))
 
-        # Subscribing Autoware Control messages and converting to CARLA control
         self.sub_control = self.ros2_node.create_subscription(
             ActuationCommandStamped,
             "/control/command/actuation_cmd",
@@ -120,7 +110,6 @@ class carla_ros2_interface(object):
 
         self.current_control = carla.VehicleControl()
 
-        # Direct data publishing from CARLA for Autoware
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
             PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
         )
@@ -140,7 +129,6 @@ class carla_ros2_interface(object):
             ActuationStatusStamped, "/vehicle/status/actuation_status", 1
         )
 
-        # Create Publisher for each Physical Sensors
         for sensor in self.sensors["sensors"]:
             self.id_to_sensor_type_map[sensor["id"]] = sensor["type"]
             if sensor["type"] == "sensor.camera.rgb":
@@ -155,7 +143,7 @@ class carla_ros2_interface(object):
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
                         PointCloud2,
                         f"/sensing/lidar/{sensor['id']}/pointcloud_before_sync",
-                        10,
+                        5,  # lower qos depth as using best_reliability
                     )
                 else:
                     self.ros2_node.get_logger().info(
@@ -170,9 +158,6 @@ class carla_ros2_interface(object):
                     f"No Publisher for {sensor['type']} Sensor"
                 )
                 pass
-
-        # add to multi threaded executor instead
-        # self.spin_thread = threading.Thread(target=rclpy.spin, args=(self.ros2_node,))
 
     def __call__(self):
         input_data = self.sensor_interface.get_data()
@@ -504,18 +489,16 @@ class carla_ros2_interface(object):
             else:
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
-        # Publish ego vehicle status
-        self.ego_status()
+        time.sleep(0.05)  # 50ms delay to ensure published messages are received
 
-        time.sleep(0.001) # small delay to ensure all data can be sent in time 
-        
-        # publish clock last to ensure all sensor data is waiting for autoware
         seconds = int(self.timestamp)
         nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
         obj_clock = Clock()
         obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
         self.clock_publisher.publish(obj_clock)
-        
+
+        self.ego_status()
+
         return self.current_control
 
     def shutdown(self):
