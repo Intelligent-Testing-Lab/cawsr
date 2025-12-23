@@ -23,7 +23,7 @@ docker pull ghcr.io/intelligent-testing-lab/autoware-scenario-runner:latest
 docker pull ghcr.io/intelligent-testing-lab/autoware:latest
 ```
 
-Autoware and ROS use a custom messaging interface for communcation, known as DDS. They support various implementations, but they all rely on specific network settings to enable maximum data transfer. Save the following command in `setup.sh`, allow it to be executable `chmod +x setup.sh` and run.
+Autoware and ROS use a custom messaging interface for communication, known as DDS. They support various implementations, but they all rely on specific network settings to enable maximum data transfer. Save the following command in `setup.sh`, allow it to be executable `chmod +x setup.sh` and run.
 ```bash
 # Increase the maximum receive and send buffer size for network packets, allowing our containers to communicate
 sudo sysctl -w net.core.rmem_max=2147483647  # 2 GiB, default is 208 KiB
@@ -43,7 +43,7 @@ xhost +local:docker
 Using CAWSR
 ------------------------
 
-After completiting the prerequisite steps, clone the CAWSR workspace repository. To launch CAWSR, navigate to the CAWSR workspace and run `docker compose up`.
+After completiting the prerequisite steps, clone the [CAWSR workspace](https://github.com/Intelligent-Testing-Lab/cawsr_workspace) repository. To launch CAWSR, navigate to the CAWSR workspace and run `docker compose up`.
 
 The structure of the workspace is as follows.
 ```
@@ -79,7 +79,6 @@ is called. To implement a custom algorithm, create a class than inherits from `B
 
 The algorithm will execute **runs** times.
 
-
 Scenario Definition
 -------------------
 
@@ -87,6 +86,10 @@ We use a custom implementation of a scenario definition in JSON. We have include
 
 Domain Model:
 ![Domain Model](./docs/resources/scenario_domain.pdf)
+
+Notes
+------------
+Currently, traffic light recognition is disabled due to an issue with the [CARLA map format](https://github.com/autowarefoundation/autoware_universe/tree/main/simulator/autoware_carla_interface#traffic-light-recognition). This is a time consuming process, as each new traffic light requires the creation of a new objects within the CARLA Lanelet2 file that match the position of the PCD exactly. Once finished, we'll publish an updated Autoware image accordingly.
 
 Contributing
 ------------
@@ -103,3 +106,4 @@ License
 -------
 
 ScenarioRunner specific code is distributed under MIT License.
+CAWSR specific code is distributed under MIT License.

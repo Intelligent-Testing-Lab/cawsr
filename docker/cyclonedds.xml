@@ -14,7 +14,6 @@
       <Watermarks>
         <WhcHigh>1MB</WhcHigh>
       </Watermarks>
-      <SynchronousDeliveryLatencyBound>inf</SynchronousDeliveryLatencyBound>
     </Internal>
     <Tracing>
       <Verbosity>warning</Verbosity>

@@ -489,7 +489,7 @@ class carla_ros2_interface(object):
             else:
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
-        time.sleep(0.01)  # slight delay to ensure published messages are received
+        time.sleep(0.05)  # 50ms delay to ensure published messages are received
 
         seconds = int(self.timestamp)
         nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
