@@ -35,8 +35,6 @@ class EgoVehicle(object):
             self.ego_model, self.ego_spawn, self.ego_name
         )
 
-        CarlaDataProvider.get_world().tick()
-
         if self._actor is None:
             logger.warning(
                 "Failed to spawn EgoVehicle. This is likely an issue with CARLA."
