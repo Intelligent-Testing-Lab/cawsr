@@ -27,6 +27,7 @@ import numpy as np  # type: ignore
 from typing import Optional, Union, Callable
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
+from srunner.scenariomanager.timer import GameTime
 from srunner.tools.results_manager import ScenarioDefinitionManager
 from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
@@ -86,7 +87,7 @@ class AWScenarioRunner(object):
         # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
-        #  capture SIGINT for cleanp
+        #  capture SIGINT for cleanup
         self._shutdown_requested = False
 
         if sys.platform != "win32":
@@ -163,7 +164,8 @@ class AWScenarioRunner(object):
         self.ego_vehicles.append(actor)
         logger.info(f"Spawned ego with id: {actor.id}")
 
-        self.carla_world.tick()  # client must tick to spawn actors
+        # client must tick to spawn actors
+        self._tick_carla()
 
         logger.info("Initialising Autoware...")
         agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
@@ -188,7 +190,7 @@ class AWScenarioRunner(object):
 
         ego.prepare_ego(route[0][0])  # set location to first waypoint
 
-        self.carla_world.tick()
+        self._tick_carla()
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -265,6 +267,18 @@ class AWScenarioRunner(object):
 
         result_.put(result_dict)
 
+    def _tick_carla(self) -> None:
+        timestamp = None
+        world = CarlaDataProvider.get_world()
+        if world:
+            snapshot = world.get_snapshot()
+            if snapshot:
+                timestamp = snapshot.timestamp
+        if timestamp:
+            CarlaDataProvider.get_world().tick()
+            CarlaDataProvider.on_carla_tick()
+            GameTime.on_carla_tick(timestamp)
+
     def _load_alg(self) -> type[BasicAlgorithm]:
         """Load an algorithm instance from mounted docker volume algorithms/
 
@@ -285,10 +299,12 @@ class AWScenarioRunner(object):
         )
 
     def run_algorithm(self) -> None:
-        """Executes CAWSR in algorithm mode. Every scenario"""
+        """Executes CAWSR in algorithm mode"""
+
         # load the algorithm and scenario defintion
         optimisation_algorithm = self._load_alg()
         scenario = pathlib.Path(self._conf["algorithm"]["initial_definition"])
+
         # add some code here
         # if scenario = null (initial definition not given)
         # run the algorithm to generate a new, random scenario
@@ -317,7 +333,7 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[
                 0
-            ]  # route id. Multiple routes currently aren't supported, so use first route
+            ]  # route id. Multiple routes currently aren't supported, so use first route -> fix to use config
 
             json_definition = self._cawsr_process(
                 route_config=route_config,
