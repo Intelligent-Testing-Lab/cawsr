@@ -276,8 +276,8 @@ class AWScenarioRunner(object):
                 timestamp = snapshot.timestamp
         if timestamp:
             CarlaDataProvider.get_world().tick()
-            CarlaDataProvider.on_carla_tick()
             GameTime.on_carla_tick(timestamp)
+            CarlaDataProvider.on_carla_tick()
 
     def _load_alg(self) -> type[BasicAlgorithm]:
         """Load an algorithm instance from mounted docker volume algorithms/

@@ -142,7 +142,7 @@ class carla_ros2_interface(object):
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
                         PointCloud2,
                         f"/sensing/lidar/{sensor['id']}/pointcloud_before_sync",
-                        5,  # lower qos depth as using best_reliability
+                        10,  # lower qos depth as using best_reliability
                     )
                 else:
                     self.ros2_node.get_logger().info(

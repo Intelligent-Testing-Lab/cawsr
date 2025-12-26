@@ -47,26 +47,38 @@ class AutowareAgent(AutonomousAgent):
 
         self.config = config
 
-        self._node = rclpy.create_node("cawsr_bridge")
-
+        # initialise autoware state object
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
+
+        self._node = rclpy.create_node("cawsr_bridge")
+        self._node_state = rclpy.create_node("autoware_state_node")
 
         self.carla_interface = InitializeInterface(self.config, self._node)
 
-        self.state_node = state_node.StateNode(self.autoware_state, self._node)
+        self.state_node = state_node.StateNode(self.autoware_state, self._node_state)
         self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
-        self.route_node = route_node.RouteNode(self.autoware_state, self._node)
-        self.autoware_node = autoware_node.AutowareNode(self.autoware_state, self._node)
-
-        self._single_thread_executor = rclpy.executors.SingleThreadedExecutor()
-
-        self._single_thread_executor.add_node(self._node)
-
-        self._executor_thread = threading.Thread(
-            target=self._single_thread_executor.spin, daemon=True
+        self.route_node = route_node.RouteNode(self.autoware_state, self._node_state)
+        self.autoware_node = autoware_node.AutowareNode(
+            self.autoware_state, self._node_state
         )
-        self._executor_thread.start()
+
+        # run state note and cawsr bridge in separate executors
+        self._executors = [
+            rclpy.executors.SingleThreadedExecutor(),
+            rclpy.executors.SingleThreadedExecutor(),
+        ]
+
+        self._executors[0].add_node(self._node)
+        self._executors[1].add_node(self._node_state)
+
+        self._executor_threads = [
+            threading.Thread(target=self._executors[0].spin, daemon=True),
+            threading.Thread(target=self._executors[1].spin, daemon=True),
+        ]
+
+        for thread in self._executor_threads:
+            thread.start()
 
         self.sent_route = False
         self.initialised = False
@@ -110,11 +122,11 @@ class AutowareAgent(AutonomousAgent):
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
-            self.autoware_node.destroy_node()
-            self.state_node.destroy_node()
-            self.route_node.destroy_node()
+            self._node.destroy_node()
+            self._node_state.destroy_node()
             rclpy.shutdown()
-            self._executor_thread.join()
+            for thread in self._executor_threads:
+                thread.join()
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
 
