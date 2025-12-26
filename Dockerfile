@@ -50,7 +50,6 @@ RUN mkdir /cyclonedds && \
     mv /autoware_scenario_runner/docker/cyclonedds.xml /cyclonedds/ && \
     rm -rf /autoware_scenario_runner/docker && \
     echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc && \
-    echo "export CYCLONEDDS_URI=file:///cyclonedds/cyclonedds.xml" >> ~/.bashrc && \
     echo "alias rossrc='source ${AUTOWARE_MSG_PKG} && source ${ROS_PKG} && echo Sourced'" >> ~/.bashrc && \
     source ~/.bashrc
 
