@@ -3,21 +3,20 @@
   <Domain Id="any">
     <General>
       <Interfaces>
-        <NetworkInterface autodetermine="true" priority="default" multicast="false" />
+        <NetworkInterface address="${HOST_IP}" multicast="false" />
       </Interfaces>
-
       <AllowMulticast>false</AllowMulticast>
-
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
 
     <Discovery>
       <Peers>
         <Peer address="${AUTOWARE_IP}" />
+        <Peer address="127.0.0.1" />
       </Peers>
       <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>10</MaxAutoParticipantIndex>
     </Discovery>
-
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
