@@ -3,7 +3,7 @@
   <Domain Id="any">
     <General>
       <Interfaces>
-        <NetworkInterface name="auto" priority="default" multicast="false" />
+        <NetworkInterface autodetermine="true" priority="default" multicast="false" />
       </Interfaces>
 
       <AllowMulticast>false</AllowMulticast>
