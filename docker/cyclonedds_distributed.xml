@@ -3,20 +3,26 @@
   <Domain Id="any">
     <General>
       <Interfaces>
-        <NetworkInterface autodetermine="true" priority="default" multicast="default" />
+        <NetworkInterface name="auto" priority="default" multicast="false" />
       </Interfaces>
-      <AllowMulticast>default</AllowMulticast>
+
+      <AllowMulticast>false</AllowMulticast>
+
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
+
+    <Discovery>
+      <Peers>
+        <Peer address="${AUTOWARE_IP}" />
+      </Peers>
+      <ParticipantIndex>auto</ParticipantIndex>
+    </Discovery>
+
     <Internal>
-      <SocketReceiveBufferSize min="32MB"/>
-      <SocketSendBufferSize min="8MB"/>
+      <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
-        <WhcHigh>1MB</WhcHigh>
+        <WhcHigh>500kB</WhcHigh>
       </Watermarks>
     </Internal>
-    <Tracing>
-      <Verbosity>warning</Verbosity>
-    </Tracing>
   </Domain>
 </CycloneDDS>
