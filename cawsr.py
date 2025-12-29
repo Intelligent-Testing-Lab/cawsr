@@ -183,12 +183,27 @@ class AWScenarioRunner(object):
 
         logger.info("Loading route...")
 
+        # TO DO
+        # interpolate route at a larger distance (i.e 5m) to reduce waypoints
+        # remove segment sampling from awagent.set_route
         gps_route, route = route_manipulation.interpolate_trajectory(
             route_config.keypoints
         )
         route_config.agent.set_global_plan(gps_route, route)  # set agent route
 
         ego.prepare_ego(route[0][0])  # set location to first waypoint
+
+        # allow the agent X ticks to initialize sensors and set the route
+        logger.info("Initialising agent route...")
+        budget = self._conf["initialisation_budget"]
+        status = False
+        for tick in range(1, budget + 1):
+            status = self.aw_agent.run_step_init()  # type: ignore
+            self._tick_carla()
+        if not status:
+            logger.info("Agent failed to initialise route")
+        else:
+            logger.info("Successfully initialised agent; route set.")
 
         self._tick_carla()
 
@@ -218,19 +233,6 @@ class AWScenarioRunner(object):
             self.scenario_manager.load_scenario(
                 scenario, self.aw_agent, follow_ego=True
             )
-
-            # logger.info("Initialising agent route...")
-            # allow the agent to localise and set the route
-            # budget = self._conf["initialisation_budget"]
-            # status = False
-            # for tick in range(1, budget + 1):
-            #    status = self.aw_agent.run_step_init()  # type: ignore
-            #    CarlaDataProvider.get_world().tick()
-            # if not status:
-            #    logger.info("Agent failed to initialise route")
-            # else:
-            #    logger.info("Successfully initialised agent; route set.")
-
             self.scenario_manager.run_scenario()
             result = True
         except Exception:
@@ -441,6 +443,7 @@ class AWScenarioRunner(object):
         self.results_manager.cleanup_xml()
 
         # copy over the recording from CARLA container
+        time.sleep(1)  # ensure file is written
         CARLAManager.fetch_file(
             "/home/carla/recording.log",
             self.results_manager.last_scenario,
