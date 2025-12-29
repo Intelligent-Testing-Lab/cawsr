@@ -232,7 +232,6 @@ class AWScenarioRunner(object):
             #    logger.info("Successfully initialised agent; route set.")
 
             self.scenario_manager.run_scenario()
-            self.carla_client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
@@ -241,6 +240,7 @@ class AWScenarioRunner(object):
             )
             result = False
 
+        self.carla_client.stop_recorder()
         # stop the MetricsCollector thread
         MetricsCollector.reset()
 
@@ -324,7 +324,7 @@ class AWScenarioRunner(object):
 
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
-            time.sleep(5)  # allow CARLA to load
+            time.sleep(10)  # allow CARLA to load
 
             env_config = EnvironmentParser.parse_scenario_env(
                 self.results_manager.fetch_scenario_xml()
@@ -363,7 +363,7 @@ class AWScenarioRunner(object):
 
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
-            time.sleep(5)  # allow CARLA to load
+            time.sleep(10)  # allow CARLA to load
 
             if self._conf["benchmark"]["random_sampling"]:
                 scenario = random.choice(scenarios)
