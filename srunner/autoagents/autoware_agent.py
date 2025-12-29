@@ -138,7 +138,6 @@ class AutowareAgent(AutonomousAgent):
 
         Ticks CARLA and Autoware, allowing the agent to localise and plan the route.
         Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
-
         """
 
         if not self.agent_set_route:
@@ -166,6 +165,8 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             return True
 
+        self.carla_interface.tick_bridge()
+
         return False
 
     def run_step(self) -> None:
@@ -177,11 +178,11 @@ class AutowareAgent(AutonomousAgent):
             )
             self.last_tick = time.perf_counter_ns()
 
-        if not self.initialised:
-            self.initialised = self.run_step_init()
-
-            if self.initialised:
-                logger.info("Set agent route!")
+        # if not self.initialised:
+        #    self.initialised = self.run_step_init()
+        #
+        #    if self.initialised:
+        #        logger.info("Set agent route!")
 
         # check if the current route is set and we can publish engage
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:

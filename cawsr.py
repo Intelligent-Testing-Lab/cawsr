@@ -205,8 +205,6 @@ class AWScenarioRunner(object):
         else:
             logger.info("Successfully initialised agent; route set.")
 
-        self._tick_carla()
-
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
         CarlaDataProvider.set_traffic_manager_port(tm_port)
