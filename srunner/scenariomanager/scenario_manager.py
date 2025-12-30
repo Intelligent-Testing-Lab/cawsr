@@ -77,7 +77,6 @@ class ScenarioManager(object):
         self.scenario_duration_game = 0.0
         self.start_system_time = None
         self.end_system_time = None
-        GameTime.restart()
 
     def cleanup(self):
         """

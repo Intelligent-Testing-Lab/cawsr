@@ -73,22 +73,22 @@ docker compose up
 When running distributed, we use *unicast* to enable compatibility with all networks. This requires some extra configuration.
 
 Running CAWSR distributed using the following setup:
-- **Machine A**: Carla and CAWSR
+- **Machine A**: CAWSR and CARLA
 - **Machine B**: Autoware
 
 Configure the `.env` and ensure is it the same across both machines
 ```
 [Network]
-MODE=local # or distributed (caps sensitive)
+MODE=distributed
 ROS_DOMAIN_ID=0
 
 # For distributed mode
 HOST_IP=127.0.0.1 # CAWSR and CARLA
 AUTOWARE_IP=127.0.0.1 # Autoware
 ```
-The `ROS_DOMAIN_ID` *must* match, otherwise the ROS2 nodes will not be able to find each other. Once configured, start CAWSR and Carla on Machine A
+The `ROS_DOMAIN_ID` *must* match, otherwise the ROS2 nodes will not be able to find each other. Once configured, start CAWSR on Machine A
 ```
-docker compose up carla cawsr
+docker compose up cawsr
 ```
 and Autoware on Machine B
 ```
