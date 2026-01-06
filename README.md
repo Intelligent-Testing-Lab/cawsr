@@ -180,19 +180,19 @@ Core CAWSR logic and Autoware integration.
 <details>
 <summary>Associated Files / Directories:</summary>
 <ul>
-<li>`srunner/scenarioconfigs/environment_configuration.py`</li>
-<li>`srunner/scenario_decoder/json_to_xml_files.py`</li>
-<li>`srunner/scenarioconfigs/carla_config.py`</li>
-<li>`srunner/autoagents/autoware_agent.py`</li>
-<li>`srunner/autoagents/autoware_nodes/`</li>
-<li>`srunner/tools/results_manager.py`</li>
-<li>`srunner/autoagents/agent_state/`</li>
-<li>`srunner/objects/`</li>
-<li>`Dockerfile`</li>
-<li>`cawsr.py`</li>
-<li>`srunner/tools/metrics_collector.py`</li>
-<li>`srunner/tools/CARLA_manager.py`</li>
-<li>`srunner/tools/log.py`</li>
+<li>```srunner/scenarioconfigs/environment_configuration.py```</li>
+<li>```srunner/scenario_decoder/json_to_xml_files.py```</li>
+<li>```srunner/scenarioconfigs/carla_config.py```</li>
+<li>```srunner/autoagents/autoware_agent.py```</li>
+<li>```srunner/autoagents/autoware_nodes/```</li>
+<li>```srunner/tools/results_manager.py```</li>
+<li>```srunner/autoagents/agent_state/```</li>
+<li>```srunner/objects/```</li>
+<li>```Dockerfile```</li>
+<li>```cawsr.py```</li>
+<li>```srunner/tools/metrics_collector.py```</li>
+<li>```srunner/tools/CARLA_manager.py```</li>
+<li>```srunner/tools/log.py```</li>
 </ul>
 </details>
 
@@ -200,10 +200,10 @@ Core CAWSR logic and Autoware integration.
 Scenario execution engine for CARLA.
 * **Copyright:** © Intel Corporation / CARLA Team
 * **License File:** [`LICENSE Carla`](./LICENSE%20Carla)
-</details>
-<summary>Associated Files:</summary>
+<details>
+<summary>Associated Files / Directories:</summary>
 <ul>
-<li>`srunner/` (excluding files under CAWSR license)</li>
+<li>```srunner/``` (excluding files under CAWSR license)</li>
 </ul>
 </details>
 
@@ -215,7 +215,7 @@ Autoware communication bridge.
 <details>
 <summary>Associated Files / Directories:</summary>
 <ul>
-<li>`srunner/autoagents/autoware_carla_bridge/`</li>
+<li>```srunner/autoagents/autoware_carla_bridge/```</li>
 </ul>
 </details>
 
