@@ -14,7 +14,6 @@
 
 import json
 import math
-import time
 
 # pylint: disable=import-error
 from autoware_vehicle_msgs.msg import ControlModeReport
@@ -55,8 +54,6 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
-from srunner.tools.CARLA_manager import CARLAManager
-
 
 class carla_ros2_interface(object):
     def __init__(self, node):
@@ -86,26 +83,19 @@ class carla_ros2_interface(object):
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
 
-        self.game_time_offset = (
-            CARLAManager.FIXED_DELTA_SECONDS * 3
-        )  # offset to account for initilisation ticks
-        frac, whole = math.modf(self.game_time_offset)
-
         self.ros2_node = node
 
-        # Publish clock with larger queue to prevent drops
-        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 50)
+        self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
-        obj_clock.clock = Time(sec=int(whole), nanosec=int(frac * 1e9))
+        obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
 
-        # Sensor Config (Edit your sensor here)
+        # load sensor config and create publishers
         sensors_config = pathlib.Path(
             "srunner/autoagents/autoware_carla_interface/objects/sensors.json"
         )
         self.sensors = json.load(open(sensors_config.absolute()))
 
-        # Subscribing Autoware Control messages and converting to CARLA control
         self.sub_control = self.ros2_node.create_subscription(
             ActuationCommandStamped,
             "/control/command/actuation_cmd",
@@ -120,39 +110,39 @@ class carla_ros2_interface(object):
         self.current_control = carla.VehicleControl()
 
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
-            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 10
+            PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
         )
         self.pub_vel_state = self.ros2_node.create_publisher(
-            VelocityReport, "/vehicle/status/velocity_status", 10
+            VelocityReport, "/vehicle/status/velocity_status", 1
         )
         self.pub_steering_state = self.ros2_node.create_publisher(
-            SteeringReport, "/vehicle/status/steering_status", 10
+            SteeringReport, "/vehicle/status/steering_status", 1
         )
         self.pub_ctrl_mode = self.ros2_node.create_publisher(
-            ControlModeReport, "/vehicle/status/control_mode", 10
+            ControlModeReport, "/vehicle/status/control_mode", 1
         )
         self.pub_gear_state = self.ros2_node.create_publisher(
-            GearReport, "/vehicle/status/gear_status", 10
+            GearReport, "/vehicle/status/gear_status", 1
         )
         self.pub_actuation_status = self.ros2_node.create_publisher(
-            ActuationStatusStamped, "/vehicle/status/actuation_status", 10
+            ActuationStatusStamped, "/vehicle/status/actuation_status", 1
         )
 
         for sensor in self.sensors["sensors"]:
             self.id_to_sensor_type_map[sensor["id"]] = sensor["type"]
             if sensor["type"] == "sensor.camera.rgb":
                 self.pub_camera = self.ros2_node.create_publisher(
-                    Image, "/sensing/camera/traffic_light/image_raw", 10
+                    Image, "/sensing/camera/traffic_light/image_raw", 1
                 )
                 self.pub_camera_info = self.ros2_node.create_publisher(
-                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 10
+                    CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
                 )
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
                         PointCloud2,
                         f"/sensing/lidar/{sensor['id']}/pointcloud_before_sync",
-                        10,
+                        10,  # lower qos depth as using best_reliability
                     )
                 else:
                     self.ros2_node.get_logger().info(
@@ -160,16 +150,13 @@ class carla_ros2_interface(object):
                     )
             elif sensor["type"] == "sensor.other.imu":
                 self.pub_imu = self.ros2_node.create_publisher(
-                    Imu, "/sensing/imu/tamagawa/imu_raw", 10
+                    Imu, "/sensing/imu/tamagawa/imu_raw", 1
                 )
             else:
                 self.ros2_node.get_logger().info(
                     f"No Publisher for {sensor['type']} Sensor"
                 )
                 pass
-
-        # add to multi threaded executor instead
-        # self.spin_thread = threading.Thread(target=rclpy.spin, args=(self.ros2_node,))
 
     def __call__(self):
         input_data = self.sensor_interface.get_data()
@@ -487,16 +474,11 @@ class carla_ros2_interface(object):
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
 
-        # Publish clock FIRST to update transform system before sensor data arrives
-        # This prevents "extrapolation into the future" errors
         seconds = int(self.timestamp)
         nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
         obj_clock = Clock()
         obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
         self.clock_publisher.publish(obj_clock)
-
-        # Small delay to allow clock to propagate to transform system
-        time.sleep(0.005)
 
         # publish data of all sensors
         for key, data in input_data.items():
@@ -512,12 +494,7 @@ class carla_ros2_interface(object):
             else:
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
-        # Publish ego vehicle status
         self.ego_status()
-
-        # Small delay to ensure large messages (LiDAR) are fully transmitted
-        time.sleep(0.005)
-
         return self.current_control
 
     def shutdown(self):

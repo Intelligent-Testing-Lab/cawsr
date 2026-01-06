@@ -47,10 +47,10 @@ RUN python3 -m pip install -r requirements.txt && \
 
 # update CYCLONE DDS Config for ROS
 RUN mkdir /cyclonedds && \
-    mv /autoware_scenario_runner/docker/cyclonedds.xml /cyclonedds/ && \
+    mv /autoware_scenario_runner/docker/cyclonedds_local.xml /cyclonedds/ && \
+    mv /autoware_scenario_runner/docker/cyclonedds_distributed.xml /cyclonedds/ && \
     rm -rf /autoware_scenario_runner/docker && \
     echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc && \
-    echo "export CYCLONEDDS_URI=file:///cyclonedds/cyclonedds.xml" >> ~/.bashrc && \
     echo "alias rossrc='source ${AUTOWARE_MSG_PKG} && source ${ROS_PKG} && echo Sourced'" >> ~/.bashrc && \
     source ~/.bashrc
 
