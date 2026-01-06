@@ -27,6 +27,7 @@ import numpy as np  # type: ignore
 from typing import Optional, Union, Callable
 
 from srunner.scenariomanager.scenario_manager import ScenarioManager
+from srunner.scenariomanager.timer import GameTime
 from srunner.tools.results_manager import ScenarioDefinitionManager
 from srunner.scenarios.route_scenario import RouteScenario
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
@@ -86,7 +87,7 @@ class AWScenarioRunner(object):
         # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
-        #  capture SIGINT for cleanp
+        #  capture SIGINT for cleanup
         self._shutdown_requested = False
 
         if sys.platform != "win32":
@@ -154,6 +155,9 @@ class AWScenarioRunner(object):
 
         logger.info(f"{settings.__str__()}")
 
+        logger.info("Restarting GameTime...")
+        GameTime.restart()
+
         # update the world
         CarlaDataProvider.set_world(self.carla_world)
 
@@ -163,7 +167,8 @@ class AWScenarioRunner(object):
         self.ego_vehicles.append(actor)
         logger.info(f"Spawned ego with id: {actor.id}")
 
-        self.carla_world.tick()  # client must tick to spawn actors
+        # client must tick to spawn actors
+        self._tick_carla()
 
         logger.info("Initialising Autoware...")
         agent_class_name = self.module_aw_agent.__name__.title().replace("_", "")
@@ -181,6 +186,9 @@ class AWScenarioRunner(object):
 
         logger.info("Loading route...")
 
+        # TO DO
+        # interpolate route at a larger distance (i.e 5m) to reduce waypoints
+        # remove segment sampling from awagent.set_route
         gps_route, route = route_manipulation.interpolate_trajectory(
             route_config.keypoints
         )
@@ -188,7 +196,17 @@ class AWScenarioRunner(object):
 
         ego.prepare_ego(route[0][0])  # set location to first waypoint
 
-        self.carla_world.tick()
+        # allow the agent X ticks to initialize sensors and set the route
+        logger.info("Initialising agent route...")
+        budget = self._conf["initialisation_budget"]
+        status = False
+        for tick in range(1, budget + 1):
+            status = self.aw_agent.run_step_init()  # type: ignore
+            self._tick_carla()
+        if not status:
+            logger.info("Agent failed to initialise route")
+        else:
+            logger.info("Successfully initialised agent; route set.")
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -211,26 +229,14 @@ class AWScenarioRunner(object):
             traceback.print_exc()
 
         logger.info("Starting scenario...")
+
         try:
             self.carla_client.start_recorder("/home/carla/recording.log", True)
             self.scenario_manager.load_scenario(
                 scenario, self.aw_agent, follow_ego=True
             )
 
-            # logger.info("Initialising agent route...")
-            # allow the agent to localise and set the route
-            # budget = self._conf["initialisation_budget"]
-            # status = False
-            # for tick in range(1, budget + 1):
-            #    status = self.aw_agent.run_step_init()  # type: ignore
-            #    CarlaDataProvider.get_world().tick()
-            # if not status:
-            #    logger.info("Agent failed to initialise route")
-            # else:
-            #    logger.info("Successfully initialised agent; route set.")
-
             self.scenario_manager.run_scenario()
-            self.carla_client.stop_recorder()
             result = True
         except Exception:
             traceback.print_exc()
@@ -239,6 +245,7 @@ class AWScenarioRunner(object):
             )
             result = False
 
+        self.carla_client.stop_recorder()
         # stop the MetricsCollector thread
         MetricsCollector.reset()
 
@@ -265,6 +272,18 @@ class AWScenarioRunner(object):
 
         result_.put(result_dict)
 
+    def _tick_carla(self) -> None:
+        timestamp = None
+        world = CarlaDataProvider.get_world()
+        if world:
+            snapshot = world.get_snapshot()
+            if snapshot:
+                timestamp = snapshot.timestamp
+        if timestamp:
+            CarlaDataProvider.get_world().tick()
+            GameTime.on_carla_tick(timestamp)
+            CarlaDataProvider.on_carla_tick()
+
     def _load_alg(self) -> type[BasicAlgorithm]:
         """Load an algorithm instance from mounted docker volume algorithms/
 
@@ -285,10 +304,12 @@ class AWScenarioRunner(object):
         )
 
     def run_algorithm(self) -> None:
-        """Executes CAWSR in algorithm mode. Every scenario"""
+        """Executes CAWSR in algorithm mode"""
+
         # load the algorithm and scenario defintion
         optimisation_algorithm = self._load_alg()
         scenario = pathlib.Path(self._conf["algorithm"]["initial_definition"])
+
         # add some code here
         # if scenario = null (initial definition not given)
         # run the algorithm to generate a new, random scenario
@@ -308,7 +329,7 @@ class AWScenarioRunner(object):
 
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
-            time.sleep(5)  # allow CARLA to load
+            time.sleep(10)  # allow CARLA to load
 
             env_config = EnvironmentParser.parse_scenario_env(
                 self.results_manager.fetch_scenario_xml()
@@ -317,7 +338,7 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[
                 0
-            ]  # route id. Multiple routes currently aren't supported, so use first route
+            ]  # route id. Multiple routes currently aren't supported, so use first route -> fix to use config
 
             json_definition = self._cawsr_process(
                 route_config=route_config,
@@ -347,7 +368,7 @@ class AWScenarioRunner(object):
 
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
-            time.sleep(5)  # allow CARLA to load
+            time.sleep(10)  # allow CARLA to load
 
             if self._conf["benchmark"]["random_sampling"]:
                 scenario = random.choice(scenarios)
@@ -425,6 +446,7 @@ class AWScenarioRunner(object):
         self.results_manager.cleanup_xml()
 
         # copy over the recording from CARLA container
+        time.sleep(1)  # ensure file is written
         CARLAManager.fetch_file(
             "/home/carla/recording.log",
             self.results_manager.last_scenario,

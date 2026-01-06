@@ -77,7 +77,6 @@ class ScenarioManager(object):
         self.scenario_duration_game = 0.0
         self.start_system_time = None
         self.end_system_time = None
-        GameTime.restart()
 
     def cleanup(self):
         """
@@ -178,22 +177,18 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
-            
+            if self._agent is not None:
+                self._agent()  # pylint: disable=not-callable
 
             _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
                 CarlaDataProvider.get_world().tick()
+                GameTime.on_carla_tick(timestamp)
+                CarlaDataProvider.on_carla_tick()
 
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )
-            
-            if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
-
-            # Update game time and actor information
-            GameTime.on_carla_tick(timestamp)
-            CarlaDataProvider.on_carla_tick()
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6

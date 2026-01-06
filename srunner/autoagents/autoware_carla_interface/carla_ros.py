@@ -14,7 +14,6 @@
 
 import json
 import math
-import time
 
 # pylint: disable=import-error
 from autoware_vehicle_msgs.msg import ControlModeReport
@@ -143,7 +142,7 @@ class carla_ros2_interface(object):
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
                         PointCloud2,
                         f"/sensing/lidar/{sensor['id']}/pointcloud_before_sync",
-                        5,  # lower qos depth as using best_reliability
+                        10,  # lower qos depth as using best_reliability
                     )
                 else:
                     self.ros2_node.get_logger().info(
@@ -475,6 +474,12 @@ class carla_ros2_interface(object):
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
 
+        seconds = int(self.timestamp)
+        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
+        obj_clock = Clock()
+        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
+        self.clock_publisher.publish(obj_clock)
+
         # publish data of all sensors
         for key, data in input_data.items():
             sensor_type = self.id_to_sensor_type_map[key]
@@ -489,16 +494,7 @@ class carla_ros2_interface(object):
             else:
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
-        time.sleep(0.05)  # 50ms delay to ensure published messages are received
-
-        seconds = int(self.timestamp)
-        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
-        obj_clock = Clock()
-        obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
-        self.clock_publisher.publish(obj_clock)
-
         self.ego_status()
-
         return self.current_control
 
     def shutdown(self):
