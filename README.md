@@ -166,10 +166,6 @@ We use a custom implementation of a scenario definition in JSON. We have include
 Domain Model:
 ![Domain Model](./docs/resources/scenario_domain.png)
 
-Notes
-------------
-Currently, traffic light recognition is disabled due to an issue with the [CARLA map format](https://github.com/autowarefoundation/autoware_universe/tree/main/simulator/autoware_carla_interface#traffic-light-recognition). The updated LaneLet files (as well as the Autoware images) will be published accordingly once development has finished.
-
 Contributing
 ------------
 
@@ -191,6 +187,6 @@ Scenario execution engine for CARLA.
 Autoware communication bridge.
 **Apache License 2.0**.
 * **Copyright:** © The Autoware Foundation / Tier IV, Inc. / AutoCore / Leo Drive
-* **License File:** [`LICENSE-APACHE`](./LICENSE-APACHE)
+* **License File:** [`LICENSE-APACHE`](./LICENSE%20Autoware)
 
 **Notices:** See [`NOTICE`](./NOTICE) for the full list of required attributions.
