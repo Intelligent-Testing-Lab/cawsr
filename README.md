@@ -177,16 +177,46 @@ License
 Core CAWSR logic and Autoware integration.
 * **Copyright:** © 2025 University of Sheffield
 * **License File:** [`LICENSE Sheffield`](./LICENSE%20Sheffield)
+<details>
+<summary>Associated Files / Directories:</summary>
+<ul>
+<li>`srunner/scenarioconfigs/environment_configuration.py`</li>
+<li>`srunner/scenario_decoder/json_to_xml_files.py`</li>
+<li>`srunner/scenarioconfigs/carla_config.py`</li>
+<li>`srunner/autoagents/autoware_agent.py`</li>
+<li>`srunner/autoagents/autoware_nodes/`</li>
+<li>`srunner/tools/results_manager.py`</li>
+<li>`srunner/autoagents/agent_state/`</li>
+<li>`srunner/objects/`</li>
+<li>`Dockerfile`</li>
+<li>`cawsr.py`</li>
+<li>`srunner/tools/metrics_collector.py`</li>
+<li>`srunner/tools/CARLA_manager.py`</li>
+<li>`srunner/tools/log.py`</li>
+</ul>
+</details>
 
 ### 2. Scenario Runner (CARLA) (MIT)
 Scenario execution engine for CARLA.
 * **Copyright:** © Intel Corporation / CARLA Team
 * **License File:** [`LICENSE Carla`](./LICENSE%20Carla)
+</details>
+<summary>Associated Files:</summary>
+<ul>
+<li>`srunner/` (excluding files under CAWSR license)</li>
+</ul>
+</details>
 
 ### 3. Autoware Carla Interface (Apache 2.0)
 Autoware communication bridge.
 **Apache License 2.0**.
 * **Copyright:** © The Autoware Foundation / Tier IV, Inc. / AutoCore / Leo Drive
 * **License File:** [`LICENSE-Autoware`](./LICENSE%20Autoware)
+<details>
+<summary>Associated Files / Directories:</summary>
+<ul>
+<li>`srunner/autoagents/autoware_carla_bridge/`</li>
+</ul>
+</details>
 
 **Notices:** See [`NOTICE`](./NOTICE) for the full list of required attributions.
