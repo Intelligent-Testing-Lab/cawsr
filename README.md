@@ -187,6 +187,6 @@ Scenario execution engine for CARLA.
 Autoware communication bridge.
 **Apache License 2.0**.
 * **Copyright:** © The Autoware Foundation / Tier IV, Inc. / AutoCore / Leo Drive
-* **License File:** [`LICENSE-APACHE`](./LICENSE%20Autoware)
+* **License File:** [`LICENSE-Autoware`](./LICENSE%20Autoware)
 
 **Notices:** See [`NOTICE`](./NOTICE) for the full list of required attributions.
