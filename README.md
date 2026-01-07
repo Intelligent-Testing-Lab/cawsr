@@ -209,7 +209,6 @@ Scenario execution engine for CARLA.
 <ul>
 <li><b>srunner/scenarios/</b> </li>
 <li><b>srunner/examples/</b> </li>
-<li><b>srunner/scen/</b> </li>
 <li><b>srunner/scenarioconfigs/route_scenario_configuration.py</b> </li>
 <li><b>srunner/scenarioconfigs/scenario_configuration.py</b> </li>
 <li><b>srunner/scenariomanager/actorcontrols</b> </li>
