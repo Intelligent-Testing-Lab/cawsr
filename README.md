@@ -193,6 +193,10 @@ Core CAWSR logic and Autoware integration.
 <li><b>srunner/tools/metrics_collector.py</b></li>
 <li><b>srunner/tools/CARLA_manager.py</b></li>
 <li><b>srunner/tools/log.py</b></li>
+<li><b>srunner/scenariomanager/scenario_manager.py (modified)</b></li>
+<li><b>srunner/autoagents/autoware_carla_interface/carla_autoware.py (modified)</b></li>
+<li><b>srunner/autoagents/autoware_carla_interface/carla_ros.py (modified) </b></li>
+<li><b>docker/autoware_msgs.tar.xz/src/autoware_cawsr_msgs</b></li>
 </ul>
 </details>
 
@@ -201,9 +205,28 @@ Scenario execution engine for CARLA.
 * **Copyright:** © Intel Corporation / CARLA Team
 * **License File:** [`LICENSE Carla`](./LICENSE%20Carla)
 <details>
-<summary>Associated Files / Directories:</summary>
+<summary>Associated Files / Directories (excluding files under CAWSR license):</summary>
 <ul>
-<li><b>srunner/</b> (excluding files under CAWSR license)</li>
+<li><b>srunner/scenarios/</b> </li>
+<li><b>srunner/examples/</b> </li>
+<li><b>srunner/scen/</b> </li>
+<li><b>srunner/scenarioconfigs/route_scenario_configuration.py</b> </li>
+<li><b>srunner/scenarioconfigs/scenario_configuration.py</b> </li>
+<li><b>srunner/scenariomanager/actorcontrols</b> </li>
+<li><b>srunner/scenariomanager/scenarioatomics</b> </li>
+<li><b>srunner/scenariomanager/lights_sim.py</b> </li>
+<li><b>srunner/scenariomanager/results_writer.py</b> </li>
+<li><b>srunner/scenariomanager/timer.py</b> </li>
+<li><b>srunner/scenariomanager/traffic_events.py</b> </li>
+<li><b>srunner/scenariomanager/watchdog.py</b> </li>
+<li><b>srunner/scenariomanager/weather_sim.py</b> </li>
+<li><b>srunner/scenariomanager/carla_data_provider.py</b> </li>
+<li><b>srunner/tools/background_manager.py</b> </li>
+<li><b>srunner/tools/py_trees_port.py</b> </li>
+<li><b>srunner/tools/route_manipulation.py</b> </li>
+<li><b>srunner/tools/route_parser.py</b> </li>
+<li><b>srunner/tools/scenario_parser.py</b> </li>
+<li><b>srunner/tools/scenario_helper.py</b> </li>
 </ul>
 </details>
 
@@ -213,9 +236,10 @@ Autoware communication bridge.
 * **Copyright:** © The Autoware Foundation / Tier IV, Inc. / AutoCore / Leo Drive
 * **License File:** [`LICENSE-Autoware`](./LICENSE%20Autoware)
 <details>
-<summary>Associated Files / Directories:</summary>
+<summary>Associated Files / Directories (excluding files under CAWSR license):</summary>
 <ul>
 <li><b>srunner/autoagents/autoware_carla_bridge/</b></li>
+<li><b>docker/autoware_msgs.tar.xz/src</b></li>
 </ul>
 </details>
 
