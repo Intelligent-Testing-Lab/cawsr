@@ -17,7 +17,7 @@ Setup access to the [**Github container registry**](https://docs.github.com/en/p
 
 Once you have been granted access, pull the following images:
 ```
-docker pull carlasim/carla:0.9.15
+docker pull ghcr.io/intelligent-testing-lab/carla:0.9.15
 docker pull ghcr.io/intelligent-testing-lab/autoware-scenario-runner:latest
 docker pull ghcr.io/intelligent-testing-lab/autoware:latest
 ```
