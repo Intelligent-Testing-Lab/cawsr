@@ -17,7 +17,7 @@ Setup access to the [**Github container registry**](https://docs.github.com/en/p
 
 Once you have been granted access, pull the following images:
 ```
-docker pull carlasim/carla:0.9.15
+docker pull ghcr.io/intelligent-testing-lab/carla:0.9.15
 docker pull ghcr.io/intelligent-testing-lab/autoware-scenario-runner:latest
 docker pull ghcr.io/intelligent-testing-lab/autoware:latest
 ```
@@ -177,16 +177,69 @@ License
 Core CAWSR logic and Autoware integration.
 * **Copyright:** © 2025 University of Sheffield
 * **License File:** [`LICENSE Sheffield`](./LICENSE%20Sheffield)
+<details>
+<summary>Associated Files / Directories:</summary>
+<ul>
+<li><b>srunner/scenarioconfigs/environment_configuration.py</b></li>
+<li><b>srunner/scenario_decoder/json_to_xml_files.py</b></li>
+<li><b>srunner/scenarioconfigs/carla_config.py</b></li>
+<li><b>srunner/autoagents/autoware_agent.py</b></li>
+<li><b>srunner/autoagents/autoware_nodes/</b></li>
+<li><b>srunner/tools/results_manager.py</b></li>
+<li><b>srunner/autoagents/agent_state/</b></li>
+<li><b>srunner/objects/</b></li>
+<li><b>Dockerfile</b></li>
+<li><b>cawsr.py</b></li>
+<li><b>srunner/tools/metrics_collector.py</b></li>
+<li><b>srunner/tools/CARLA_manager.py</b></li>
+<li><b>srunner/tools/log.py</b></li>
+<li><b>srunner/scenariomanager/scenario_manager.py (modified)</b></li>
+<li><b>srunner/autoagents/autoware_carla_interface/carla_autoware.py (modified)</b></li>
+<li><b>srunner/autoagents/autoware_carla_interface/carla_ros.py (modified) </b></li>
+<li><b>docker/autoware_msgs.tar.xz/src/autoware_cawsr_msgs</b></li>
+</ul>
+</details>
 
 ### 2. Scenario Runner (CARLA) (MIT)
 Scenario execution engine for CARLA.
 * **Copyright:** © Intel Corporation / CARLA Team
 * **License File:** [`LICENSE Carla`](./LICENSE%20Carla)
+<details>
+<summary>Associated Files / Directories (excluding files under CAWSR license):</summary>
+<ul>
+<li><b>srunner/scenarios/</b> </li>
+<li><b>srunner/examples/</b> </li>
+<li><b>srunner/scenarioconfigs/route_scenario_configuration.py</b> </li>
+<li><b>srunner/scenarioconfigs/scenario_configuration.py</b> </li>
+<li><b>srunner/scenariomanager/actorcontrols</b> </li>
+<li><b>srunner/scenariomanager/scenarioatomics</b> </li>
+<li><b>srunner/scenariomanager/lights_sim.py</b> </li>
+<li><b>srunner/scenariomanager/results_writer.py</b> </li>
+<li><b>srunner/scenariomanager/timer.py</b> </li>
+<li><b>srunner/scenariomanager/traffic_events.py</b> </li>
+<li><b>srunner/scenariomanager/watchdog.py</b> </li>
+<li><b>srunner/scenariomanager/weather_sim.py</b> </li>
+<li><b>srunner/scenariomanager/carla_data_provider.py</b> </li>
+<li><b>srunner/tools/background_manager.py</b> </li>
+<li><b>srunner/tools/py_trees_port.py</b> </li>
+<li><b>srunner/tools/route_manipulation.py</b> </li>
+<li><b>srunner/tools/route_parser.py</b> </li>
+<li><b>srunner/tools/scenario_parser.py</b> </li>
+<li><b>srunner/tools/scenario_helper.py</b> </li>
+</ul>
+</details>
 
 ### 3. Autoware Carla Interface (Apache 2.0)
 Autoware communication bridge.
 **Apache License 2.0**.
 * **Copyright:** © The Autoware Foundation / Tier IV, Inc. / AutoCore / Leo Drive
 * **License File:** [`LICENSE-Autoware`](./LICENSE%20Autoware)
+<details>
+<summary>Associated Files / Directories (excluding files under CAWSR license):</summary>
+<ul>
+<li><b>srunner/autoagents/autoware_carla_bridge/</b></li>
+<li><b>docker/autoware_msgs.tar.xz/src</b></li>
+</ul>
+</details>
 
 **Notices:** See [`NOTICE`](./NOTICE) for the full list of required attributions.
