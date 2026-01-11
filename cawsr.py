@@ -433,6 +433,7 @@ class AWScenarioRunner(object):
         else:
             seed = 0
 
+        env_config.iteration = run
         scenario_process = multiprocessing.Process(
             target=self.run_scenario,  # need to catch connection exception
             args=(

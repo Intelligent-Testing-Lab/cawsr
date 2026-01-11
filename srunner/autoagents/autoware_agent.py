@@ -56,7 +56,9 @@ class AutowareAgent(AutonomousAgent):
         self.carla_interface = InitializeInterface(self.config, self._node)
 
         self.state_node = state_node.StateNode(self.autoware_state, self._node_state)
-        self.state_node.reset_autoware(self.config.town, self.config.ego_name)
+        if config.iteration == 1:
+            # only reset autoware on the first run
+            self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
         self.route_node = route_node.RouteNode(self.autoware_state, self._node_state)
         self.autoware_node = autoware_node.AutowareNode(
