@@ -21,7 +21,7 @@ class CARLAManager(object):
     port = 2000  # default
     fidelity = "Low"  # default
     run_command = [
-        'docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 /bin/bash -c "./CarlaUE4.sh -carla-rpc-port=2000 -quality-level=Low"'
+        "docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port=2000 -quality-level=Low"
     ]
 
     @staticmethod
@@ -31,7 +31,7 @@ class CARLAManager(object):
         CARLAManager.FIXED_DELTA_SECONDS = config.FIXED_DELTA_SECONDS
 
         CARLAManager.run_command = [
-            f'docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 /bin/bash -c "./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"'
+            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
         ]
 
     @staticmethod
