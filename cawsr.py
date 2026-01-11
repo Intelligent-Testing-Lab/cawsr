@@ -161,11 +161,23 @@ class AWScenarioRunner(object):
         # update the world
         CarlaDataProvider.set_world(self.carla_world)
 
-        logger.info("Spawning ego...")
-        ego = EgoVehicle(env_config)
-        actor = ego.spawn()
-        self.ego_vehicles.append(actor)
-        logger.info(f"Spawned ego with id: {actor.id}")
+        # attempt to spawn the ego 3 times for redundancy
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                logger.info("Spawning ego...")
+                ego = EgoVehicle(env_config)
+                actor = ego.spawn()
+                self.ego_vehicles.append(actor)
+                logger.info(f"Spawned ego with id: {actor.id}")
+            except Exception as e:
+                logger.error(f"Failed to spawn ego on attempt {attempt + 1}: {e}")
+                if attempt == max_attempts - 1:
+                    logger.error(
+                        "Failed to spawn ego: Terminating scenario. This is most likely an issue with CARLA"
+                    )
+                    raise
+                time.sleep(2)
 
         # client must tick to spawn actors
         self._tick_carla()
