@@ -170,6 +170,7 @@ class AWScenarioRunner(object):
                 actor = ego.spawn()
                 self.ego_vehicles.append(actor)
                 logger.info(f"Spawned ego with id: {actor.id}")
+                break  # exit loop if successful
             except Exception as e:
                 logger.error(f"Failed to spawn ego on attempt {attempt + 1}: {e}")
                 if attempt == max_attempts - 1:
