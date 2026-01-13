@@ -67,10 +67,21 @@ This facilitates a wide range of verification strategies based on common metrics
 Lastly, it is worth noting that simulators can often introduce unintended nondeterminism, which leads to inconsistent test results [@9793395; @osikowicz2025empirically].
 Therefore, `CAWSR` is designed to minimise such nondeterminism throughout the evaluation pipeline.
 
+# Research Impact
 
-# Tool Overview
+CAWSR is the first verification tool of its kind to bridge the gap between CARLA and Autoware, intended as a modern replacement for the Apollo/LGSVL workflow. Designed for ease of use and reproducibility, it enables researchers to build and evaluate scenario generation algorithms on a state-of-the-art simulator platform with a modern, industry-grade ADS system.
 
-`CAWSR` is a fully synchronous testing framework that directly integrates the CARLA simulator, Scenario Runner (as the scenario executor), and Autoware (as the System Under Test) to facilitate autonomous driving testing research. The tool is distributed as a containerized deployment using Docker and currently supports two modes of operation:
+A primary contribution of this tool is the unification of evaluation standards. Industry-grade AD systems operate in disparate evaluation environments when compared to academic agents, which introduce unintended nondeterminism[@9793395; @osikowicz2025empirically]. Built on the unified CARLA platform, CAWSR enables the execution of modular industry systems, facilitating direct comparison to academic agents (end-to-end models) under identical conditions.
+
+Furthermore, CAWSR offers a flexible programmatic interface for search-based testing and verification of Autoware through scenario generation algorithms. This enables researchers to design verification strategies based on various metrics extracted from scenario execution, such as the CARLA Leaderboard's driving score.
+
+CAWSR prioritises a streamlined deployment process for ease of use and reproducibility. By leveraging containerised deployment through Docker, the framework removes complex dependencies associated with Autoware and CARLA, simplifying the complexity of setup drastically. To support community adoption, a comprehensive set of tools and example implementations is provided, supplying the foundations for the development of new scenarios and verification strategies.
+
+
+# Software Design
+<!-- I've renamed the "Tool Overview" section since it fits quite well here, and added a few justifications.-->
+
+`CAWSR` is a fully synchronous testing framework that directly integrates the CARLA simulator, Scenario Runner (as the scenario executor), and Autoware (as the System Under Test) to facilitate autonomous driving testing research. The tool is distributed as a containerized deployment using Docker to manage complex dependencies and simplify the setup process. Currently two modes of operation are supported:
 
 1. *Scenario Generation Mode:* Enables the dynamic generation and execution of scenarios (e.g. iterative scenario generation) provided by a user-defined algorithm. This is particularly useful for assessing the performance of new simulation-based ADS testing techniques.
 2. *Benchmark Mode:* Allows the execution of a predefined set of scenario definitions provided by the user. This is useful for standardised evaluations and comparisons between different driving agents.
@@ -85,7 +96,8 @@ The evaluation pipeline is engineered to be fully synchronous, minimising uninte
 
 - JSON Parser: Translates the *scenario_definition* (see \autoref{fig:scenario_domain}) into a Behavior Tree (BT). It utilises Scenario Runner's *Atomic Behaviours* and *Atomic Conditions* as modular primitives to define discrete actions (e.g., spawning pedestrians) and logic triggers.
 
-- ScenarioManager: Orchestrates the simulation loop by evaluating the BT to update actor states and triggering CARLA simulation ticks. Execution terminates based on CARLA Leaderboard criteria [@carla_leaderboard], as summarised in \autoref{tab:termination_criteria}. Post-execution, the module calculates the Driving Score (DS) according to the official leaderboard metrics.
+<!-- David: Citing SR for added transparency, since this class is natively part of it -->
+- ScenarioManager[@carla_scenario_runner_2025]: Orchestrates the simulation loop by evaluating the BT to update actor states and triggering CARLA simulation ticks. Execution terminates based on CARLA Leaderboard criteria [@carla_leaderboard], as summarised in \autoref{tab:termination_criteria}. Post-execution, the module calculates the Driving Score (DS) according to the official leaderboard metrics.
 
 - Agent and CarlaBridge: The Agent manages the ROS2 connection to Autoware. At each timestep, the CarlaBridge [@carlaautowarebridge] transforms CARLA snapshots and sensor data into the Autoware coordinate system. Autoware processes these inputs to issue control commands, which the Agent then applies to the ego vehicle.
 
@@ -106,6 +118,10 @@ This model is based on the format introduced by Scenario Runner, facilitating su
 To summarise, `CAWSR` provides ADS testing research community an easy to use Autoware evaluation pipeline.
 We hope that this work can facilitate the evaluation of new testing approaches on a state of the art driving system.
 
+# AI Usage Disclosure
+
+<!-- David: I used AI to help explain concepts some concepts and generate short code snippets to get me started (mostly about ROS2 and networking). Is this the correct way to phrase it? -->
+Generative AI tools were used in this work solely to support high-level research concepts and structural ideas. All software implementation, including the source code, architecture, and deployment scripts, was authored entirely by the researchers without AI assistance.
 
 # Acknowledgements
 
