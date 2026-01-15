@@ -69,13 +69,15 @@ Therefore, `CAWSR` is designed to minimise such nondeterminism throughout the ev
 
 # Research Impact
 
-CAWSR is the first verification tool of its kind to bridge the gap between CARLA and Autoware, intended as a modern replacement for the Apollo/LGSVL workflow. Designed for ease of use and reproducibility, it enables researchers to build and evaluate scenario generation algorithms on a state-of-the-art simulator platform with a modern, industry-grade ADS system.
+`CAWSR` provides a significant research impact by bridging the gap between the widely-used CARLA simulator and the industry-grade Autoware ADS.
+It addresses a critical bottleneck in the ADS testing research community by offering a modern replacement for the outdated Apollo/LGSVL workflow, which has lacked official support since 2022.
 
-A primary contribution of this tool is the unification of evaluation standards. Industry-grade AD systems operate in disparate evaluation environments when compared to academic agents, which introduce unintended nondeterminism[@9793395; @osikowicz2025empirically]. Built on the unified CARLA platform, CAWSR enables the execution of modular industry systems, facilitating direct comparison to academic agents (end-to-end models) under identical conditions.
+It enhances research reproducibility by implementing a fully synchronous evaluation pipeline that minimises unintended nondeterminism in simulation-based testing.
+To ensure community readiness and ease of use, it is distributed as a Docker container.
 
-Furthermore, CAWSR offers a flexible programmatic interface for search-based testing and verification of Autoware through scenario generation algorithms. This enables researchers to design verification strategies based on various metrics extracted from scenario execution, such as the CARLA Leaderboard's driving score.
+Furthermore, by adopting CARLA Leaderboard metrics, `CAWSR` enables researchers to directly compare Autoware with other state-of-the-art driving agents in the CARLA environment.
+It provides an essential foundation for the systematic evaluation of various testing approaches for ADS.
 
-CAWSR prioritises a streamlined deployment process for ease of use and reproducibility. By leveraging containerised deployment through Docker, the framework removes complex dependencies associated with Autoware and CARLA, simplifying the complexity of setup drastically. To support community adoption, a comprehensive set of tools and example implementations is provided, supplying the foundations for the development of new scenarios and verification strategies.
 
 
 # Software Design
@@ -96,7 +98,8 @@ The evaluation pipeline is engineered to be fully synchronous, minimising uninte
 
 - JSON Parser: Translates the *scenario_definition* (see \autoref{fig:scenario_domain}) into a Behavior Tree (BT). It utilises Scenario Runner's *Atomic Behaviours* and *Atomic Conditions* as modular primitives to define discrete actions (e.g., spawning pedestrians) and logic triggers.
 
-- ScenarioManager[@carla_scenario_runner_2025]: Orchestrates the simulation loop by evaluating the BT to update actor states and triggering CARLA simulation ticks. Execution terminates based on CARLA Leaderboard criteria [@carla_leaderboard], as summarised in \autoref{tab:termination_criteria}. Post-execution, the module calculates the Driving Score (DS) according to the official leaderboard metrics.
+<!-- David: Citing SR for added transparency, since this class is natively part of it -->
+- ScenarioManager [@carla_scenario_runner_2025]: Orchestrates the simulation loop by evaluating the BT to update actor states and triggering CARLA simulation ticks. Execution terminates based on CARLA Leaderboard criteria [@carla_leaderboard], as summarised in \autoref{tab:termination_criteria}. Post-execution, the module calculates the Driving Score (DS) according to the official leaderboard metrics.
 
 - Agent and CarlaBridge: The Agent manages the ROS2 connection to Autoware. At each timestep, the CarlaBridge [@carlaautowarebridge] transforms CARLA snapshots and sensor data into the Autoware coordinate system. Autoware processes these inputs to issue control commands, which the Agent then applies to the ego vehicle.
 
