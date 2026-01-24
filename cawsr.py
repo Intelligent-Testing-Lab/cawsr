@@ -209,7 +209,7 @@ class AWScenarioRunner(object):
         route_config.agent.set_global_plan(gps_route, route)  # set agent route
 
         # visualise the route in CARLA
-        visualise_route(route)
+        visualise_route([waypoint[0] for waypoint in route])
 
         ego.prepare_ego(route[0][0])  # set location to first waypoint
 
