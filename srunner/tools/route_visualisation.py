@@ -29,5 +29,5 @@ def visualise_route(route: list[carla.Location], lifetime=600):
 
     # draw final waypoint
     world_debug.draw_point(
-        location=route[-1], size=0.1, color=waypoint, life_time=lifetime
+        location=route[-1].location, size=0.1, color=waypoint, life_time=lifetime
     )
