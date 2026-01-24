@@ -137,6 +137,10 @@ class carla_ros2_interface(object):
                 self.pub_camera_info = self.ros2_node.create_publisher(
                     CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
                 )
+
+                # self.pub_camera_yolo_info = self.ros2_node.create_publisher(
+                #    CameraInfo, "/sensing/camera/0/camera_info", 1
+                # )
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(

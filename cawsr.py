@@ -37,6 +37,7 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.scenarioconfigs.route_scenario_configuration import (
     RouteScenarioConfiguration,
 )
+from srunner.tools.route_visualisation import visualise_route
 from srunner.tools import route_manipulation
 from srunner.objects.ego_vehicle import EgoVehicle
 from srunner.tools.log import LogUtil
@@ -206,6 +207,9 @@ class AWScenarioRunner(object):
             route_config.keypoints
         )
         route_config.agent.set_global_plan(gps_route, route)  # set agent route
+
+        # visualise the route in CARLA
+        visualise_route(route)
 
         ego.prepare_ego(route[0][0])  # set location to first waypoint
 
@@ -460,11 +464,12 @@ class AWScenarioRunner(object):
         self.results_manager.cleanup_xml()
 
         # copy over the recording from CARLA container
-        time.sleep(1)  # ensure file is written
+        time.sleep(1)  # ensure file is finished writing
         CARLAManager.fetch_file(
             "/home/carla/recording.log",
             self.results_manager.last_scenario,
         )
+        time.sleep(1)  # allow some time for docker to copy it over
 
         # fetch execution status of the scenario (failure or success)
         status = result["status"]
