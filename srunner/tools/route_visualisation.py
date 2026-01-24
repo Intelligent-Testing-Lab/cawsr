@@ -17,8 +17,8 @@ def visualise_route(route: list[carla.Location], lifetime=600):
     waypoint_color = carla.Color(r=0, g=0, b=255)
 
     for waypoint in range(len(route) - 1):
-        begin = route[waypoint]
-        end = route[waypoint + 1]
+        begin = route[waypoint].location
+        end = route[waypoint + 1].location
 
         world_debug.draw_line(
             begin=begin, end=end, thickness=0.5, color=line_color, life_time=lifetime
