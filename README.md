@@ -45,6 +45,7 @@ Running CAWSR
 
 CAWSR can both be ran `locally` or `distributed`. Due to the high-spec requirements, it is recommended to run distributed if you do not meet the following minimum specs:
 - At least **10GB** VRAM and a modern GPU (2080 ti or newer)
+    - We currently supports 20 and 30 series GPUs. Compatibility with the 40 series is current WIP.     
 - At least **32GB** RAM
 - A modern Intel or AMD CPU with at least 8 cores.
 
