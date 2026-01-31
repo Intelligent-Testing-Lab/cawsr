@@ -13,7 +13,8 @@
       },
       "image_size_x": 1920,
       "image_size_y": 1080,
-      "fov": 90.0
+      "fov": 90.0,
+      "publish_frequency": 11.0
     },
     {
       "type": "sensor.lidar.ray_cast",
@@ -32,7 +33,8 @@
       "upper_fov": 10.0,
       "lower_fov": -30.0,
       "rotation_frequency": 20,
-      "noise_stddev": 0.0
+      "noise_stddev": 0.0,
+      "publish_frequency": 11.0
     },
     {
       "type": "sensor.other.gnss",
@@ -44,7 +46,8 @@
         "roll": 0.0,
         "pitch": 0.0,
         "yaw": 0.0
-      }
+      },
+      "publish_frequency": 2.0
     },
     {
       "type": "sensor.other.imu",
@@ -56,7 +59,8 @@
         "roll": 0.0,
         "pitch": 0.0,
         "yaw": 0.0
-      }
+      },
+      "publish_frequency": 50.0
     }
   ]
 }

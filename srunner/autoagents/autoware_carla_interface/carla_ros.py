@@ -26,7 +26,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
-import datetime
 import pathlib
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo
@@ -54,6 +53,8 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
+from tools.CARLA_manager import CARLAManager
+
 
 class carla_ros2_interface(object):
     def __init__(self, node):
@@ -80,8 +81,10 @@ class carla_ros2_interface(object):
             "pose": 2,
         }
         self.publish_prev_times = {
-            sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
+            sensor: GameTime.get_time() for sensor in self.sensor_frequencies
         }
+
+        self.delta = CARLAManager.FIXED_DELTA_SECONDS  # delta in seconds
 
         self.ros2_node = node
 
@@ -139,8 +142,9 @@ class carla_ros2_interface(object):
                 )
 
                 # self.pub_camera_yolo_info = self.ros2_node.create_publisher(
-                #    CameraInfo, "/sensing/camera/0/camera_info", 1
+                #   CameraInfo, "/sensing/camera/0/camera_info", 1
                 # )
+
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
@@ -169,9 +173,9 @@ class carla_ros2_interface(object):
         return control
 
     def checkFrequency(self, sensor):
-        time_delta = (
-            datetime.datetime.now() - self.publish_prev_times[sensor]
-        ).microseconds / 1000000.0
+        # implement frequency check based on game time
+        time_delta = GameTime.get_time() - self.publish_prev_times[sensor]
+
         if 1.0 / time_delta >= self.sensor_frequencies[sensor]:
             return True
         return False
@@ -189,7 +193,7 @@ class carla_ros2_interface(object):
         """Transform the received lidar measurement into a ROS point cloud message."""
         if self.checkFrequency(id_):
             return
-        self.publish_prev_times[id_] = datetime.datetime.now()
+        self.publish_prev_times[id_] = GameTime.get_time()
 
         header = self.get_msg_header(frame_id="velodyne_top_changed")
         fields = [
@@ -262,7 +266,7 @@ class carla_ros2_interface(object):
         """Transform odometry data to Pose and publish Pose with Covariance message."""
         if self.checkFrequency("pose"):
             return
-        self.publish_prev_times["pose"] = datetime.datetime.now()
+        self.publish_prev_times["pose"] = GameTime.get_time()
 
         header = self.get_msg_header(frame_id="map")
         out_pose_with_cov = PoseWithCovarianceStamped()
@@ -339,7 +343,7 @@ class carla_ros2_interface(object):
 
         if self.checkFrequency("camera"):
             return
-        self.publish_prev_times["camera"] = datetime.datetime.now()
+        self.publish_prev_times["camera"] = GameTime.get_time()
 
         image_data_array = numpy.ndarray(
             shape=(carla_camera_data.height, carla_camera_data.width, 4),
@@ -360,7 +364,7 @@ class carla_ros2_interface(object):
         """Transform a received imu measurement into a ROS Imu message and publish Imu message."""
         if self.checkFrequency("imu"):
             return
-        self.publish_prev_times["imu"] = datetime.datetime.now()
+        self.publish_prev_times["imu"] = GameTime.get_time()
 
         imu_msg = Imu()
         imu_msg.header = self.get_msg_header(frame_id="tamagawa/imu_link_changed")
@@ -420,7 +424,7 @@ class carla_ros2_interface(object):
         if self.checkFrequency("status"):
             return
 
-        self.publish_prev_times["status"] = datetime.datetime.now()
+        self.publish_prev_times["status"] = GameTime.get_time()
 
         # convert velocity from cartesian to ego frame
         trans_mat = numpy.array(self.ego_actor.get_transform().get_matrix()).reshape(

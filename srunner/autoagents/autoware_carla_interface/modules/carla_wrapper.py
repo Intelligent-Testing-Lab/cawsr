@@ -23,6 +23,8 @@ import numpy as np  # type: ignore
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 
+logger = logging.getLogger("scenario-runner")
+
 
 # Sensor Wrapper for Agent
 class SensorReceivedNoData(Exception):
@@ -54,7 +56,7 @@ class CallBack(object):
         elif isinstance(data, GenericMeasurement):
             self._parse_pseudo_sensor(data, self._tag)
         else:
-            logging.error("No callback method for this sensor.")
+            logger.error("No callback method for this sensor.")
 
     # Parsing CARLA physical Sensors
     def _parse_image_cb(self, image, tag):
@@ -215,6 +217,13 @@ class SensorWrapper(object):
                     roll=sensor_spec["spawn_point"]["roll"] - 0.015,
                     yaw=sensor_spec["spawn_point"]["yaw"] + 0.0364,
                 )
+
+            bp.set_attribute(
+                "sensor_tick", str(round(1.0 / sensor_spec["publish_frequency"], 2))
+            )
+            logger.info(
+                f"Sensor {sensor_spec['id']} tick rate set to {str(round(1.0 / sensor_spec['publish_frequency'], 2))}"
+            )
 
             # create sensor
             sensor_transform = carla.Transform(sensor_location, sensor_rotation)

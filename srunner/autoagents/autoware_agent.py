@@ -94,7 +94,6 @@ class AutowareAgent(AutonomousAgent):
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
-        # autoware cannot handle many waypoints, becomes unreliable
         n_waypoints = len(self.waypoints_world)
         segment_size = int(n_waypoints / 3)
 
