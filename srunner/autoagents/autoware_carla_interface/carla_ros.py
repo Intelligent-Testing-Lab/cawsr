@@ -53,7 +53,7 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 
-from tools.CARLA_manager import CARLAManager
+from srunner.tools.CARLA_manager import CARLAManager
 
 
 class carla_ros2_interface(object):

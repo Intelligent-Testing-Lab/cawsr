@@ -17,7 +17,7 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.autoagents.autoware_carla_interface.carla_autoware import (
     InitializeInterface,
 )
-from tools.CARLA_manager import CARLAManager
+from srunner.tools.CARLA_manager import CARLAManager
 
 import threading
 import rclpy
