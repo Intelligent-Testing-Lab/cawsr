@@ -17,6 +17,7 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.autoagents.autoware_carla_interface.carla_autoware import (
     InitializeInterface,
 )
+from tools.CARLA_manager import CARLAManager
 
 import threading
 import rclpy
@@ -46,6 +47,7 @@ class AutowareAgent(AutonomousAgent):
         rclpy.init(args=None)
 
         self.config = config
+        self.tick_delta = CARLAManager.FIXED_DELTA_SECONDS
 
         # initialise autoware state object
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
@@ -173,7 +175,7 @@ class AutowareAgent(AutonomousAgent):
     def run_step(self) -> None:
         """Tick method containing all logic based on autoware state"""
         self.counter += 1
-        if self.counter % 20 == 0:
+        if self.counter % int(1 / self.tick_delta) == 0:
             logger.info(
                 f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
             )
