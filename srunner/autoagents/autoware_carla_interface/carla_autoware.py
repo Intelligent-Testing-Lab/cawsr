@@ -26,6 +26,8 @@ from srunner.scenariomanager.timer import GameTime
 
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 
+from enum import Enum
+
 
 class SensorLoop(object):
     def __init__(self):
@@ -100,3 +102,9 @@ class InitializeInterface(object):
         if self.interface:
             self.interface.shutdown()
             self.interface = None
+
+
+class CarlaState(Enum):
+    PLAY = 1
+    CONTROL = 2
+    STOP = 3

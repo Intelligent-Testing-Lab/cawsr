@@ -55,6 +55,8 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
 
 from srunner.tools.CARLA_manager import CARLAManager
 
+from carla_autoware import CarlaState
+
 
 class carla_ros2_interface(object):
     def __init__(self, node):
@@ -83,15 +85,15 @@ class carla_ros2_interface(object):
         self.publish_prev_times = {
             sensor: GameTime.get_time() for sensor in self.sensor_frequencies
         }
-
         self.delta = CARLAManager.FIXED_DELTA_SECONDS  # delta in seconds
-
         self.ros2_node = node
 
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
         obj_clock = Clock()
         obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
+
+        self.carla_state = CarlaState.PLAY
 
         # load sensor config and create publishers
         sensors_config = pathlib.Path(
@@ -175,6 +177,9 @@ class carla_ros2_interface(object):
     def checkFrequency(self, sensor):
         # implement frequency check based on game time
         time_delta = GameTime.get_time() - self.publish_prev_times[sensor]
+
+        if time_delta == 0.0:
+            return True
 
         if 1.0 / time_delta >= self.sensor_frequencies[sensor]:
             return True
@@ -417,7 +422,9 @@ class carla_ros2_interface(object):
             self.first_order_steering(-in_cmd.actuation.steer_cmd) * max_steer_ratio
         )
         out_cmd.brake = in_cmd.actuation.brake_cmd
+
         self.current_control = out_cmd
+        self.carla_state = CarlaState.CONTROL  # update state
 
     def ego_status(self):
         """Publish ego vehicle status."""
@@ -480,6 +487,7 @@ class carla_ros2_interface(object):
         self.pub_gear_state.publish(out_gear_state)
 
     def run_step(self, input_data, timestamp):
+        self.carla_state = CarlaState.PLAY
         self.timestamp = timestamp
 
         seconds = int(self.timestamp)
@@ -503,7 +511,12 @@ class carla_ros2_interface(object):
                 self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
 
         self.ego_status()
+
+        # wait to receive a control command
+        while self.carla_state != CarlaState.CONTROL:
+            pass
         return self.current_control
 
     def shutdown(self):
+        self.carla_state = CarlaState.STOP
         self.ros2_node.destroy_node()
