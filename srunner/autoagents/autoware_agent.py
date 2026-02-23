@@ -17,6 +17,7 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.autoagents.autoware_carla_interface.carla_autoware import (
     InitializeInterface,
 )
+from srunner.scenariomanager.timer import GameTime
 from srunner.tools.CARLA_manager import CARLAManager
 
 import threading
@@ -177,7 +178,7 @@ class AutowareAgent(AutonomousAgent):
         self.counter += 1
         if self.counter % int(1 / self.tick_delta) == 0:
             logger.info(
-                f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
+                f"Ticked 1 second game-time, Current time: {GameTime.get_time():.2f}s, Current tick: {self.counter}"
             )
             self.last_tick = time.perf_counter_ns()
 
