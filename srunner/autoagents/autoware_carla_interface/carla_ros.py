@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.sr/bin/env python
 
+import datetime
 import json
 import math
 
@@ -82,9 +83,14 @@ class carla_ros2_interface(object):
             "status": 50,
             "pose": 2,
         }
+        # self.publish_prev_times = {
+        #    sensor: GameTime.get_time() for sensor in self.sensor_frequencies
+        # }
+
         self.publish_prev_times = {
-            sensor: GameTime.get_time() for sensor in self.sensor_frequencies
+            sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
         }
+
         self.delta = CARLAManager.FIXED_DELTA_SECONDS  # delta in seconds
         self.ros2_node = node
 
@@ -176,7 +182,12 @@ class carla_ros2_interface(object):
 
     def checkFrequency(self, sensor):
         # implement frequency check based on game time
-        time_delta = GameTime.get_time() - self.publish_prev_times[sensor]
+        # time_delta = GameTime.get_time() - self.publish_prev_times[sensor]
+
+        # implement frequency check based on real time
+        time_delta = (
+            datetime.datetime.now() - self.publish_prev_times[sensor]
+        ).microseconds / 1000000.0
 
         if time_delta == 0.0:
             return True

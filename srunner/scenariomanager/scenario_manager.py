@@ -25,6 +25,8 @@ from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
 from srunner.tools.metrics_collector import MetricsCollector
 
+from srunner.tools.CARLA_manager import CARLAManager
+
 
 class ScenarioManager(object):
     """
@@ -171,6 +173,7 @@ class ScenarioManager(object):
         """
         if self._timestamp_last_run < timestamp.elapsed_seconds and self._running:
             self._timestamp_last_run = timestamp.elapsed_seconds
+            start_tick = time.perf_counter_ns()
 
             self._watchdog.update()
 
@@ -203,6 +206,12 @@ class ScenarioManager(object):
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
+
+            end_tick = time.perf_counter_ns()
+
+            tick_diff = (start_tick - end_tick) / 1e9
+            if (start_tick - end_tick) < CARLAManager.FIXED_DELTA_SECONDS:
+                time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
 
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""
