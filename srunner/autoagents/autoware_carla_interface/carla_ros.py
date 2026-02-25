@@ -104,6 +104,7 @@ class carla_ros2_interface(object):
         self.clock_publisher.publish(obj_clock)
 
         self.carla_state = CarlaState.PLAY
+        self.initialising = True
 
         # load sensor config and create publishers
         sensors_config = pathlib.Path(
@@ -528,8 +529,9 @@ class carla_ros2_interface(object):
         self.ego_status()
 
         # wait to receive a control command
-        while self.carla_state != CarlaState.CONTROL:
+        while self.carla_state != CarlaState.CONTROL and not self.initialising:
             pass
+
         return self.current_control
 
     def shutdown(self):

@@ -76,6 +76,9 @@ class InitializeInterface(object):
         self.bridge_loop.start_game_time = GameTime.get_time()
         self.bridge_loop.running = True
 
+    def set_initialising(self, initialising):
+        self.interface.initialising = initialising  # type: ignore
+
     def tick_bridge(self):
         timestamp = None
         world = CarlaDataProvider.get_world()
