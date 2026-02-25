@@ -28,6 +28,7 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
 import pathlib
+from enum import Enum
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
@@ -53,10 +54,13 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_utils import (
 from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
-
 from srunner.tools.CARLA_manager import CARLAManager
 
-from srunner.autoagents.autoware_carla_interface.carla_autoware import CarlaState
+
+class CarlaState(Enum):
+    PLAY = 1
+    CONTROL = 2
+    STOP = 3
 
 
 class carla_ros2_interface(object):

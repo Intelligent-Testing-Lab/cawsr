@@ -123,8 +123,6 @@ All folders are mounted as Docker volumes into the CAWSR container, so any chang
 Before using CAWSR, Autoware must build various `TensorRT` engines for inference. Engine builds are not cross-compatible across various GPU compute capabilities (see [here](https://developer.nvidia.com/cuda/gpus)), so they must be rebuilt per machine. This process usually only takes a few minutes on modern hardware, and starts after the initial launch of autoware.
 
 
-
-
 ## Configuring CAWSR
 
 CAWSR is designed to be highly configurable and supports easy swapping of config files.
