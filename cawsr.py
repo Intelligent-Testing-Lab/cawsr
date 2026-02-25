@@ -382,11 +382,6 @@ class AWScenarioRunner(object):
         for i in range(0, runs):
             logger.info(f"Running scenario {i + 1}/{runs}")
 
-            CARLAManager._set_recording_dir(self.results_manager.recording_path)
-            logger.info("Starting CARLA container....")
-            CARLAManager.restart_carla()
-            time.sleep(10)  # allow CARLA to load
-
             if self._conf["benchmark"]["random_sampling"]:
                 scenario = random.choice(scenarios)
                 scenarios.remove(scenario)  # each scenario can only be picked once
@@ -399,6 +394,11 @@ class AWScenarioRunner(object):
                 run=i,
                 save_def=True,
             )
+
+            CARLAManager._set_recording_dir(self.results_manager.recording_path)
+            logger.info("Starting CARLA container....")
+            CARLAManager.restart_carla()
+            time.sleep(10)  # allow CARLA to load
 
             env_config = EnvironmentParser.parse_scenario_env(
                 self.results_manager.fetch_scenario_xml()
@@ -587,9 +587,10 @@ class AWScenarioRunner(object):
     def _cleanup(self) -> None:
         """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA."""
         try:
-            CarlaDataProvider.get_client().get_trafficmanager(
-                int(self._carla.TRAFFIC_MANAGER.PORT)
-            ).set_synchronous_mode(False)
+            if CarlaDataProvider.get_client() is not None:
+                CarlaDataProvider.get_client().get_trafficmanager(
+                    int(self._carla.TRAFFIC_MANAGER.PORT)
+                ).set_synchronous_mode(False)
         except RuntimeError:
             sys.exit(-1)
 
