@@ -9,6 +9,7 @@ import os
 import datetime
 
 import json
+from pathlib import Path
 from srunner.scenario_decoder.json_to_xml_files import XMLToFiles
 from srunner.tools.CARLA_manager import CARLAManager
 
@@ -72,7 +73,7 @@ class ScenarioDefinitionManager(object):
 
         # make the recordings folder
         os.makedirs(os.path.join(full_path, "recording"), exist_ok=True)
-        self.recording_path = os.path.join(full_path, "recording")
+        self.recording_path = Path(os.path.join(full_path, "recording")).resolve()
 
         os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.last_scenario = full_path
