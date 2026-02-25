@@ -32,7 +32,7 @@ class CARLAManager(object):
         CARLAManager.FIXED_DELTA_SECONDS = config.FIXED_DELTA_SECONDS
 
         CARLAManager.run_command = [
-            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
+            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v {CARLAManager.recording_dir}:/home/carla/recordings:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
         ]
 
     @staticmethod
@@ -55,6 +55,10 @@ class CARLAManager(object):
                 env=env,
             )
             logger.info(f"Started CARLA container {result.stdout.strip()}")
+
+            if result.stderr:
+                logger.error(f"Error starting CARLA container: {result.stderr.strip()}")
+
             CARLAManager.container_id = result.stdout.strip()
         else:
             CARLAManager.restart_carla()
