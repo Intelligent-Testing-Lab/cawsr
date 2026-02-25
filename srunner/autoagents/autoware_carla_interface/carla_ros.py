@@ -214,7 +214,7 @@ class carla_ros2_interface(object):
         """Transform the received lidar measurement into a ROS point cloud message."""
         if self.checkFrequency(id_):
             return
-        self.publish_prev_times[id_] = GameTime.get_time()
+        self.publish_prev_times[id_] = datetime.datetime.now()
 
         header = self.get_msg_header(frame_id="velodyne_top_changed")
         fields = [
@@ -287,7 +287,7 @@ class carla_ros2_interface(object):
         """Transform odometry data to Pose and publish Pose with Covariance message."""
         if self.checkFrequency("pose"):
             return
-        self.publish_prev_times["pose"] = GameTime.get_time()
+        self.publish_prev_times["pose"] = datetime.datetime.now()
 
         header = self.get_msg_header(frame_id="map")
         out_pose_with_cov = PoseWithCovarianceStamped()
@@ -364,7 +364,7 @@ class carla_ros2_interface(object):
 
         if self.checkFrequency("camera"):
             return
-        self.publish_prev_times["camera"] = GameTime.get_time()
+        self.publish_prev_times["camera"] = datetime.datetime.now()
 
         image_data_array = numpy.ndarray(
             shape=(carla_camera_data.height, carla_camera_data.width, 4),
@@ -385,7 +385,7 @@ class carla_ros2_interface(object):
         """Transform a received imu measurement into a ROS Imu message and publish Imu message."""
         if self.checkFrequency("imu"):
             return
-        self.publish_prev_times["imu"] = GameTime.get_time()
+        self.publish_prev_times["imu"] = datetime.datetime.now()
 
         imu_msg = Imu()
         imu_msg.header = self.get_msg_header(frame_id="tamagawa/imu_link_changed")
@@ -447,7 +447,7 @@ class carla_ros2_interface(object):
         if self.checkFrequency("status"):
             return
 
-        self.publish_prev_times["status"] = GameTime.get_time()
+        self.publish_prev_times["status"] = datetime.datetime.now()
 
         # convert velocity from cartesian to ego frame
         trans_mat = numpy.array(self.ego_actor.get_transform().get_matrix()).reshape(
