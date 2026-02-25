@@ -28,7 +28,6 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
 import pathlib
-from enum import Enum
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
@@ -55,12 +54,6 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 from srunner.tools.CARLA_manager import CARLAManager
-
-
-class CarlaState(Enum):
-    PLAY = 1
-    CONTROL = 2
-    STOP = 3
 
 
 class carla_ros2_interface(object):
@@ -102,9 +95,6 @@ class carla_ros2_interface(object):
         obj_clock = Clock()
         obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
-
-        self.carla_state = CarlaState.PLAY
-        self.initialising = True
 
         # load sensor config and create publishers
         sensors_config = pathlib.Path(
@@ -440,7 +430,6 @@ class carla_ros2_interface(object):
         out_cmd.brake = in_cmd.actuation.brake_cmd
 
         self.current_control = out_cmd
-        self.carla_state = CarlaState.CONTROL  # update state
 
     def ego_status(self):
         """Publish ego vehicle status."""
@@ -503,7 +492,6 @@ class carla_ros2_interface(object):
         self.pub_gear_state.publish(out_gear_state)
 
     def run_step(self, input_data, timestamp):
-        self.carla_state = CarlaState.PLAY
         self.timestamp = timestamp
 
         seconds = int(self.timestamp)
@@ -528,12 +516,7 @@ class carla_ros2_interface(object):
 
         self.ego_status()
 
-        # wait to receive a control command
-        while self.carla_state != CarlaState.CONTROL and not self.initialising:
-            pass
-
         return self.current_control
 
     def shutdown(self):
-        self.carla_state = CarlaState.STOP
         self.ros2_node.destroy_node()

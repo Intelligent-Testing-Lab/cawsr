@@ -89,7 +89,6 @@ class AutowareAgent(AutonomousAgent):
         self.initialised = False
 
         self.carla_interface.load_world()
-        self.carla_interface.set_initialising(not self.initialised)
         self.carla_interface.run_bridge()
 
     def set_route(self) -> None:
