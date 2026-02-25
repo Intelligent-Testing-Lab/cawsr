@@ -218,8 +218,8 @@ class AWScenarioRunner(object):
         budget = self._conf["initialisation_budget"]
         status = False
         for tick in range(1, budget + 1):
-            status = self.aw_agent.run_step_init()  # type: ignore
             self._tick_carla()
+            status = self.aw_agent.run_step_init()  # type: ignore
         if not status:
             logger.info("Agent failed to initialise route")
         else:
