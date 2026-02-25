@@ -70,6 +70,10 @@ class ScenarioDefinitionManager(object):
 
         full_path = os.path.join(results_folder, f"{iteration}")
 
+        # make the recordings folder
+        os.makedirs(os.path.join(full_path, "recording"), exist_ok=True)
+        self.recording_path = os.path.join(full_path, "recording")
+
         os.makedirs(full_path, exist_ok=True)  # exist_ok=True, no need to error handle
         self.last_scenario = full_path
 

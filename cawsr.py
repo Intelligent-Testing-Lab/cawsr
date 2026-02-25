@@ -248,7 +248,9 @@ class AWScenarioRunner(object):
         logger.info("Starting scenario...")
 
         try:
-            self.carla_client.start_recorder("/home/carla/recording.log", True)
+            self.carla_client.start_recorder(
+                "/home/carla/recordings/recording.log", True
+            )
             self.scenario_manager.load_scenario(
                 scenario, self.aw_agent, follow_ego=True
             )
@@ -327,10 +329,6 @@ class AWScenarioRunner(object):
         optimisation_algorithm = self._load_alg()
         scenario = pathlib.Path(self._conf["algorithm"]["initial_definition"])
 
-        # add some code here
-        # if scenario = null (initial definition not given)
-        # run the algorithm to generate a new, random scenario
-
         logger.info(str(scenario.absolute()))
         json_definition = self._load_scenario(
             scenario_name=scenario.stem,
@@ -344,6 +342,7 @@ class AWScenarioRunner(object):
         for i in range(0, runs):
             logger.info(f"Running scenario {i + 1}/{runs}")
 
+            CARLAManager._set_recording_dir(self.results_manager.recording_path)
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
             time.sleep(10)  # allow CARLA to load
@@ -355,7 +354,7 @@ class AWScenarioRunner(object):
                 self.results_manager.last_scenario, env_config
             )[
                 0
-            ]  # route id. Multiple routes currently aren't supported, so use first route -> fix to use config
+            ]  # route id. Multiple routes currently aren't supported, so use first route
 
             json_definition = self._cawsr_process(
                 route_config=route_config,
@@ -383,6 +382,7 @@ class AWScenarioRunner(object):
         for i in range(0, runs):
             logger.info(f"Running scenario {i + 1}/{runs}")
 
+            CARLAManager._set_recording_dir(self.results_manager.recording_path)
             logger.info("Starting CARLA container....")
             CARLAManager.restart_carla()
             time.sleep(10)  # allow CARLA to load
@@ -465,11 +465,6 @@ class AWScenarioRunner(object):
 
         # copy over the recording from CARLA container
         time.sleep(1)  # ensure file is finished writing
-        CARLAManager.fetch_file(
-            "/home/carla/recording.log",
-            self.results_manager.last_scenario,
-        )
-        time.sleep(1)  # allow some time for docker to copy it over
 
         # fetch execution status of the scenario (failure or success)
         status = result["status"]
