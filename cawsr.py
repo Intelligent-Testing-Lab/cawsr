@@ -597,9 +597,11 @@ class AWScenarioRunner(object):
         except RuntimeError:
             sys.exit(-1)
 
-        self.scenario_manager.cleanup()
+        if self.scenario_manager is not None:
+            self.scenario_manager.cleanup()
 
-        CarlaDataProvider.cleanup()
+        if CarlaDataProvider is not None:
+            CarlaDataProvider.cleanup()
 
         for i, _ in enumerate(self.ego_vehicles):
             if self.ego_vehicles[i]:
@@ -612,7 +614,7 @@ class AWScenarioRunner(object):
         self.ego_vehicles = []
 
         if self.aw_agent:
-            self.aw_agent.destroy()
+            self.aw_agent.destroy(cleanup=True)
             self.aw_agent = None
 
 

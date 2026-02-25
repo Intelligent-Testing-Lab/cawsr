@@ -5,22 +5,20 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-from rclpy.node import Node
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
 import logging
 
-from autoware_cawsr_msgs.msg import AutowareRestart
-import logging
+from autoware_cawsr_msgs.msg import AutowareRestart, AutowareShutdown
 
 
 logger = logging.getLogger("scenario-runner")
 logger.propagate = False
 
 
-class StateNode():
+class StateNode:
     route_state = "/planning/mission_planning/state"
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
@@ -46,6 +44,10 @@ class StateNode():
 
         self.restart_autoware_pub = self.node.create_publisher(
             AutowareRestart, self.reset_topic, 10
+        )
+
+        self.shutdown_autoware_pub = self.node.create_publisher(
+            AutowareShutdown, "/autoware/shutdown", 10
         )
 
     def route_state_cb(self, route_state_msg: RouteState) -> None:
@@ -86,3 +88,13 @@ class StateNode():
         msg.ego_name = str(ego_name)
 
         self.restart_autoware_pub.publish(msg)
+
+    def shutdown_autoware(self):
+        """Publishes an empty message to shutdown autoware."""
+
+        # fill with dummy data, since this topic only handles shutting autoware down
+        msg = AutowareShutdown()
+        msg.carla_map = "Town01"
+        msg.ego_name = "ego_vehicle"
+
+        self.shutdown_autoware_pub.publish(msg)

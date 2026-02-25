@@ -68,22 +68,25 @@ class AutowareAgent(AutonomousAgent):
             self.autoware_state, self._node_state
         )
 
-        # run state note and cawsr bridge in separate executors
-        self._executors = [
-            rclpy.executors.SingleThreadedExecutor(),
-            rclpy.executors.SingleThreadedExecutor(),
-        ]
+        try:
+            # run state note and cawsr bridge in separate executors
+            self._executors = [
+                rclpy.executors.SingleThreadedExecutor(),
+                rclpy.executors.SingleThreadedExecutor(),
+            ]
 
-        self._executors[0].add_node(self._node)
-        self._executors[1].add_node(self._node_state)
+            self._executors[0].add_node(self._node)
+            self._executors[1].add_node(self._node_state)
 
-        self._executor_threads = [
-            threading.Thread(target=self._executors[0].spin, daemon=True),
-            threading.Thread(target=self._executors[1].spin, daemon=True),
-        ]
+            self._executor_threads = [
+                threading.Thread(target=self._executors[0].spin, daemon=True),
+                threading.Thread(target=self._executors[1].spin, daemon=True),
+            ]
 
-        for thread in self._executor_threads:
-            thread.start()
+            for thread in self._executor_threads:
+                thread.start()
+        except rclpy.executors.ExternalShutdownException:
+            logger.info("Node Executor shutdown externally...")
 
         self.sent_route = False
         self.initialised = False
@@ -119,10 +122,14 @@ class AutowareAgent(AutonomousAgent):
             node=self._node,
         )
 
-    def destroy(self) -> None:
+    def destroy(self, cleanup=False) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
-        self.state_node.reset_autoware(self.config.town, self.config.ego_name)
+        if not cleanup:
+            self.state_node.reset_autoware(self.config.town, self.config.ego_name)
+        else:
+            self.state_node.shutdown_autoware()
+
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
@@ -133,9 +140,6 @@ class AutowareAgent(AutonomousAgent):
                 thread.join()
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
-
-    def cleanup(self) -> None:
-        self.destroy()
 
     def run_step_init(self) -> bool:
         """Route Initialisation loop
@@ -181,12 +185,6 @@ class AutowareAgent(AutonomousAgent):
                 f"Ticked 1 second game-time, Current time: {GameTime.get_time():.2f}s, Current tick: {self.counter}"
             )
             self.last_tick = time.perf_counter_ns()
-
-        # if not self.initialised:
-        #    self.initialised = self.run_step_init()
-        #
-        #    if self.initialised:
-        #        logger.info("Set agent route!")
 
         # check if the current route is set and we can publish engage
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
