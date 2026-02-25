@@ -56,7 +56,7 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
 
 from srunner.tools.CARLA_manager import CARLAManager
 
-from carla_autoware import CarlaState
+from srunner.autoagents.autoware_carla_interface.carla_autoware import CarlaState
 
 
 class carla_ros2_interface(object):

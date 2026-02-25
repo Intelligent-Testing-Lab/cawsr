@@ -45,7 +45,7 @@ Running CAWSR
 
 CAWSR can both be ran `locally` or `distributed`. Due to the high-spec requirements, it is recommended to run distributed if you do not meet the following minimum specs:
 - At least **10GB** VRAM and a modern GPU (2080 ti or newer)
-    - We currently supports 20 and 30 series GPUs. Compatibility with the 40 series is current WIP.     
+    - We currently supports 20 and 30 series GPUs. Compatibility with the 40 series is current WIP.
 
 - At least **32GB** RAM
 - A modern Intel or AMD CPU with at least 8 cores.
@@ -117,6 +117,13 @@ docker_compose.yml
 .env
 ```
 All folders are mounted as Docker volumes into the CAWSR container, so any changes persist between host and container.
+
+## Autoware Warmup
+
+Before using CAWSR, Autoware must build various `TensorRT` engines for inference. Engine builds are not cross-compatible across various GPU compute capabilities (see [here](https://developer.nvidia.com/cuda/gpus)), so they must be rebuilt per machine. This process usually only takes a few minutes on modern hardware, and starts after the initial launch of autoware.
+
+
+
 
 ## Configuring CAWSR
 
