@@ -225,9 +225,6 @@ class AWScenarioRunner(object):
         else:
             logger.info("Successfully initialised agent; route set.")
 
-        # prepare the agent for execution
-        self.aw_agent.carla_interface.set_initialising(False)  # type: ignore
-
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
         CarlaDataProvider.set_traffic_manager_port(tm_port)
@@ -589,6 +586,9 @@ class AWScenarioRunner(object):
 
     def _cleanup(self) -> None:
         """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA."""
+        # stop CARLA
+        CARLAManager.stop_carla()
+
         try:
             if CarlaDataProvider.get_client() is not None:
                 CarlaDataProvider.get_client().get_trafficmanager(
