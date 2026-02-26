@@ -3,6 +3,10 @@ FROM osrf/ros:humble-desktop
 RUN apt -y update && \
     apt install --no-install-recommends -y libpng16-16 libtiff5 libjpeg8 build-essential curl wget git libxerces-c-dev python3-pip vim
 
+# Create carla user with same UID/GID as the CARLA simulator container
+RUN groupadd -g 1000 carla && \
+    useradd -m -u 1000 -g carla -s /bin/bash carla
+
 # clone repo
 COPY . /autoware_scenario_runner
 
@@ -50,11 +54,19 @@ RUN mkdir /cyclonedds && \
     mv /autoware_scenario_runner/docker/cyclonedds_local.xml /cyclonedds/ && \
     mv /autoware_scenario_runner/docker/cyclonedds_distributed.xml /cyclonedds/ && \
     rm -rf /autoware_scenario_runner/docker && \
-    echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> ~/.bashrc && \
-    echo "alias rossrc='source ${AUTOWARE_MSG_PKG} && source ${ROS_PKG} && echo Sourced'" >> ~/.bashrc && \
-    source ~/.bashrc
+    echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> /home/carla/.bashrc && \
+    echo "alias rossrc='source ${AUTOWARE_MSG_PKG} && source ${ROS_PKG} && echo Sourced'" >> /home/carla/.bashrc
 
 ENV CARLA_API_ROOT="/autoware_scenario_runner/PythonAPI"
 ENV PYTHONPATH="${PYTHONPATH}:${CARLA_API_ROOT}/carla/agents:${CARLA_API_ROOT}/carla"
+
+# Give carla user ownership of necessary directories
+RUN chown -R carla:carla /autoware_scenario_runner && \
+    chown -R carla:carla /ros_workspace && \
+    chown -R carla:carla /cyclonedds && \
+    usermod -aG docker carla
+
+# Switch to carla user
+USER carla
 
 ENTRYPOINT [ "/autoware_scenario_runner/entrypoint.sh" ]
