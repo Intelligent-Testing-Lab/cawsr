@@ -1,5 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+For development and contributing docs see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+
 CAWSR: ScenarioRunner for CARLA with support for Autoware
 ========================
 
@@ -7,9 +9,9 @@ CAWSR (Carla Autoware Scenario Runner) is a scenario execution engine built for 
 
 Prerequisites
 ---------------------------
-Both CARLA and Autoware require a high-spec computer with a high-end Nvidia GPU. It is also possible to run a [**distributed**]() setup with multiple machines to help ease the workload, or run the entire stack locally. Currently, only Linux is supported (guide was written on Ubuntu 24.04).
+Both CARLA and Autoware require a high-spec computer with a high-end Nvidia GPU. It is also possible to run a [**distributed**](#distributed) setup with multiple machines to help ease the workload, or run the entire stack locally. Currently, only Linux is supported (guide was written on Ubuntu 24.04).
 
-Ensure the target machine(s) have the [Docker Engine]() and [Nvidia Container toolkit]() installed to enable gpu accelerated workflows in Docker.
+Ensure the target machine(s) have the [Docker Engine](https://docs.docker.com/engine/install/) and [Nvidia Container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed to enable gpu accelerated workflows in Docker.
 
 CAWSR Setup
 ---------------------------
@@ -173,10 +175,10 @@ We use a custom implementation of a scenario definition in JSON. We have include
 Domain Model:
 ![Domain Model](./docs/resources/scenario_domain.png)
 
-Contributing
-------------
+Contributing & Development
+--------------------------
 
-Please take a look at our [Contribution guidelines]().
+Please take a look at our [Contribution guidelines](CONTRIBUTING.md). To setup a development container, follow our [development guidelines](docs/DEVELOPMENT.md)
 
 License
 -------
