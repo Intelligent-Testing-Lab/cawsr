@@ -47,9 +47,10 @@ RUN apt-get update -y && \
 
 # install pip packages and setup docker entrypoint
 RUN python3 -m pip install -r requirements.txt && \
-    mv docker/PythonAPI.tar ./ && \
-    tar -xvf PythonAPI.tar && \
-    rm -rf PythonAPI.tar && \
+    mkdir -p /carla_api && \
+    mv /autoware_scenario_runner/docker/PythonAPI.tar /carla_api/ && \
+    tar -xvf /carla_api/PythonAPI.tar -C /carla_api && \
+    rm -rf /carla_api/PythonAPI.tar && \
     cd /container_tools && \
     chmod +x /container_tools/entrypoint.sh && \
     mkdir logs
@@ -62,11 +63,13 @@ RUN mkdir /cyclonedds && \
     echo "export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp" >> /home/carla/.bashrc && \
     echo "alias rossrc='source ${AUTOWARE_MSG_PKG} && source ${ROS_PKG} && echo Sourced'" >> /home/carla/.bashrc
 
-ENV CARLA_API_ROOT="/autoware_scenario_runner/PythonAPI"
+ENV CARLA_API_ROOT="/carla_api/PythonAPI"
 ENV PYTHONPATH="${PYTHONPATH}:${CARLA_API_ROOT}/carla/agents:${CARLA_API_ROOT}/carla"
 
 # Give carla user ownership of necessary directories
 RUN chown -R carla:carla /autoware_scenario_runner && \
+    chown -R carla:carla /carla_api && \
+    chown -R carla:carla /container_tools && \
     chown -R carla:carla /ros_workspace && \
     chown -R carla:carla /cyclonedds && \
     usermod -aG docker carla
