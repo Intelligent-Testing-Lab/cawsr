@@ -141,6 +141,13 @@ class AutowareAgent(AutonomousAgent):
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
 
+        try:
+            if rclpy.ok():
+                rclpy.shutdown()
+        except Exception as e:
+            # rclpy.shutdown() can raise if already shut down
+            self.logger.debug(f"rclpy shutdown raised: {e}")
+
     def run_step_init(self) -> bool:
         """Route Initialisation loop
 

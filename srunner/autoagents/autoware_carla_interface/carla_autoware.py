@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2024 Tier IV, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -10,22 +12,20 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.sr/bin/env python
+# limitations under the License.
 
+import random
+import signal
 import time
 
-from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
-    SensorReceivedNoData,
-)
-from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
-    SensorWrapper,
-)
+import carla
+
 from srunner.autoagents.autoware_carla_interface.carla_ros import carla_ros2_interface
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.timer import GameTime
-
+from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import SensorReceivedNoData
+from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import SensorWrapper
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
-
 
 class SensorLoop(object):
     def __init__(self):
@@ -52,7 +52,8 @@ class SensorLoop(object):
 
 class InitializeInterface(object):
     def __init__(self, config: EnvironmentConfig, node):
-        self.interface = carla_ros2_interface(node)
+        self.interface = carla_ros2_interface()
+
         self.world = None
         self.sensor_wrapper = None
         self.ego_actor = None
@@ -64,10 +65,10 @@ class InitializeInterface(object):
         self.ego_actor = CarlaDataProvider.get_actor_by_name(self.config.ego_name)
         self.interface.ego_actor = self.ego_actor  # TODO improve design
         self.interface.physics_control = self.ego_actor.get_physics_control()
-
+    
         self.sensor_wrapper = SensorWrapper(self.interface)
         self.sensor_wrapper.setup_sensors(self.ego_actor, False)
-
+    
     def run_bridge(self):
         self.bridge_loop = SensorLoop()
         self.bridge_loop.sensor = self.sensor_wrapper
@@ -91,12 +92,40 @@ class InitializeInterface(object):
         self.bridge_loop._stop_loop()
 
     def _cleanup(self):
-        self.sensor_wrapper.cleanup()
-        CarlaDataProvider.cleanup()
-        if self.ego_actor:
-            self.ego_actor.destroy()
-            self.ego_actor = None
+        """Clean up all CARLA resources in reverse initialization order.
 
-        if self.interface:
+        Ensures cleanup happens even if individual steps fail.
+        """
+        self._cleanup_sensors()
+        self._cleanup_ros_interface()
+        self._cleanup_ego_actor()
+        self._cleanup_carla_provider()
+
+    def _cleanup_sensors(self):
+        """Clean up sensor wrapper, continuing on error."""
+        if not self.sensor_wrapper:
+            return
+        try:
+            self.sensor_wrapper.cleanup()
+        except Exception as e:
+            print(f"Warning: Sensor cleanup failed: {e}")
+
+    def _cleanup_ros_interface(self):
+        """Clean up ROS interface, continuing on error."""
+        if not self.interface:
+            return
+        try:
             self.interface.shutdown()
             self.interface = None
+        except Exception as e:
+            print(f"Warning: ROS interface shutdown failed: {e}")
+
+    def _cleanup_ego_actor(self):
+        """Destroy ego vehicle, continuing on error."""
+        if not self.ego_actor:
+            return
+        try:
+            self.ego_actor.destroy()
+            self.ego_actor = None
+        except Exception as e:
+            print(f"Warning: Ego actor destruction failed: {e}")

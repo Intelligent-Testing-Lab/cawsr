@@ -4,8 +4,6 @@ import struct
 import sys
 
 import carla
-
-# message imports
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Quaternion
 from sensor_msgs.msg import PointCloud2
@@ -37,10 +35,7 @@ def _get_struct_fmt(is_bigendian, fields, field_names=None):
             fmt += "x" * (field.offset - offset)
             offset = field.offset
         if field.datatype not in _DATATYPES:
-            print(
-                "Skipping unknown PointField datatype [{}]" % field.datatype,
-                file=sys.stderr,
-            )
+            print("Skipping unknown PointField datatype [{}]" % field.datatype, file=sys.stderr)
         else:
             datatype_fmt, datatype_length = _DATATYPES[field.datatype]
             fmt += field.count * datatype_fmt
