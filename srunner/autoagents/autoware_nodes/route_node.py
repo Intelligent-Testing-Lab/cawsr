@@ -5,11 +5,10 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-from rclpy.node import Node
 from geometry_msgs.msg import Pose
 
 # Import the service types directly
-from autoware_adapi_v1_msgs.srv import SetRoutePoints, ClearRoute
+from autoware_adapi_v1_msgs.srv import ClearRoute
 
 # You might explicitly import the Request types for clarity, though not strictly necessary
 from autoware_adapi_v1_msgs.srv._clear_route import ClearRoute_Request
@@ -21,12 +20,12 @@ import logging
 logger = logging.getLogger("scenario-runner")
 logger.propagate = False
 
-class RouteNode():
+
+class RouteNode:
     last_goal = None
     last_waypoints = []
 
     # These are service names, not topic names. Renamed for clarity.
-    set_route_points_service_name = "/api/routing/set_route_points"
     clear_route_service_name = "/api/routing/clear_route"
 
     goal_topic = "/planning/mission_planning/goal"
@@ -38,34 +37,18 @@ class RouteNode():
         self.autoware_state = autoware_state
         self.node = node
 
-        # Create service clients, not publishers
-        self.set_route_client = self.node.create_client(
-            SetRoutePoints, self.set_route_points_service_name
-        )
         self.clear_route_client = self.node.create_client(
             ClearRoute, self.clear_route_service_name
         )
 
-        self.goal_publisher = self.node.create_publisher(PoseStamped, self.goal_topic, 10)
+        self.goal_publisher = self.node.create_publisher(
+            PoseStamped, self.goal_topic, 10
+        )
         self.checkpoint_publisher = self.node.create_publisher(
             PoseStamped, self.checkpoint_topic, 10
         )
 
-        # Good practice: Wait for the service server to be available before trying to call it
-        logger.info(
-            f"Waiting for '{self.set_route_points_service_name}' service..."
-        )
-        while not self.set_route_client.wait_for_service(timeout_sec=1.0):
-            logger.info(
-                f"Service '{self.set_route_points_service_name}' not available, waiting again..."
-            )
-        logger.info(
-            f"Service '{self.set_route_points_service_name}' available."
-        )
-
-        logger.info(
-            f"Waiting for '{self.clear_route_service_name}' service..."
-        )
+        logger.info(f"Waiting for '{self.clear_route_service_name}' service...")
         while not self.clear_route_client.wait_for_service(timeout_sec=1.0):
             logger.info(
                 f"Service '{self.clear_route_service_name}' not available, waiting again..."
@@ -129,8 +112,6 @@ class RouteNode():
             if response.status.success:
                 logger.info("Route cleared successfully!")
             else:
-                logger.warn(
-                    f"Failed to clear route: {response.status.message}"
-                )
+                logger.warn(f"Failed to clear route: {response.status.message}")
         except Exception as e:
             logger.error(f"Service call failed: {e}")
