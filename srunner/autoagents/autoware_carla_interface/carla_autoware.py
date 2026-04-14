@@ -14,18 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
-import signal
 import time
 
-import carla
 
 from srunner.autoagents.autoware_carla_interface.carla_ros import carla_ros2_interface
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.scenariomanager.timer import GameTime
-from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import SensorReceivedNoData
-from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import SensorWrapper
+from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
+    SensorReceivedNoData,
+)
+from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
+    SensorWrapper,
+)
 from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
+
 
 class SensorLoop(object):
     def __init__(self):
@@ -52,7 +54,7 @@ class SensorLoop(object):
 
 class InitializeInterface(object):
     def __init__(self, config: EnvironmentConfig, node):
-        self.interface = carla_ros2_interface()
+        self.interface = carla_ros2_interface(node)
 
         self.world = None
         self.sensor_wrapper = None
@@ -65,10 +67,10 @@ class InitializeInterface(object):
         self.ego_actor = CarlaDataProvider.get_actor_by_name(self.config.ego_name)
         self.interface.ego_actor = self.ego_actor  # TODO improve design
         self.interface.physics_control = self.ego_actor.get_physics_control()
-    
+
         self.sensor_wrapper = SensorWrapper(self.interface)
         self.sensor_wrapper.setup_sensors(self.ego_actor, False)
-    
+
     def run_bridge(self):
         self.bridge_loop = SensorLoop()
         self.bridge_loop.sensor = self.sensor_wrapper
