@@ -191,6 +191,8 @@ class AWScenarioRunner(object):
             self.aw_agent = getattr(self.module_aw_agent, agent_class_name)(
                 env_config
             )  # agent init function
+
+            # publish initialising state once agent is loaded
             route_config.agent = self.aw_agent
         except Exception as e:  # Forces the simulation to run synchronously # pylint: disable=broad-except
             logger.error("Could not setup required agent due to {}".format(e))
@@ -225,18 +227,19 @@ class AWScenarioRunner(object):
         else:
             logger.info("Successfully initialised agent; route set.")
 
-        logger.info("Loading Traffic Manager...")
-        tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
-        CarlaDataProvider.set_traffic_manager_port(tm_port)
-        tm = self.carla_client.get_trafficmanager(tm_port)
-
-        tm.set_random_device_seed(int(self._carla.TRAFFIC_MANAGER.SEED))
-        tm.set_synchronous_mode(self._carla.SYNC)
+        if env_config.background_behaviour:
+            logger.info("Loading Traffic Manager...")
+            tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
+            CarlaDataProvider.set_traffic_manager_port(tm_port)
+            tm = self.carla_client.get_trafficmanager(tm_port)
+            tm.set_random_device_seed(int(self._carla.TRAFFIC_MANAGER.SEED))
+            tm.set_synchronous_mode(self._carla.SYNC)
 
         try:
             scenario = RouteScenario(
                 world=self.carla_world,
                 config=route_config,
+                env_config=env_config,
                 debug_mode=self.DEBUG,
                 ego_vehicle=ego._actor,
                 route=route,
@@ -290,6 +293,25 @@ class AWScenarioRunner(object):
             result_dict["definition"] = definition
 
         result_.put(result_dict)
+
+    def init_agent_loop(self):
+        # allow the agent X ticks to initialize sensors and set the route
+        logger.info("Initialising agent route...")
+        budget = self._conf["initialisation_budget"]
+        status = False
+        for tick in range(1, budget + 1):
+            start_tick = time.perf_counter_ns()
+            self._tick_carla()
+            status = self.aw_agent.run_step_init()  # type: ignore
+            end_tick = time.perf_counter_ns()
+
+            tick_diff = (end_tick - start_tick) / 1e9
+            if (end_tick - start_tick) < CARLAManager.FIXED_DELTA_SECONDS:
+                time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
+        if not status:
+            logger.info("Agent failed to initialise route")
+        else:
+            logger.info("Successfully initialised agent; route set.")
 
     def _tick_carla(self) -> None:
         timestamp = None

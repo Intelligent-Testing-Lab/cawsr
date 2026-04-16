@@ -209,8 +209,8 @@ class ScenarioManager(object):
 
             end_tick = time.perf_counter_ns()
 
-            tick_diff = (start_tick - end_tick) / 1e9
-            if (start_tick - end_tick) < CARLAManager.FIXED_DELTA_SECONDS:
+            tick_diff = (end_tick - start_tick) / 1e9
+            if (end_tick - start_tick) < CARLAManager.FIXED_DELTA_SECONDS:
                 time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
 
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:

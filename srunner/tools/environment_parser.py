@@ -30,7 +30,9 @@ class EnvironmentParser(object):
 
         for scenario in tree.iter("scenario"):
             config.town = scenario.attrib.get("town", "")
-            config.route_id
+            config.background_behaviour = (
+                scenario.attrib.get("background_behaviour", "false").lower() == "true"
+            )
 
             for elem in scenario.iter():
                 if elem.tag == "ego_vehicle":

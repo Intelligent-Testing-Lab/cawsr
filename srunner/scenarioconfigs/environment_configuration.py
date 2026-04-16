@@ -23,6 +23,7 @@ class EnvironmentConfig(object):
         self.town: str = ""
         self.ego_model: str = ""
         self.ego_name: str = ""
+        self.background_behaviour: bool = False
         self.ego_spawn: carla.Transform | None = None
         self.sensor_config: list[DefaultSensor] = []
         self.route_id: int = 0

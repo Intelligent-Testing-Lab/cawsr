@@ -68,6 +68,7 @@ class RouteScenario(BasicScenario):
         self,
         world,
         config,
+        env_config,
         debug_mode=False,
         criteria_enable=True,
         timeout=300,
@@ -79,6 +80,7 @@ class RouteScenario(BasicScenario):
         """
 
         self.config = config
+        self.env_config = env_config
         self.route = self._get_route(config) if not route else route
 
         sampled_scenario_definitions = self._filter_scenarios(config.scenario_configs)
@@ -370,11 +372,12 @@ class RouteScenario(BasicScenario):
         )  # Tick the ScenarioTriggerer before the scenarios
 
         # Add the Background Activity
-        behavior.add_child(
-            BackgroundBehavior(
-                self.ego_vehicles[0], self.route, name="BackgroundActivity"
+        if self.env_config.background_behaviour:
+            behavior.add_child(
+                BackgroundBehavior(
+                    self.ego_vehicles[0], self.route, name="BackgroundActivity"
+                )
             )
-        )
 
         behavior.add_children(scenario_behaviors)
         return behavior
