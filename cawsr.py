@@ -44,6 +44,7 @@ from srunner.tools.log import LogUtil
 from srunner.tools.metrics_collector import MetricsCollector
 from srunner.scenarioconfigs.carla_config import CARLA
 from srunner.tools.CARLA_manager import CARLAManager
+from srunner.scenariomanager.scenario_state import CAWSRState, ScenarioState
 
 from algorithms.basic_algorithm import BasicAlgorithm
 
@@ -258,6 +259,7 @@ class AWScenarioRunner(object):
                 scenario, self.aw_agent, follow_ego=True
             )
 
+            CAWSRState.set_state(ScenarioState.RUNNING)
             self.scenario_manager.run_scenario()
             result = True
         except Exception:
@@ -270,6 +272,8 @@ class AWScenarioRunner(object):
         self.carla_client.stop_recorder()
         # stop the MetricsCollector thread
         MetricsCollector.reset()
+
+        CAWSRState.set_state(ScenarioState.FINISHED)
 
         # analyse the scenario
         criteria = self._output_criteria(
@@ -642,7 +646,7 @@ class AWScenarioRunner(object):
 
 def init_logs() -> None:
     """Sets up the CAWSR logging object. Can be retrieved by calling
-    `logginer.get_logger("scenario-runner")`
+    `logging.get_logger("scenario-runner")`
     """
     logger.setLevel(logging.INFO)
 
@@ -687,13 +691,15 @@ def main():
     carla_config._parse_dict(carla_config, config["carla"])
     CARLAManager._load_config(carla_config)
 
-    # reload world and sync must be present when running agent-based route scenarios
     scenario_runner = None
     try:
         scenario_runner = AWScenarioRunner(config, carla_config)
         results = scenario_runner.run()
         logger.info(results)
-    except Exception:  # NOT GOOD PRACTICE PROBABLY CHANGE
+    except Exception:
+        logger.critical(
+            "Something went wrong during CAWSR execution. Please check the stack trace for more details. File an issue if you think this shouldn't happen! Error details: "
+        )
         traceback.print_exc()
     finally:
         if scenario_runner is not None:

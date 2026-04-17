@@ -4,14 +4,18 @@
 #
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
-
+from __future__ import annotations
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
 from srunner.autoagents.agent_state import autoware_state
+from typing import TYPE_CHECKING
 import logging
 
-from autoware_cawsr_msgs.msg import AutowareRestart, AutowareShutdown
+from autoware_cawsr_msgs.msg import AutowareRestart, AutowareShutdown, CawsrState
+
+if TYPE_CHECKING:
+    from srunner.scenariomanager.scenario_state import ScenarioStateType
 
 
 logger = logging.getLogger("scenario-runner")
@@ -50,6 +54,10 @@ class StateNode:
             AutowareShutdown, "/autoware/shutdown", 10
         )
 
+        self.cawsr_state_publisher = self.node.create_publisher(
+            CawsrState, "/cawsr/scenario_state", 10
+        )
+
     def route_state_cb(self, route_state_msg: RouteState) -> None:
         """Set the AutowareState attribute route_state
 
@@ -79,6 +87,20 @@ class StateNode:
         """
         self.autoware_state.localize_state = localize_state_msg.state
         logger.info(f"Localization state: {self.autoware_state.localize_state}")
+
+    def publish_cawsr_state(self, current_state: ScenarioStateType) -> None:
+        """Publish the current scenario state to a topic for CAWSR to consume
+
+        Args:
+            scenario_state (ScenarioStateType): the current scenario state, e.g. 0, 1, 2, 3
+                uint8 NOT_STARTED = 0
+                uint8 INITIALISING= 1
+                uint8 RUNNING = 2
+                uint8 FINISHED = 3
+        """
+        msg = CawsrState()
+        msg.scenario_state = current_state.value
+        self.cawsr_state_publisher.publish(msg)
 
     def reset_autoware(self, carla_map: str, ego_name: str):
         """Publishes an empty message to reset autoware."""

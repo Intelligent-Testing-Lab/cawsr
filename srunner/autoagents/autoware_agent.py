@@ -21,6 +21,9 @@ from srunner.scenariomanager.timer import GameTime
 from srunner.tools.CARLA_manager import CARLAManager
 
 import threading
+
+from srunner.scenariomanager.scenario_state import CAWSRState, ScenarioState
+
 import rclpy
 import time
 import logging
@@ -56,9 +59,13 @@ class AutowareAgent(AutonomousAgent):
         self._node = rclpy.create_node("cawsr_bridge")
         self._node_state = rclpy.create_node("autoware_state_node")
 
-        self.carla_interface = InitializeInterface(self.config, self._node)
+        CAWSRState.set_state(ScenarioState.INITIALISING)
 
         self.state_node = state_node.StateNode(self.autoware_state, self._node_state)
+        self.carla_interface = InitializeInterface(self.config, self._node)
+        CAWSRState.set_publisher_node(self.state_node)
+
+        # look into why
         if config.iteration == 1:
             # only reset autoware on the first run
             self.state_node.reset_autoware(self.config.town, self.config.ego_name)
