@@ -100,6 +100,9 @@ class StateNode:
         """
         msg = CawsrState()
         msg.scenario_state = current_state.value
+        logger.info(
+            f"Publishing CAWSR state: {current_state.name} ({current_state.value})"
+        )
         self.cawsr_state_publisher.publish(msg)
 
     def reset_autoware(self, carla_map: str, ego_name: str):
