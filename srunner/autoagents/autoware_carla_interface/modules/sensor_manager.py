@@ -181,6 +181,9 @@ class SensorRegistry:
         current_time = datetime.datetime.now().microsecond / 1000000.0
 
         time_diff = current_time - sensor.last_publish_time
+        self.logger.info(
+            f"Checking publish for sensor {sensor_id}: time_diff={time_diff:.3f}s, required={1.0 / sensor.frequency_hz:.3f}s, will_publish: {not time_diff < (1.0 / sensor.frequency_hz)}"
+        )
         return time_diff >= (1.0 / sensor.frequency_hz)
 
     def get_all_sensors(self) -> Dict[str, SensorConfig]:
