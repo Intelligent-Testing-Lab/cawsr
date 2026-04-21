@@ -23,6 +23,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+import datetime
 
 
 @dataclass
@@ -96,7 +97,9 @@ class SensorRegistry:
             True if successfully registered, False otherwise
         """
         if config.sensor_id in self.sensors:
-            self.logger.warning(f"Sensor {config.sensor_id} already registered, updating...")
+            self.logger.warning(
+                f"Sensor {config.sensor_id} already registered, updating..."
+            )
 
         self.sensors[config.sensor_id] = config
         self.type_mapping[config.sensor_id] = config.sensor_type
@@ -127,7 +130,11 @@ class SensorRegistry:
         Returns:
             List of matching sensor configurations
         """
-        return [sensor for sensor in self.sensors.values() if sensor.carla_type == sensor_type]
+        return [
+            sensor
+            for sensor in self.sensors.values()
+            if sensor.carla_type == sensor_type
+        ]
 
     def get_enabled_sensors(self) -> List[SensorConfig]:
         """Get all enabled sensors.
@@ -149,7 +156,7 @@ class SensorRegistry:
         """
         sensor = self.get_sensor(sensor_id)
         if sensor:
-            sensor.last_publish_time = timestamp
+            sensor.last_publish_time = datetime.datetime.now().microsecond / 1000000.0
             sensor.first_data = False
             return True
         return False
@@ -170,6 +177,8 @@ class SensorRegistry:
 
         if sensor.first_data or sensor.last_publish_time is None:
             return True
+
+        current_time = datetime.datetime.now().microsecond / 1000000.0
 
         time_diff = current_time - sensor.last_publish_time
         return time_diff >= (1.0 / sensor.frequency_hz)
