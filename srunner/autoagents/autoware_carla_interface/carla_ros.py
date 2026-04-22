@@ -144,9 +144,13 @@ class carla_ros2_interface(object):
                     CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
                 )
 
-                # self.pub_camera_yolo_info = self.ros2_node.create_publisher(
-                #   CameraInfo, "/sensing/camera/0/camera_info", 1
-                # )
+                self.pub_camera_yolo_info = self.ros2_node.create_publisher(
+                    CameraInfo, "/sensing/camera/0/camera_info", 1
+                )
+
+                self.pub_camera_yolo = self.ros2_node.create_publisher(
+                    Image, "/sensing/camera/0/image_raw", 1
+                )
 
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
@@ -370,6 +374,14 @@ class carla_ros2_interface(object):
         cam_info.header = img_msg.header
         self.pub_camera_info.publish(cam_info)
         self.pub_camera.publish(img_msg)
+
+        # build another message to publish for yolo
+        img_msg.header = self.get_msg_header(frame_id="0/camera_optical_link")
+
+        cam_info = self._camera_info
+        cam_info.header = img_msg.header
+        self.pub_camera_yolo_info.publish(cam_info)
+        self.pub_camera_yolo.publish(img_msg)
 
     def imu(self, carla_imu_measurement):
         """Transform a received imu measurement into a ROS Imu message and publish Imu message."""
