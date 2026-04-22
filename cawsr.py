@@ -67,8 +67,12 @@ class AWScenarioRunner(object):
     aw_agent = None  # autoware agent
 
     def __init__(self, cawsr_config: dict, carla_conf: CARLA) -> None:
-        """
-        Setup Scenario Manager and the Carla client
+        """Initialises CAWSR, loading the Autoware agent module and setting up signal handlers for cleanup on shutdown.
+        Also initialises the ScenarioDefinitionManager for managing results directories and files.
+
+        Args:
+            cawsr_config (dict): CAWSR configuration options loaded from YAML file
+            carla_conf (CARLA): CARLA-specific configuration options loaded from YAML file
         """
         self.DEBUG = cawsr_config["debug"]
         self._conf = cawsr_config
@@ -120,6 +124,18 @@ class AWScenarioRunner(object):
         current_definiton: Union[dict, None],
         algorithm: Union[Callable, None],
     ) -> None:
+        """Starts the CAWSR scenario based on the provided configuration and seed
+        Handles connection to the Autoware agent and CARLA client, and runs the scenario manager until the scenario is complete or a shutdown signal is received.
+        Args:
+            route_config (RouteScenarioConfiguration): RouteSCenarioConfiguration object configuration
+            env_config (EnvironmentConfig): EnvironmentConfig object containing the environment configuration
+            scenario_name (str): Name of the scenario to run
+            seed (int): Random seed for reproducibility
+            algorithm_mode (bool): Whether to load algorithmic scenario generation loop, or just execute scenarios in sequence
+            result_ (_type_): Result object for storing scenario results
+            current_definiton (Union[dict, None]): Optional dict containing the current scenario definition, used for algorithmic scenario generation
+            algorithm (Union[Callable, None]): Optional Callable algorithm class, used for algorithmic scenario generation. See docs for expected interface.
+        """
         logger.info("Initialising Scenario Manager...")
         self.scenario_manager = ScenarioManager(
             self.DEBUG,
@@ -200,18 +216,14 @@ class AWScenarioRunner(object):
 
         logger.info("Loading route...")
 
-        # TO DO
-        # interpolate route at a larger distance (i.e 5m) to reduce waypoints
-        # remove segment sampling from awagent.set_route
         gps_route, route = route_manipulation.interpolate_trajectory(
             route_config.keypoints
         )
         route_config.agent.set_global_plan(gps_route, route)  # set agent route
 
-        # visualise the route in CARLA
+        # visualise the route in CARLA and set location to first waypoint
         visualise_route([waypoint[0] for waypoint in route])
-
-        ego.prepare_ego(route[0][0])  # set location to first waypoint
+        ego.prepare_ego(route[0][0])
 
         # allow the agent X ticks to initialize sensors and set the route
         logger.info("Initialising agent route...")
@@ -265,6 +277,7 @@ class AWScenarioRunner(object):
             result = False
 
         self.carla_client.stop_recorder()
+
         # stop the MetricsCollector thread
         MetricsCollector.reset()
 
@@ -292,6 +305,7 @@ class AWScenarioRunner(object):
         result_.put(result_dict)
 
     def _tick_carla(self) -> None:
+        """Advances CARLA 1 tick into the future"""
         timestamp = None
         world = CarlaDataProvider.get_world()
         if world:
@@ -323,9 +337,11 @@ class AWScenarioRunner(object):
         )
 
     def run_algorithm(self) -> None:
-        """Executes CAWSR in algorithm mode"""
+        """Executes CAWSR in algorithm mode, loading a custom algorithm interface for scenario generation and optimisation.
+        Scenarios are generated iteratively based on the previous scenario's performance, and the initial scenario definition provided.
+        """
 
-        # load the algorithm and scenario defintion
+        # load the algorithm and scenario definitions
         optimisation_algorithm = self._load_alg()
         scenario = pathlib.Path(self._conf["algorithm"]["initial_definition"])
 
@@ -374,7 +390,7 @@ class AWScenarioRunner(object):
             )
 
     def run_benchmark(self) -> None:
-        """Executes CAWSR in benchmark mode. Scenarios are loaded from the target directory"""
+        """Executes CAWSR in benchmark mode. Scenarios are loaded from the target directory, and either executed in sequence or randomly sampled based on a seed."""
         target_dir = pathlib.Path(self._conf["benchmark"]["scenarios"])
         scenarios = [scenario for scenario in target_dir.glob("*.json")]
 
@@ -384,7 +400,7 @@ class AWScenarioRunner(object):
 
             if self._conf["benchmark"]["random_sampling"]:
                 scenario = random.choice(scenarios)
-                scenarios.remove(scenario)  # each scenario can only be picked once
+                scenarios.remove(scenario)  # each scenario can only be executed once
             else:
                 scenario = scenarios[i]
 
@@ -427,6 +443,21 @@ class AWScenarioRunner(object):
         current_definiton: Union[dict, None] = None,
         algorithm: Union[Callable, None] = None,
     ) -> Optional[dict]:
+        """Spawns a CAWSR process to execute a given, configured scenario.
+        Handles setup, execution, and teardown of the scenario, and returns the scenario definition if in algorithm mode for use in the next iteration of the algorithm.
+
+        Args:
+            route_config (RouteScenarioConfiguration): Scenario configuration object containing the route and agent information
+            env_config (EnvironmentConfig): Scenario configuration object containing the environment information, such as weather and town
+            scenario_name (str): Name of the scenario, used for results management and logging
+            run (int): Current run number, used for logging and results management
+            algorithm_mode (bool, optional): Whether to run in algorithm mode. Defaults to False.
+            current_definiton (Union[dict, None], optional): The current scenario definition. Defaults to None.
+            algorithm (Union[Callable, None], optional): The algorithm to use. Defaults to None.
+
+        Returns:
+            Optional[dict]: The updated scenario definition if in algorithm mode, otherwise None.
+        """
         scenario_result = multiprocessing.Queue()
         scenario_result.put({"status": False, "criteria": {}})
 
@@ -463,8 +494,7 @@ class AWScenarioRunner(object):
             scenario_process.kill()
         self.results_manager.cleanup_xml()
 
-        # copy over the recording from CARLA container
-        time.sleep(1)  # ensure file is finished writing
+        time.sleep(1)
 
         # fetch execution status of the scenario (failure or success)
         status = result["status"]
@@ -487,8 +517,20 @@ class AWScenarioRunner(object):
         save_def: bool = True,
         return_def: bool = False,
     ) -> Optional[dict]:
+        """Loads a given scenario from the JSON definition file
+
+        Args:
+            scenario_name (str): Name of the scenario, used for results management and logging
+            path (str): Path to the JSON definition file
+            run (int): Current run number, used for logging and results management
+            save_def (bool, optional): Whether to save the scenario definition. Defaults to True.
+            return_def (bool, optional): Whether to return the scenario definition. Defaults to False.
+
+        Returns:
+            Optional[dict]: The loaded scenario definition if `return_def` is True, otherwise None.
+        """
         try:
-            with open(path, "r", encoding="UTF-8") as raw_json:  # type: ignore
+            with open(path, "r", encoding="UTF-8") as raw_json:
                 json_definition = json.loads(raw_json.read())
         except FileNotFoundError:
             logger.info("JSON definition does not exist, exiting...")
@@ -521,6 +563,16 @@ class AWScenarioRunner(object):
     def _output_criteria(
         self, criteria, file_name: str, save_file: bool = True
     ) -> dict:
+        """Filter the criteria.json generated by scenario-runner to calculate driving score
+
+        Args:
+            criteria (_type_): The criteria generated by scenario-runner, containing all the information about the scenario execution, including the criteria results and their attributes
+            file_name (str):  The name of the file to save the filtered criteria to, used for results management and logging
+            save_file (bool, optional): Whether to save the filtered criteria to a file. Defaults to True.
+
+        Returns:
+            dict: The filtered criteria dictionary
+        """
         # Filter the attributes that aren't JSON serializable
         with open("temp.json", "w", encoding="utf-8") as fp:
             criteria_dict = {}
@@ -539,13 +591,21 @@ class AWScenarioRunner(object):
 
         os.remove("temp.json")
 
-        # Save the criteria dictionary into a .json file
+        # save the criteria dictionary into a .json file
         if save_file:
             with open(file_name, "w", encoding="utf-8") as fp:
                 json.dump(criteria_dict, fp, sort_keys=False, indent=4)
         return criteria_dict
 
     def _calculate_driving_score(self, criteria: dict) -> float:
+        """Returns driving score based on a set of provided infractions, and the criteria log generated by scenario runner.
+
+        Args:
+            criteria (dict): The criteria dictionary generated by scenario runner, containing the results of all criteria and their attributes. See `_output_criteria` for details on how this is generated.
+
+        Returns:
+            float: The calculated driving score
+        """
         infractions_dict = {
             "OutsideRouteLanesTest": 0.3,
             "CollisionTest": 1.0,
@@ -586,12 +646,12 @@ class AWScenarioRunner(object):
 
     def _cleanup(self) -> None:
         """Cleanup function. Removes instances of the CARLA client and WORLD, also destroys the Ego vehicle in CARLA."""
-        # stop CARLA
         CARLAManager.stop_carla()
 
         try:
-            if CarlaDataProvider.get_client() is not None:
-                CarlaDataProvider.get_client().get_trafficmanager(
+            client = CarlaDataProvider.get_client()
+            if client is not None:
+                client.get_trafficmanager(
                     int(self._carla.TRAFFIC_MANAGER.PORT)
                 ).set_synchronous_mode(False)
         except RuntimeError:
@@ -671,7 +731,7 @@ def main():
         scenario_runner = AWScenarioRunner(config, carla_config)
         results = scenario_runner.run()
         logger.info(results)
-    except Exception:  # NOT GOOD PRACTICE PROBABLY CHANGE
+    except Exception:  # catch any anonymous exceptions to ensure cleanup is always called, as CARLA can leave zombie processes
         traceback.print_exc()
     finally:
         if scenario_runner is not None:
