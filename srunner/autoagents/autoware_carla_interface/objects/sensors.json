@@ -28,8 +28,8 @@
         "yaw": 0.0
       },
       "range": 100,
-      "channels": 64,
-      "points_per_second": 300000,
+      "channels": 128,
+      "points_per_second": 1200000,
       "upper_fov": 10.0,
       "lower_fov": -30.0,
       "rotation_frequency": 20,
