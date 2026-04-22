@@ -145,11 +145,11 @@ class carla_ros2_interface(object):
                 )
 
                 self.pub_camera_yolo_info = self.ros2_node.create_publisher(
-                    CameraInfo, "/sensing/camera/0/camera_info", 1
+                    CameraInfo, "/sensing/camera/CAM_FRONT/camera_info", 1
                 )
 
                 self.pub_camera_yolo = self.ros2_node.create_publisher(
-                    Image, "/sensing/camera/0/image_raw", 1
+                    Image, "/sensing/camera/CAM_FRONT/image_raw", 1
                 )
 
             elif sensor["type"] == "sensor.lidar.ray_cast":
@@ -376,7 +376,7 @@ class carla_ros2_interface(object):
         self.pub_camera.publish(img_msg)
 
         # build another message to publish for yolo
-        img_msg.header = self.get_msg_header(frame_id="0/camera_optical_link")
+        img_msg.header = self.get_msg_header(frame_id="CAM_FRONT/camera_optical_link")
 
         cam_info = self._camera_info
         cam_info.header = img_msg.header
