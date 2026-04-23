@@ -145,11 +145,11 @@ class carla_ros2_interface(object):
                 )
 
                 self.pub_camera_yolo_info = self.ros2_node.create_publisher(
-                    CameraInfo, "/sensing/camera/CAM_FRONT/camera_info", 1
+                    CameraInfo, "/sensing/camera/camera4/camera_info", 1
                 )
 
                 self.pub_camera_yolo = self.ros2_node.create_publisher(
-                    Image, "/sensing/camera/CAM_FRONT/image_raw", 1
+                    Image, "/sensing/camera/camera4/image_raw", 1
                 )
 
             elif sensor["type"] == "sensor.lidar.ray_cast":
