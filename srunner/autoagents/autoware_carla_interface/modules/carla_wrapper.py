@@ -218,14 +218,6 @@ class SensorWrapper(object):
                     yaw=sensor_spec["spawn_point"]["yaw"] + 0.0364,
                 )
 
-            # bp.set_attribute(
-            #    "sensor_tick", str(round(1.0 / sensor_spec["publish_frequency"], 2))
-            # )
-
-            logger.info(
-                f"Sensor {sensor_spec['id']} tick rate set to {str(round(1.0 / sensor_spec['publish_frequency'], 2))}"
-            )
-
             # create sensor
             sensor_transform = carla.Transform(sensor_location, sensor_rotation)
             sensor = CarlaDataProvider.get_world().spawn_actor(
