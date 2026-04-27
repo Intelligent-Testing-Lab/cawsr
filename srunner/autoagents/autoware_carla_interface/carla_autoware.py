@@ -52,7 +52,7 @@ class SensorLoop(object):
 
 class InitializeInterface(object):
     def __init__(self, config: EnvironmentConfig, node):
-        self.interface = carla_ros2_interface(node)
+        self.interface = carla_ros2_interface(node, config)
         self.world = None
         self.sensor_wrapper = None
         self.ego_actor = None

@@ -13,7 +13,6 @@
 # limitations under the License.sr/bin/env python
 
 import datetime
-import json
 import math
 
 # pylint: disable=import-error
@@ -27,7 +26,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
-import pathlib
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
@@ -54,11 +52,15 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
 from srunner.tools.CARLA_manager import CARLAManager
+from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
+
+import rclpy
 
 
 class carla_ros2_interface(object):
-    def __init__(self, node):
+    def __init__(self, node: rclpy.node.Node, config: EnvironmentConfig):
         self.sensor_interface = SensorInterface()
+        self.config = config
         self.prev_timestamp = None
         self.prev_steer_output = 0.0
         self.tau = 0.2
@@ -80,9 +82,6 @@ class carla_ros2_interface(object):
             "status": 50,
             "pose": 2,
         }
-        # self.publish_prev_times = {
-        #    sensor: GameTime.get_time() for sensor in self.sensor_frequencies
-        # }
 
         self.publish_prev_times = {
             sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
@@ -96,11 +95,9 @@ class carla_ros2_interface(object):
         obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
 
-        # load sensor config and create publishers
-        sensors_config = pathlib.Path(
-            "srunner/autoagents/autoware_carla_interface/objects/sensors.json"
-        )
-        self.sensors = json.load(open(sensors_config.absolute()))
+        self.sensors = {
+            "sensors": [sensor.sensor_dict() for sensor in self.config.sensor_config]
+        }
 
         self.sub_control = self.ros2_node.create_subscription(
             ActuationCommandStamped,

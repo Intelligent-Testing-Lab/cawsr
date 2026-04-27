@@ -1,5 +1,3 @@
-from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-
 import carla
 
 
@@ -12,23 +10,40 @@ class DefaultSensor(object):
         self.type: str = ""
         self.id: str = ""
         self.spawn: carla.Transform | None = None
+        self.publish_frequency: int = 0
 
-    def _spawn(self, bp_library, vehicle) -> None:
-        sensor_bp = bp_library.find(str(self.type))
+    def _spawn_to_dict(self) -> dict:
+        if self.spawn is None:
+            return {}
+        return {
+            "x": self.spawn.location.x,
+            "y": self.spawn.location.y,
+            "z": self.spawn.location.z,
+            "pitch": self.spawn.rotation.pitch,
+            "roll": self.spawn.rotation.roll,
+            "yaw": self.spawn.rotation.yaw,
+        }
 
-        ignored_params = ["serealize", "id", "_spawn", "type", "spawn"]
+    def sensor_dict(self) -> dict:
+        """Converts all sensor attributes in a dictionary
 
-        sensor_params = [attr for attr in dir(self) if attr not in ignored_params]
+        Returns:
+            dict: Dictionary for sensor params in the format expected by autoware_carla_interface
+        """
+        sensor_config = {}
+
+        ignored_attr = ["sensor_dict", "_spawn_to_dict"]
+        sensor_params = [attr for attr in dir(self) if attr not in ignored_attr]
         sensor_params = filter(lambda x: not x.startswith("__"), sensor_params)
 
-        for param in sensor_params:
-            sensor_bp.set_attribute(param, str(getattr(self, param)))
+        for sensor_param in sensor_params:
+            if sensor_param.lower() == "spawn":
+                sensor_config["spawn_point"] = self._spawn_to_dict()
+                continue
+            sensor_config[sensor_param] = getattr(self, sensor_param)
 
-        CarlaDataProvider.get_world().spawn_actor(sensor_bp, self.spawn, vehicle)
-        CarlaDataProvider.get_world().tick()
-
-    def serealize(self):
-        return self.type, self.id
+        print(sensor_config)
+        return sensor_config
 
 
 class CameraRGB(DefaultSensor):
