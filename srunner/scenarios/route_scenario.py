@@ -261,7 +261,7 @@ class RouteScenario(BasicScenario):
         scenario_definitions,
         scenarios_per_tick=5,
         timeout=300,
-        debug=False,
+        debug=True,
     ):
         """
         Initializes the class of all the scenarios that will be present in the route.

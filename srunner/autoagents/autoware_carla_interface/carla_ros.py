@@ -373,7 +373,7 @@ class carla_ros2_interface(object):
         self.pub_camera.publish(img_msg)
 
         # build another message to publish for yolo
-        img_msg.header = self.get_msg_header(frame_id="CAM_FRONT/camera_optical_link")
+        img_msg.header = self.get_msg_header(frame_id="camera4/camera_optical_link")
 
         cam_info = self._camera_info
         cam_info.header = img_msg.header
