@@ -122,6 +122,9 @@ class AutowareAgent(AutonomousAgent):
             node=self._node,
         )
 
+    def cleanup(self) -> None:
+        self.destroy()
+
     def destroy(self, cleanup=False) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
