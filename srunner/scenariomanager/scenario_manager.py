@@ -180,18 +180,12 @@ class ScenarioManager(object):
             if self._debug_mode:
                 print("\n--------- Tick ---------\n")
 
-            if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
-
-            _tick_carla_start = time.perf_counter_ns() / 1e6
             if self._sync_mode and self._watchdog.get_status():
-                CarlaDataProvider.get_world().tick()
                 GameTime.on_carla_tick(timestamp)
                 CarlaDataProvider.on_carla_tick()
 
-            MetricsCollector.update_key(
-                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
-            )
+            if self._agent is not None:
+                self._agent()  # pylint: disable=not-callable
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6
@@ -212,6 +206,11 @@ class ScenarioManager(object):
             tick_diff = (start_tick - end_tick) / 1e9
             if (start_tick - end_tick) < CARLAManager.FIXED_DELTA_SECONDS:
                 time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
+            _tick_carla_start = time.perf_counter_ns() / 1e6
+            CarlaDataProvider.get_world().tick()
+            MetricsCollector.update_key(
+                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
+            )
 
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""
