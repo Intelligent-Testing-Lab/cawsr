@@ -22,6 +22,7 @@ class AutonomousAgent(object):
         #  current global plans to reach a destination
         self._global_plan = None
         self._global_plan_world_coord = None
+        self._carla_timestamp = None
 
         # this data structure will contain all sensor data
         # self.sensor_interface = SensorInterface()
