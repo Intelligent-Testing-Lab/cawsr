@@ -84,7 +84,7 @@ class carla_ros2_interface(object):
             "camera": 11,
             "imu": 50,
             "status": 50,
-            "pose": 2,
+            "pose": 20,
         }
 
         self.publish_prev_times = {
