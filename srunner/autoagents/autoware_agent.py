@@ -182,8 +182,9 @@ class AutowareAgent(AutonomousAgent):
         self.counter += 1
         if self.counter % int(1 / self.tick_delta) == 0:
             logger.info(
-                f"Ticked 1 second game-time, Current time: {GameTime.get_time():.2f}s, Current tick: {self.counter}"
+                f"Ticked 1 second game-time, Current time: {GameTime.get_time():.2f}s, Current tick: {self.counter}. Ratio of 1s:{time.perf_counter_ns() - self.last_tick}s (Sim vs Wall)"
             )
+
             self.last_tick = time.perf_counter_ns()
 
         # check if the current route is set and we can publish engage
