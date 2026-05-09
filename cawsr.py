@@ -226,16 +226,33 @@ class AWScenarioRunner(object):
         ego.prepare_ego(route[0][0])
 
         # allow the agent X ticks to initialize sensors and set the route
+        # uses the same tick pattern as the scenario_manager main loop
         logger.info("Initialising agent route...")
         budget = self._conf["initialisation_budget"]
-        status = False
         for tick in range(1, budget + 1):
-            self._tick_carla()
-            status = self.aw_agent.run_step_init()  # type: ignore
-        if not status:
-            logger.info("Agent failed to initialise route")
+            _tick_carla_start = time.perf_counter_ns() / 1e6
+            world = CarlaDataProvider.get_world()
+            if world:
+                world.tick()
+                for _ in range(5):
+                    time.sleep(0)
+            MetricsCollector.update_key(
+                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
+            )
+            timestamp = None
+            if world:
+                snapshot = world.get_snapshot()
+                if snapshot:
+                    timestamp = snapshot.timestamp
+            if timestamp:
+                self.aw_agent._carla_timestamp = timestamp
+                GameTime.on_carla_tick(timestamp)
+                CarlaDataProvider.on_carla_tick()
+                self.aw_agent.run_step()
+            if self.aw_agent.autoware_state.route_set():
+                break
         else:
-            logger.info("Successfully initialised agent; route set.")
+            logger.info("Agent failed to initialise route")
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -258,6 +275,8 @@ class AWScenarioRunner(object):
             traceback.print_exc()
 
         logger.info("Starting scenario...")
+
+        self.aw_agent.scenario_loaded = True
 
         try:
             self.carla_client.start_recorder(
