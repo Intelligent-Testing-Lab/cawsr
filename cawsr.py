@@ -306,17 +306,18 @@ class AWScenarioRunner(object):
 
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
-        timestamp = None
         world = CarlaDataProvider.get_world()
         if world:
+            world.tick()
+            for _ in range(5):
+                time.sleep(0)
+
             snapshot = world.get_snapshot()
             if snapshot:
                 timestamp = snapshot.timestamp
-        if timestamp:
-            CarlaDataProvider.get_world().tick()
-            time.sleep(0)
-            GameTime.on_carla_tick(timestamp)
-            CarlaDataProvider.on_carla_tick()
+                self.aw_agent._carla_timestamp = timestamp
+                GameTime.on_carla_tick(timestamp)
+                CarlaDataProvider.on_carla_tick()
 
     def _load_alg(self) -> type[BasicAlgorithm]:
         """Load an algorithm instance from mounted docker volume algorithms/

@@ -104,6 +104,9 @@ class SensorInterface(object):
         if tag not in self._sensors_objects:
             raise ValueError(f"Sensor with tag [{tag}] has not been created")
 
+        if hasattr(timestamp, "elapsed_seconds"):
+            timestamp = timestamp.elapsed_seconds
+
         self._new_data_buffers.put((tag, timestamp, data))
 
     def get_data(self, expected_time=None):
