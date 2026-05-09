@@ -67,7 +67,7 @@ class AutowareAgent(AutonomousAgent):
         )
 
         try:
-            # run state note and cawsr bridge in separate executors
+            # run state node and cawsr bridge in separate executors
             self._executors = [
                 rclpy.executors.SingleThreadedExecutor(),
                 rclpy.executors.SingleThreadedExecutor(),
@@ -80,17 +80,16 @@ class AutowareAgent(AutonomousAgent):
                 threading.Thread(target=self._executors[0].spin, daemon=True),
                 threading.Thread(target=self._executors[1].spin, daemon=True),
             ]
-
-            for thread in self._executor_threads:
-                thread.start()
         except rclpy.executors.ExternalShutdownException:
             logger.info("Node Executor shutdown externally...")
 
         self.sent_route = False
-        self.initialised = False
 
         self.carla_interface.load_world()
         self.carla_interface.run_bridge()
+
+        for thread in self._executor_threads:
+            thread.start()
 
     def set_route(self) -> None:
         self.agent_set_route = True
@@ -149,7 +148,7 @@ class AutowareAgent(AutonomousAgent):
         Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
         """
 
-        self.carla_interface.tick_bridge()
+        self.carla_interface.tick_bridge(self._carla_timestamp)
 
         if not self.agent_set_route:
             self.set_route()
@@ -191,4 +190,4 @@ class AutowareAgent(AutonomousAgent):
         if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
             self.autoware_node.publish_engage(True)
 
-        self.carla_interface.tick_bridge()
+        self.carla_interface.tick_bridge(self._carla_timestamp)

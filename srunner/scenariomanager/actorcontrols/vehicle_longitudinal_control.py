@@ -17,7 +17,6 @@ from srunner.scenariomanager.actorcontrols.basic_control import BasicControl
 
 
 class VehicleLongitudinalControl(BasicControl):
-
     """
     Controller class for vehicles derived from BasicControl.
 

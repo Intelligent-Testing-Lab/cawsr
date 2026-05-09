@@ -26,7 +26,6 @@ from srunner.scenariomanager.actorcontrols.pedestrian_control import PedestrianC
 
 
 class ActorControl(object):
-
     """
     This class provides a wrapper (access mechanism) for user-defined actor controls.
     The controllers are loaded via importlib. Therefore, the module name of the controller
@@ -63,7 +62,6 @@ class ActorControl(object):
     _last_lane_offset_command = None
 
     def __init__(self, actor, control_py_module, args, scenario_file_path):
-
         # use importlib to import the control module
         if not control_py_module:
             if isinstance(actor, carla.Walker):
@@ -77,16 +75,20 @@ class ActorControl(object):
             if scenario_file_path:
                 sys.path.append(scenario_file_path)
             if ".py" in control_py_module:
-                module_name = os.path.basename(control_py_module).split('.')[0]
+                module_name = os.path.basename(control_py_module).split(".")[0]
                 sys.path.append(os.path.dirname(control_py_module))
                 module_control = importlib.import_module(module_name)
-                control_class_name = module_control.__name__.title().replace('_', '')
+                control_class_name = module_control.__name__.title().replace("_", "")
             else:
                 sys.path.append(os.path.dirname(__file__))
                 module_control = importlib.import_module(control_py_module)
-                control_class_name = control_py_module.split('.')[-1].title().replace('_', '')
+                control_class_name = (
+                    control_py_module.split(".")[-1].title().replace("_", "")
+                )
 
-            self.control_instance = getattr(module_control, control_class_name)(actor, args)
+            self.control_instance = getattr(module_control, control_class_name)(
+                actor, args
+            )
 
     def reset(self):
         """

@@ -15,7 +15,6 @@ A user must not modify the module.
 
 
 class BasicControl(object):
-
     """
     This class is the base class for user-defined actor controllers
     All user-defined agents must be derived from this class.
@@ -106,7 +105,8 @@ class BasicControl(object):
         """
         raise NotImplementedError(
             "This function must be re-implemented by the user-defined actor control."
-            "If this error becomes visible the class hierarchy is somehow broken")
+            "If this error becomes visible the class hierarchy is somehow broken"
+        )
 
     def run_step(self):
         """
@@ -115,4 +115,5 @@ class BasicControl(object):
         """
         raise NotImplementedError(
             "This function must be re-implemented by the user-defined actor control."
-            "If this error becomes visible the class hierarchy is somehow broken")
+            "If this error becomes visible the class hierarchy is somehow broken"
+        )

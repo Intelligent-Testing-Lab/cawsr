@@ -18,7 +18,6 @@ from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 
 
 class GameTime(object):
-
     """
     This (static) class provides access to the CARLA game time.
 
@@ -86,7 +85,6 @@ class GameTime(object):
 
 
 class SimulationTimeCondition(py_trees.behaviour.Behaviour):
-
     """
     This class contains an atomic simulation time condition behavior.
     It uses the CARLA game time, not the system time which is used by
@@ -95,7 +93,9 @@ class SimulationTimeCondition(py_trees.behaviour.Behaviour):
     Returns, if the provided rule was successfully evaluated
     """
 
-    def __init__(self, timeout, comparison_operator=operator.gt, name="SimulationTimeCondition"):
+    def __init__(
+        self, timeout, comparison_operator=operator.gt, name="SimulationTimeCondition"
+    ):
         """
         Setup timeout
         """
@@ -126,13 +126,14 @@ class SimulationTimeCondition(py_trees.behaviour.Behaviour):
         else:
             new_status = py_trees.common.Status.SUCCESS
 
-        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+        self.logger.debug(
+            "%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status)
+        )
 
         return new_status
 
 
 class TimeOut(SimulationTimeCondition):
-
     """
     This class contains an atomic timeout behavior.
     It uses the CARLA game time, not the system time which is used by
@@ -164,6 +165,7 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
     Behavior responsible of the route's timeout. With an initial value,
     it increases every time the agent advanced through the route, and is dependent on the road's speed.
     """
+
     MIN_TIMEOUT = 300
     TIMEOUT_ROUTE_PERC = 10
 
@@ -219,7 +221,10 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
 
         new_index = self._current_index
 
-        for index in range(self._current_index, min(self._current_index + self._wsize + 1, self._route_length)):
+        for index in range(
+            self._current_index,
+            min(self._current_index + self._wsize + 1, self._route_length),
+        ):
             route_transform = self._route_transforms[index]
             route_veh_vec = ego_location - route_transform.location
             if route_veh_vec.dot(route_transform.get_forward_vector()) > 0:
@@ -227,7 +232,10 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
 
         # Update the timeout value
         if new_index > self._current_index:
-            dist = self._route_accum_meters[new_index] - self._route_accum_meters[self._current_index]
+            dist = (
+                self._route_accum_meters[new_index]
+                - self._route_accum_meters[self._current_index]
+            )
             max_speed = self._ego_vehicle.get_speed_limit() / 3.6
             timeout_speed = max_speed * self.TIMEOUT_ROUTE_PERC / 100
             self._timeout_value += dist / timeout_speed
@@ -238,6 +246,8 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
             new_status = py_trees.common.Status.SUCCESS
             self.timeout = True
 
-        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+        self.logger.debug(
+            "%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status)
+        )
 
         return new_status

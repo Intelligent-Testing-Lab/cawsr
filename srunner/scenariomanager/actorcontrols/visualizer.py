@@ -24,7 +24,6 @@ from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 
 
 class Visualizer(object):
-
     """
     Visualizer class for actor controllers.
 
@@ -60,25 +59,41 @@ class Visualizer(object):
         self._camera_bird = None
         self._camera_actor = None
 
-        bp = CarlaDataProvider.get_world().get_blueprint_library().find('sensor.camera.rgb')
-        bp.set_attribute('image_size_x', '1000')
-        bp.set_attribute('image_size_y', '400')
-        self._camera_bird = CarlaDataProvider.get_world().spawn_actor(bp, carla.Transform(
-            carla.Location(x=20.0, z=50.0), carla.Rotation(pitch=-90, yaw=-90)), attach_to=self._actor)
-        self._camera_bird.listen(lambda image: self._on_camera_update(
-            image, birdseye=True))  # pylint: disable=unnecessary-lambda
+        bp = (
+            CarlaDataProvider.get_world()
+            .get_blueprint_library()
+            .find("sensor.camera.rgb")
+        )
+        bp.set_attribute("image_size_x", "1000")
+        bp.set_attribute("image_size_y", "400")
+        self._camera_bird = CarlaDataProvider.get_world().spawn_actor(
+            bp,
+            carla.Transform(
+                carla.Location(x=20.0, z=50.0), carla.Rotation(pitch=-90, yaw=-90)
+            ),
+            attach_to=self._actor,
+        )
+        self._camera_bird.listen(
+            lambda image: self._on_camera_update(image, birdseye=True)
+        )  # pylint: disable=unnecessary-lambda
 
-        bp = CarlaDataProvider.get_world().get_blueprint_library().find('sensor.camera.rgb')
-        bp.set_attribute('image_size_x', '1000')
-        bp.set_attribute('image_size_y', '400')
-        self._camera_actor = CarlaDataProvider.get_world().spawn_actor(bp, carla.Transform(
-            carla.Location(x=2.3, z=1.0)), attach_to=self._actor)
-        self._camera_actor.listen(lambda image: self._on_camera_update(
-            image, birdseye=False))  # pylint: disable=unnecessary-lambda
+        bp = (
+            CarlaDataProvider.get_world()
+            .get_blueprint_library()
+            .find("sensor.camera.rgb")
+        )
+        bp.set_attribute("image_size_x", "1000")
+        bp.set_attribute("image_size_y", "400")
+        self._camera_actor = CarlaDataProvider.get_world().spawn_actor(
+            bp, carla.Transform(carla.Location(x=2.3, z=1.0)), attach_to=self._actor
+        )
+        self._camera_actor.listen(
+            lambda image: self._on_camera_update(image, birdseye=False)
+        )  # pylint: disable=unnecessary-lambda
 
         if self._video_writer:
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            self._video = cv2.VideoWriter('recorded_video.avi', fourcc, 13, (1000, 800))
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            self._video = cv2.VideoWriter("recorded_video.avi", fourcc, 13, (1000, 800))
 
     def reset(self):
         """
@@ -116,13 +131,24 @@ class Visualizer(object):
         if self._cv_image_actor is not None and self._cv_image_bird is not None:
             im_v = cv2.vconcat([self._cv_image_actor, self._cv_image_bird])
             cv2.circle(im_v, (900, 300), 80, (170, 170, 170), -1)
-            text = str(int(round((self._actor.get_velocity().x * 3.6))))+" kph"
+            text = str(int(round((self._actor.get_velocity().x * 3.6)))) + " kph"
 
-            speed = np.sqrt(self._actor.get_velocity().x**2 + self._actor.get_velocity().y**2)
+            speed = np.sqrt(
+                self._actor.get_velocity().x ** 2 + self._actor.get_velocity().y ** 2
+            )
 
-            text = str(int(round((speed * 3.6))))+" kph"
-            text = ' '*(7-len(text)) + text
-            im_v = cv2.putText(im_v, text, (830, 310), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)
+            text = str(int(round((speed * 3.6)))) + " kph"
+            text = " " * (7 - len(text)) + text
+            im_v = cv2.putText(
+                im_v,
+                text,
+                (830, 310),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 0, 0),
+                2,
+                cv2.LINE_AA,
+            )
             cv2.imshow("", im_v)
             cv2.waitKey(1)
 

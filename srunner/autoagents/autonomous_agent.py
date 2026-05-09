@@ -72,18 +72,15 @@ class AutonomousAgent(object):
         """
         pass
 
-    def __call__(self):
+    def __call__(self, timestamp=None):
         """
         Execute the agent call, e.g. agent()
         Returns the next vehicle controls
-        """
-        # no need for any of this, handled by autoware
-        # input_data = self.sensor_interface.get_data()
 
-        # timestamp = GameTime.get_time()
-        # wallclock = GameTime.get_wallclocktime()
-        # print('======[Agent] Wallclock_time = {} / Sim_time = {}'.format(wallclock, timestamp))
-        # control.manual_gear_shift = False
+        If timestamp (carla.Timestamp) is provided, store it so that
+        subclasses can use the same CARLA snapshot without re-acquiring it.
+        """
+        self._carla_timestamp = timestamp
 
         self.run_step()
 

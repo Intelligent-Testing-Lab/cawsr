@@ -20,7 +20,6 @@ from srunner.scenariomanager.actorcontrols.basic_control import BasicControl
 
 
 class NpcVehicleControl(BasicControl):
-
     """
     Controller class for vehicles derived from BasicControl.
 
@@ -30,15 +29,18 @@ class NpcVehicleControl(BasicControl):
         actor (carla.Actor): Vehicle actor that should be controlled.
     """
 
-    _args = {'K_P': 1.0, 'K_D': 0.01, 'K_I': 0.0, 'dt': 0.05}
+    _args = {"K_P": 1.0, "K_D": 0.01, "K_I": 0.0, "dt": 0.05}
 
     def __init__(self, actor, args=None):
         super(NpcVehicleControl, self).__init__(actor)
 
         self._local_planner = LocalPlanner(  # pylint: disable=undefined-variable
-            self._actor, opt_dict={
-                'target_speed': self._target_speed * 3.6,
-                'lateral_control_dict': self._args})
+            self._actor,
+            opt_dict={
+                "target_speed": self._target_speed * 3.6,
+                "lateral_control_dict": self._args,
+            },
+        )
 
         if self._waypoints:
             self._update_plan()
@@ -52,7 +54,8 @@ class NpcVehicleControl(BasicControl):
         plan = []
         for transform in self._waypoints:
             waypoint = CarlaDataProvider.get_map().get_waypoint(
-                transform.location, project_to_road=True, lane_type=carla.LaneType.Any)
+                transform.location, project_to_road=True, lane_type=carla.LaneType.Any
+            )
             plan.append((waypoint, RoadOption.LANEFOLLOW))
         self._local_planner.set_global_plan(plan)
 
@@ -60,7 +63,7 @@ class NpcVehicleControl(BasicControl):
         """
         Update the plan (waypoint list) of the LocalPlanner
         """
-        self._local_planner._vehicle_controller._lat_controller._offset = self._offset   # pylint: disable=protected-access
+        self._local_planner._vehicle_controller._lat_controller._offset = self._offset  # pylint: disable=protected-access
 
     def reset(self):
         """
@@ -115,10 +118,11 @@ class NpcVehicleControl(BasicControl):
 
         self._actor.apply_control(control)
 
-        current_speed = math.sqrt(self._actor.get_velocity().x**2 + self._actor.get_velocity().y**2)
+        current_speed = math.sqrt(
+            self._actor.get_velocity().x ** 2 + self._actor.get_velocity().y ** 2
+        )
 
         if self._init_speed:
-
             # If _init_speed is set, and the PID controller is not yet up to the point to take over,
             # we manually set the vehicle to drive with the correct velocity
             if abs(target_speed - current_speed) > 3:
@@ -128,7 +132,9 @@ class NpcVehicleControl(BasicControl):
                 self._actor.set_target_velocity(carla.Vector3D(vx, vy, 0))
 
         # Change Brake light state
-        if (current_speed > target_speed or target_speed < 0.2) and not self._brake_lights_active:
+        if (
+            current_speed > target_speed or target_speed < 0.2
+        ) and not self._brake_lights_active:
             light_state = self._actor.get_light_state()
             light_state |= carla.VehicleLightState.Brake
             self._actor.set_light_state(carla.VehicleLightState(light_state))

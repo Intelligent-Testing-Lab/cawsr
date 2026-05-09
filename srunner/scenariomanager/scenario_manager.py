@@ -25,8 +25,6 @@ from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
 from srunner.tools.metrics_collector import MetricsCollector
 
-from srunner.tools.CARLA_manager import CARLAManager
-
 
 class ScenarioManager(object):
     """
@@ -185,7 +183,7 @@ class ScenarioManager(object):
                 CarlaDataProvider.on_carla_tick()
 
             if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
+                self._agent(timestamp)  # pylint: disable=not-callable
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6
@@ -203,11 +201,13 @@ class ScenarioManager(object):
 
             end_tick = time.perf_counter_ns()
 
-            tick_diff = (start_tick - end_tick) / 1e9
-            if (start_tick - end_tick) < CARLAManager.FIXED_DELTA_SECONDS:
-                time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
             _tick_carla_start = time.perf_counter_ns() / 1e6
             CarlaDataProvider.get_world().tick()
+
+            # Yield to CARLA internal threads so sensor callbacks for
+            # the just-ticked frame deliver before the next snapshot read.
+            time.sleep(0)
+
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )

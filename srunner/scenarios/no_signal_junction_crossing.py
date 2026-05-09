@@ -15,18 +15,23 @@ import py_trees
 import carla
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorTransformSetter,
-                                                                      ActorDestroy,
-                                                                      SyncArrival,
-                                                                      KeepVelocity,
-                                                                      StopVehicle)
+from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (
+    ActorTransformSetter,
+    ActorDestroy,
+    SyncArrival,
+    KeepVelocity,
+    StopVehicle,
+)
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
-from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import InTriggerRegion, DriveDistance, WaitEndIntersection
+from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (
+    InTriggerRegion,
+    DriveDistance,
+    WaitEndIntersection,
+)
 from srunner.scenarios.basic_scenario import BasicScenario
 
 
 class NoSignalJunctionCrossing(BasicScenario):
-
     """
     Implementation class for
     'Non-signalized junctions: crossing negotiation' scenario,
@@ -43,8 +48,16 @@ class NoSignalJunctionCrossing(BasicScenario):
     _other_actor_max_brake = 1.0
     _other_actor_target_velocity = 15
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+    ):
         """
         Setup all relevant parameters and create scenario
         """
@@ -53,12 +66,14 @@ class NoSignalJunctionCrossing(BasicScenario):
         # Timeout of scenario in seconds
         self.timeout = timeout
 
-        super(NoSignalJunctionCrossing, self).__init__("NoSignalJunctionCrossing",
-                                                       ego_vehicles,
-                                                       config,
-                                                       world,
-                                                       debug_mode,
-                                                       criteria_enable=criteria_enable)
+        super(NoSignalJunctionCrossing, self).__init__(
+            "NoSignalJunctionCrossing",
+            ego_vehicles,
+            config,
+            world,
+            debug_mode,
+            criteria_enable=criteria_enable,
+        )
 
     def _initialize_actors(self, config):
         """
@@ -66,11 +81,16 @@ class NoSignalJunctionCrossing(BasicScenario):
         """
         self._other_actor_transform = config.other_actors[0].transform
         first_vehicle_transform = carla.Transform(
-            carla.Location(config.other_actors[0].transform.location.x,
-                           config.other_actors[0].transform.location.y,
-                           config.other_actors[0].transform.location.z - 500),
-            config.other_actors[0].transform.rotation)
-        first_vehicle = CarlaDataProvider.request_new_actor(config.other_actors[0].model, first_vehicle_transform)
+            carla.Location(
+                config.other_actors[0].transform.location.x,
+                config.other_actors[0].transform.location.y,
+                config.other_actors[0].transform.location.z - 500,
+            ),
+            config.other_actors[0].transform.rotation,
+        )
+        first_vehicle = CarlaDataProvider.request_new_actor(
+            config.other_actors[0].model, first_vehicle_transform
+        )
         first_vehicle.set_simulate_physics(enabled=False)
         self.other_actors.append(first_vehicle)
 
@@ -87,50 +107,43 @@ class NoSignalJunctionCrossing(BasicScenario):
         """
 
         # Creating leaf nodes
-        start_other_trigger = InTriggerRegion(
-            self.ego_vehicles[0],
-            -80, -70,
-            -75, -60)
+        start_other_trigger = InTriggerRegion(self.ego_vehicles[0], -80, -70, -75, -60)
 
         sync_arrival = SyncArrival(
-            self.other_actors[0], self.ego_vehicles[0],
-            carla.Location(x=-74.63, y=-136.34))
+            self.other_actors[0],
+            self.ego_vehicles[0],
+            carla.Location(x=-74.63, y=-136.34),
+        )
 
         pass_through_trigger = InTriggerRegion(
-            self.ego_vehicles[0],
-            -90, -70,
-            -124, -119)
+            self.ego_vehicles[0], -90, -70, -124, -119
+        )
 
         keep_velocity_other = KeepVelocity(
-            self.other_actors[0],
-            self._other_actor_target_velocity)
-
-        stop_other_trigger = InTriggerRegion(
-            self.other_actors[0],
-            -45, -35,
-            -140, -130)
-
-        stop_other = StopVehicle(
-            self.other_actors[0],
-            self._other_actor_max_brake)
-
-        end_condition = InTriggerRegion(
-            self.ego_vehicles[0],
-            -90, -70,
-            -170, -156
+            self.other_actors[0], self._other_actor_target_velocity
         )
+
+        stop_other_trigger = InTriggerRegion(self.other_actors[0], -45, -35, -140, -130)
+
+        stop_other = StopVehicle(self.other_actors[0], self._other_actor_max_brake)
+
+        end_condition = InTriggerRegion(self.ego_vehicles[0], -90, -70, -170, -156)
 
         # Creating non-leaf nodes
         root = py_trees.composites.Sequence()
         scenario_sequence = py_trees.composites.Sequence()
         sync_arrival_parallel = py_trees.composites.Parallel(
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE
+        )
         keep_velocity_other_parallel = py_trees.composites.Parallel(
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE
+        )
 
         # Building tree
         root.add_child(scenario_sequence)
-        scenario_sequence.add_child(ActorTransformSetter(self.other_actors[0], self._other_actor_transform))
+        scenario_sequence.add_child(
+            ActorTransformSetter(self.other_actors[0], self._other_actor_transform)
+        )
         scenario_sequence.add_child(start_other_trigger)
         scenario_sequence.add_child(sync_arrival_parallel)
         scenario_sequence.add_child(keep_velocity_other_parallel)
@@ -165,15 +178,22 @@ class NoSignalJunctionCrossing(BasicScenario):
 
 
 class NoSignalJunctionCrossingRoute(BasicScenario):
-
     """
     At routes, these scenarios are simplified, as they can be triggered making
     use of the background activity. For unsignalized intersections, just wait
     until the ego_vehicle has left the intersection.
     """
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=180):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=180,
+    ):
         """
         Setup all relevant parameters and create scenario
         and instantiate scenario manager
@@ -182,12 +202,14 @@ class NoSignalJunctionCrossingRoute(BasicScenario):
         self.timeout = timeout
         self._end_distance = 50
 
-        super(NoSignalJunctionCrossingRoute, self).__init__("NoSignalJunctionCrossingRoute",
-                                                            ego_vehicles,
-                                                            config,
-                                                            world,
-                                                            debug_mode,
-                                                            criteria_enable=criteria_enable)
+        super(NoSignalJunctionCrossingRoute, self).__init__(
+            "NoSignalJunctionCrossingRoute",
+            ego_vehicles,
+            config,
+            world,
+            debug_mode,
+            criteria_enable=criteria_enable,
+        )
 
     def _create_behavior(self):
         """
