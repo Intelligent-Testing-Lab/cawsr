@@ -127,8 +127,23 @@ class ScenarioManager(object):
 
         while self._running:
             _tick_start = time.perf_counter_ns() / 1e6
-            timestamp = None
+
+            # Advance CARLA to the next frame *before* agent processing
+            # so sensor callbacks deliver during the tick and data is
+            # immediately available for the agent on this same iteration.
+            _tick_carla_start = time.perf_counter_ns() / 1e6
             world = CarlaDataProvider.get_world()
+            if world:
+                world.tick()
+                # Yield the GIL several times so CARLA internal threads
+                # can push sensor callbacks into the data buffers.
+                for _ in range(5):
+                    time.sleep(0)
+            MetricsCollector.update_key(
+                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
+            )
+
+            timestamp = None
             if world:
                 snapshot = world.get_snapshot()
                 if snapshot:
@@ -198,19 +213,6 @@ class ScenarioManager(object):
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
-
-            end_tick = time.perf_counter_ns()
-
-            _tick_carla_start = time.perf_counter_ns() / 1e6
-            CarlaDataProvider.get_world().tick()
-
-            # Yield to CARLA internal threads so sensor callbacks for
-            # the just-ticked frame deliver before the next snapshot read.
-            time.sleep(0)
-
-            MetricsCollector.update_key(
-                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
-            )
 
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""

@@ -133,7 +133,9 @@ class SensorInterface(object):
             )
             if not has_fresh and self._sensors_objects:
                 try:
-                    tag, sensor_timestamp, data = self._new_data_buffers.get(True, 0.01)
+                    tag, sensor_timestamp, data = self._new_data_buffers.get(
+                        True, 0.001
+                    )
                     self._last_data[tag] = (sensor_timestamp, data)
                 except Empty:
                     pass
