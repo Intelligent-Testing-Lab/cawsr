@@ -315,7 +315,8 @@ class AWScenarioRunner(object):
             snapshot = world.get_snapshot()
             if snapshot:
                 timestamp = snapshot.timestamp
-                self.aw_agent._carla_timestamp = timestamp
+                if self.aw_agent is not None:
+                    self.aw_agent._carla_timestamp = timestamp
                 GameTime.on_carla_tick(timestamp)
                 CarlaDataProvider.on_carla_tick()
 
