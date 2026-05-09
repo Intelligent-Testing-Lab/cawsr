@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.sr/bin/env python
 
+from __future__ import annotations
+
 import math
 import queue
 
