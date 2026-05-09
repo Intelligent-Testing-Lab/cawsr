@@ -116,6 +116,7 @@ class carla_ros2_interface(object):
 
         self._control_queue = queue.Queue(1)
         self._control_queue.put_nowait((0, carla.VehicleControl()))
+        self._last_control = carla.VehicleControl()
 
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
             PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
@@ -452,6 +453,7 @@ class carla_ros2_interface(object):
 
         try:
             self._control_queue.put_nowait((self.timestamp, out_cmd))
+            self._last_control = out_cmd
         except queue.Full:
             pass
 
@@ -551,8 +553,9 @@ class carla_ros2_interface(object):
 
         try:
             _, control = self._control_queue.get_nowait()
+            self._last_control = control
         except queue.Empty:
-            control = carla.VehicleControl()
+            control = self._last_control
 
         return control
 
