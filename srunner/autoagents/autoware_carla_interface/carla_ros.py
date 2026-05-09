@@ -531,16 +531,11 @@ class carla_ros2_interface(object):
         obj_clock.clock = Time(sec=seconds, nanosec=nanoseconds)
         self.clock_publisher.publish(obj_clock)
 
-        _epsilon = 1e-6
-
-        # publish data of all sensors — skip entries whose timestamp is older
-        # than the current frame (stale cached data from persistent sensor cache)
+        # publish data of all sensors
         for key, data in input_data.items():
             sensor_type = self.id_to_sensor_type_map[key]
             sensor_timestamp = data[0]
             sensor_data = data[1]
-            if sensor_timestamp + _epsilon < self.timestamp:
-                continue
             if sensor_type == "sensor.camera.rgb":
                 self.camera(sensor_data, timestamp=sensor_timestamp)
             elif sensor_type == "sensor.other.gnss":
