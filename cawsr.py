@@ -92,6 +92,8 @@ class AWScenarioRunner(object):
         # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
+        self.scenario_manager = None
+
         #  capture SIGINT for cleanup
         self._shutdown_requested = False
 

@@ -30,6 +30,13 @@ logger = logging.getLogger("scenario-runner")
 logger.propagate = False
 
 
+def _silent_spin(executor):
+    try:
+        executor.spin()
+    except rclpy.executors.ExternalShutdownException:
+        pass
+
+
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     agent_set_route = False
@@ -72,8 +79,12 @@ class AutowareAgent(AutonomousAgent):
             self._executors[1].add_node(self._node_state)
 
             self._executor_threads = [
-                threading.Thread(target=self._executors[0].spin, daemon=True),
-                threading.Thread(target=self._executors[1].spin, daemon=True),
+                threading.Thread(
+                    target=_silent_spin, args=(self._executors[0],), daemon=True
+                ),
+                threading.Thread(
+                    target=_silent_spin, args=(self._executors[1],), daemon=True
+                ),
             ]
         except rclpy.executors.ExternalShutdownException:
             logger.info("Node Executor shutdown externally...")
