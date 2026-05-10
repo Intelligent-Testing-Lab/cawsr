@@ -222,7 +222,7 @@ class ScenarioManager(object):
         target_loc = vehicle_transform.location + self._camera_offset
         target_yaw = vehicle_transform.rotation.yaw
 
-        smoothing = 0.3
+        smoothing = 0.1
 
         if self._smooth_cam_loc is None:
             self._smooth_cam_loc = target_loc
@@ -231,7 +231,8 @@ class ScenarioManager(object):
             self._smooth_cam_loc.x += (target_loc.x - self._smooth_cam_loc.x) * smoothing
             self._smooth_cam_loc.y += (target_loc.y - self._smooth_cam_loc.y) * smoothing
             self._smooth_cam_loc.z += (target_loc.z - self._smooth_cam_loc.z) * smoothing
-            self._smooth_cam_yaw += (target_yaw - self._smooth_cam_yaw) * smoothing
+            dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
+            self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
 
         delta_spec_trans = carla.Transform(
             self._smooth_cam_loc,
