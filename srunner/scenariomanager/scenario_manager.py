@@ -62,7 +62,6 @@ class ScenarioManager(object):
 
         self._running = False
         self._timestamp_last_run = 0.0
-        self._cam_tick = 0
         self.scenario_duration_system = 0.0
         self.scenario_duration_game = 0.0
         self.start_system_time = None
@@ -74,7 +73,6 @@ class ScenarioManager(object):
         """
         self._running = False
         self._timestamp_last_run = 0.0
-        self._cam_tick = 0
         self.scenario_duration_system = 0.0
         self.scenario_duration_game = 0.0
         self.start_system_time = None
@@ -209,9 +207,7 @@ class ScenarioManager(object):
             )
 
             if self.follow_ego:
-                self._cam_tick += 1
-                if self._cam_tick % 5 == 0:
-                    self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore
+                self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
