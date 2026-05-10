@@ -14,6 +14,8 @@
 
 import time
 
+import py_trees
+
 from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorReceivedNoData,
 )
@@ -45,6 +47,7 @@ class SensorLoop(object):
                 ego_action = self.sensor(timestamp)
             except SensorReceivedNoData as e:
                 raise RuntimeError(e)
+            py_trees.blackboard.Blackboard().set("AV_control", ego_action)
             self.ego_actor.apply_control(ego_action)
 
 

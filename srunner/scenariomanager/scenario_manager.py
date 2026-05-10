@@ -217,7 +217,7 @@ class ScenarioManager(object):
         vehicle_transform = ego.get_transform()
         target_loc = vehicle_transform.location + self._camera_offset
         target_yaw = vehicle_transform.rotation.yaw
-        target_pitch = vehicle_transform.rotation.pitch
+        target_pitch = vehicle_transform.rotation.pitch + 90
 
         smoothing = 0.1
 
@@ -240,9 +240,9 @@ class ScenarioManager(object):
             self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
 
             dpitch = (target_pitch - self._smooth_cam_pitch + 180) % 360 - 180
-            self._smooth_cam_pitch = (self._smooth_cam_pitch + dpitch) % 360 - 180
+            self._smooth_cam_pitch = (self._smooth_cam_pitch + dpitch * smoothing) % 360 - 180
 
-        delta_spec_trans = carla.Transform(
+        delta_spec_trans = carla.Transform(            
             self._smooth_cam_loc,
             carla.Rotation(pitch=self._smooth_cam_pitch, yaw=self._smooth_cam_yaw, roll=0),
         )
