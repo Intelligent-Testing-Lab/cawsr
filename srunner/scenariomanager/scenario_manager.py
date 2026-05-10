@@ -228,17 +228,21 @@ class ScenarioManager(object):
             self._smooth_cam_loc = target_loc
             self._smooth_cam_yaw = target_yaw
         else:
-            self._smooth_cam_loc.x += (target_loc.x - self._smooth_cam_loc.x) * smoothing
-            self._smooth_cam_loc.y += (target_loc.y - self._smooth_cam_loc.y) * smoothing
-            self._smooth_cam_loc.z += (target_loc.z - self._smooth_cam_loc.z) * smoothing
+            self._smooth_cam_loc.x += (
+                target_loc.x - self._smooth_cam_loc.x
+            ) * smoothing
+            self._smooth_cam_loc.y += (
+                target_loc.y - self._smooth_cam_loc.y
+            ) * smoothing
+            self._smooth_cam_loc.z += (
+                target_loc.z - self._smooth_cam_loc.z
+            ) * smoothing
             dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
             self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
 
         delta_spec_trans = carla.Transform(
             self._smooth_cam_loc,
-            carla.Rotation(
-                pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0
-            ),
+            carla.Rotation(pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0),
         )
         self.world_cam.set_transform(delta_spec_trans)
 
