@@ -234,8 +234,6 @@ class AWScenarioRunner(object):
             world = CarlaDataProvider.get_world()
             if world:
                 world.tick()
-                for _ in range(5):
-                    time.sleep(0)
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )
@@ -328,8 +326,6 @@ class AWScenarioRunner(object):
         world = CarlaDataProvider.get_world()
         if world:
             world.tick()
-            for _ in range(5):
-                time.sleep(0)
 
             snapshot = world.get_snapshot()
             if snapshot:

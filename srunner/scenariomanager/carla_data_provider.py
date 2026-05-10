@@ -146,19 +146,14 @@ class CarlaDataProvider(object):  # pylint: disable=too-many-public-methods
         with CarlaDataProvider._lock:
             for actor in CarlaDataProvider._actor_velocity_map:
                 if actor is not None and actor.is_alive:
-                    CarlaDataProvider._actor_velocity_map[actor] = calculate_velocity(
-                        actor
+                    vel = actor.get_velocity()
+                    velocity_squared = vel.x ** 2 + vel.y ** 2
+                    CarlaDataProvider._actor_velocity_map[actor] = math.sqrt(
+                        velocity_squared
                     )
-
-            for actor in CarlaDataProvider._actor_location_map:
-                if actor is not None and actor.is_alive:
-                    CarlaDataProvider._actor_location_map[actor] = actor.get_location()
-
-            for actor in CarlaDataProvider._actor_transform_map:
-                if actor is not None and actor.is_alive:
-                    CarlaDataProvider._actor_transform_map[actor] = (
-                        actor.get_transform()
-                    )
+                    transform = actor.get_transform()
+                    CarlaDataProvider._actor_location_map[actor] = transform.location
+                    CarlaDataProvider._actor_transform_map[actor] = transform
 
             world = CarlaDataProvider._world
             if world is None:

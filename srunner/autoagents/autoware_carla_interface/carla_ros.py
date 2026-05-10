@@ -223,10 +223,17 @@ class carla_ros2_interface(object):
         ).reshape(-1, 4)
 
         point_count = lidar_data.shape[0]
-        buf = numpy.empty(point_count, dtype=[
-            ("x", "f4"), ("y", "f4"), ("z", "f4"),
-            ("intensity", "u1"), ("return_type", "u1"), ("channel", "u2"),
-        ])
+        buf = numpy.empty(
+            point_count,
+            dtype=[
+                ("x", "f4"),
+                ("y", "f4"),
+                ("z", "f4"),
+                ("intensity", "u1"),
+                ("return_type", "u1"),
+                ("channel", "u2"),
+            ],
+        )
 
         buf["x"] = lidar_data[:, 0]
         buf["y"] = -lidar_data[:, 1]
@@ -246,7 +253,9 @@ class carla_ros2_interface(object):
             PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
             PointField(name="z", offset=8, datatype=PointField.FLOAT32, count=1),
             PointField(name="intensity", offset=12, datatype=PointField.UINT8, count=1),
-            PointField(name="return_type", offset=13, datatype=PointField.UINT8, count=1),
+            PointField(
+                name="return_type", offset=13, datatype=PointField.UINT8, count=1
+            ),
             PointField(name="channel", offset=14, datatype=PointField.UINT16, count=1),
         ]
 
