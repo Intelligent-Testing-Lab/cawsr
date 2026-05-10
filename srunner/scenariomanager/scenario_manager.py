@@ -12,6 +12,7 @@ It must not be modified and is for reference only!
 """
 
 from __future__ import print_function
+import math
 import time
 
 import py_trees
@@ -113,7 +114,6 @@ class ScenarioManager(object):
             self._camera_offset = carla.Location(x=0, y=0, z=50)
             self._camera_pitch = -90.0  # degrees
             self._smooth_cam_loc = None
-            self._smooth_cam_yaw = None
 
         self._draw_trigger_markers()
 
@@ -218,15 +218,14 @@ class ScenarioManager(object):
         """Ticks the spectator camera for the chosen ego"""
         vehicle_transform = ego.get_transform()
         target_loc = vehicle_transform.location + self._camera_offset
-        target_yaw = vehicle_transform.rotation.yaw
-        target_pitch = vehicle_transform.rotation.pitch + 90
+        forward = vehicle_transform.get_forward_vector()
+        target_yaw = math.degrees(math.atan2(forward.y, forward.x))
 
         smoothing = 0.1
 
         if self._smooth_cam_loc is None:
             self._smooth_cam_loc = target_loc
             self._smooth_cam_yaw = target_yaw
-            self._smooth_cam_pitch = target_pitch
         else:
             self._smooth_cam_loc.x += (
                 target_loc.x - self._smooth_cam_loc.x
@@ -237,16 +236,12 @@ class ScenarioManager(object):
             self._smooth_cam_loc.z += (
                 target_loc.z - self._smooth_cam_loc.z
             ) * smoothing
-            
             dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
             self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
 
-            dpitch = (target_pitch - self._smooth_cam_pitch + 180) % 360 - 180
-            self._smooth_cam_pitch = (self._smooth_cam_pitch + dpitch * smoothing) % 360 - 180
-
-        delta_spec_trans = carla.Transform(            
+        delta_spec_trans = carla.Transform(
             self._smooth_cam_loc,
-            carla.Rotation(pitch=self._smooth_cam_pitch, yaw=self._smooth_cam_yaw, roll=0),
+            carla.Rotation(pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0),
         )
         self.world_cam.set_transform(delta_spec_trans)
 
