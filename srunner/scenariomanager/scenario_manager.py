@@ -251,23 +251,24 @@ class ScenarioManager(object):
         world = CarlaDataProvider.get_world()
         if world is None:
             return
-        box = carla.BoundingBox(carla.Location(-1, -1, 0), carla.Location(1, 1, 2))
+        half = carla.Location(1, 1, 1)
         color = carla.Color(180, 130, 220)
         for marker in self.scenario.trigger_markers:
+            center = marker["location"]
             world.debug.draw_box(
-                box,
+                carla.BoundingBox(center, half),
                 carla.Rotation(),
                 0.02,
                 color,
-                life_time=0.0,
+                life_time=-1.0,
                 persistent_lines=True,
             )
             world.debug.draw_string(
-                marker["location"] + carla.Location(z=2.5),
+                marker["location"] + carla.Location(z=3),
                 marker["name"],
                 False,
-                color=color,
-                life_time=0.0,
+                color=carla.Color(255, 255, 255),
+                life_time=-1.0,
                 persistent_lines=True,
             )
 
