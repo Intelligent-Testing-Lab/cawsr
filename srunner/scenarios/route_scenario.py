@@ -348,6 +348,7 @@ class RouteScenario(BasicScenario):
                     [
                         scenario.config.route_var_name,
                         scenario.config.trigger_points[0].location,
+                        scenario.config.name,
                     ]
                 )
 
