@@ -114,6 +114,8 @@ class ScenarioManager(object):
             self._camera_offset = carla.Location(x=0, y=0, z=50)
             self._camera_pitch = -90.0  # degrees
             self._smooth_cam_loc = None
+            self._smooth_cam_yaw = 0.0
+            self._cam_transform = None
 
         self._draw_trigger_markers()
 
@@ -222,7 +224,8 @@ class ScenarioManager(object):
         forward = vehicle_transform.get_forward_vector()
         target_yaw = math.degrees(math.atan2(forward.y, forward.x))
 
-        smoothing = 0.1
+        smoothing_loc = 0.05
+        smoothing_rot = 0.02
 
         if self._smooth_cam_loc is None:
             self._smooth_cam_loc = target_loc
@@ -230,21 +233,25 @@ class ScenarioManager(object):
         else:
             self._smooth_cam_loc.x += (
                 target_loc.x - self._smooth_cam_loc.x
-            ) * smoothing
+            ) * smoothing_loc
             self._smooth_cam_loc.y += (
                 target_loc.y - self._smooth_cam_loc.y
-            ) * smoothing
+            ) * smoothing_loc
             self._smooth_cam_loc.z += (
                 target_loc.z - self._smooth_cam_loc.z
-            ) * smoothing
-            dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
-            self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
+            ) * smoothing_loc
 
-        delta_spec_trans = carla.Transform(
+            vel = ego.get_velocity()
+            speed = math.sqrt(vel.x ** 2 + vel.y ** 2)
+            if speed > 0.5:
+                dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
+                self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing_rot) % 360.0
+
+        self._cam_transform = carla.Transform(
             self._smooth_cam_loc,
             carla.Rotation(pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0),
         )
-        self.world_cam.set_transform(delta_spec_trans)
+        self.world_cam.set_transform(self._cam_transform)
 
     def _draw_trigger_markers(self) -> None:
         if not hasattr(self.scenario, "trigger_markers"):
@@ -274,6 +281,8 @@ class ScenarioManager(object):
             )
 
     def _draw_control_hud(self, ego):
+        if self._smooth_cam_loc is None:
+            return
         world = CarlaDataProvider.get_world()
         if world is None:
             return
@@ -284,9 +293,13 @@ class ScenarioManager(object):
         line1 = f"ctrl  t={ctrl.throttle:.3f} s={ctrl.steer:.3f} b={ctrl.brake:.3f}"
         line2 = f"noise t={noise_t:+.3f} s={noise_s:+.3f}"
         text = line1 + "\n" + line2
-        ego_loc = ego.get_location()
+
+        cam = self._cam_transform
+        hud_loc = cam.location + cam.get_forward_vector() * 12.0
+        hud_loc += cam.get_right_vector() * (-8.0)
+        hud_loc += cam.get_up_vector() * 6.0
         world.debug.draw_string(
-            ego_loc + carla.Location(z=3),
+            hud_loc,
             text,
             False,
             color=carla.Color(255, 255, 255),
