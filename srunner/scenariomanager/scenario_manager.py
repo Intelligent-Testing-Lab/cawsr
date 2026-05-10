@@ -115,6 +115,8 @@ class ScenarioManager(object):
             self._smooth_cam_loc = None
             self._smooth_cam_yaw = None
 
+        self._draw_trigger_markers()
+
     def run_scenario(self):
         """
         Trigger the start of the scenario and wait for it to finish/fail
@@ -247,6 +249,32 @@ class ScenarioManager(object):
             carla.Rotation(pitch=self._smooth_cam_pitch, yaw=self._smooth_cam_yaw, roll=0),
         )
         self.world_cam.set_transform(delta_spec_trans)
+
+    def _draw_trigger_markers(self) -> None:
+        if not hasattr(self.scenario, "trigger_markers"):
+            return
+        world = CarlaDataProvider.get_world()
+        if world is None:
+            return
+        box = carla.BoundingBox(carla.Location(-1, -1, 0), carla.Location(1, 1, 2))
+        color = carla.Color(180, 130, 220)
+        for marker in self.scenario.trigger_markers:
+            world.debug.draw_box(
+                box,
+                carla.Rotation(),
+                0.02,
+                color,
+                life_time=0.0,
+                persistent_lines=True,
+            )
+            world.debug.draw_string(
+                marker["location"] + carla.Location(z=2.5),
+                marker["name"],
+                False,
+                color=color,
+                life_time=0.0,
+                persistent_lines=True,
+            )
 
     def get_running_status(self):
         """
