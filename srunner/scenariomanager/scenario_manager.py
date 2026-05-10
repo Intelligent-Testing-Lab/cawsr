@@ -210,6 +210,7 @@ class ScenarioManager(object):
 
             if self.follow_ego:
                 self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore
+                self._draw_control_hud(self.ego_vehicles[0])
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
@@ -271,6 +272,27 @@ class ScenarioManager(object):
                 life_time=-1.0,
                 persistent_lines=True,
             )
+
+    def _draw_control_hud(self, ego):
+        world = CarlaDataProvider.get_world()
+        if world is None:
+            return
+        ctrl = ego.get_control()
+        blackboard = py_trees.blackboard.Blackboard()
+        noise_t = blackboard.get("AV_noise_throttle") or 0.0
+        noise_s = blackboard.get("AV_noise_steer") or 0.0
+        line1 = f"ctrl  t={ctrl.throttle:.3f} s={ctrl.steer:.3f} b={ctrl.brake:.3f}"
+        line2 = f"noise t={noise_t:+.3f} s={noise_s:+.3f}"
+        text = line1 + "\n" + line2
+        ego_loc = ego.get_location()
+        world.debug.draw_string(
+            ego_loc + carla.Location(z=3),
+            text,
+            False,
+            color=carla.Color(255, 255, 255),
+            life_time=0.05,
+            persistent_lines=False,
+        )
 
     def get_running_status(self):
         """

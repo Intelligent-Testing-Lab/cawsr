@@ -2623,6 +2623,10 @@ class AddNoiseToRouteEgo(AtomicBehavior):
         steer_noise = random.normal(self._steer_mean, self._steer_std)
         control.steer = max(0, min(1, control.steer + steer_noise))
 
+        blackboard = py_trees.blackboard.Blackboard()
+        blackboard.set("AV_noise_throttle", throttle_noise)
+        blackboard.set("AV_noise_steer", steer_noise)
+
         self.logger.debug(
             "%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status)
         )
