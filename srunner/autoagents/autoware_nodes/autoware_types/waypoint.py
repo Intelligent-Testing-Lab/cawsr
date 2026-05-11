@@ -51,9 +51,9 @@ class Waypoint(object):
         )
 
         qx, qy, qz, qw = quaternion_from_euler(
-            math.radians(orientation.roll),
-            -math.radians(orientation.pitch),
-            -math.radians(round(orientation.yaw, 1)),
+            0.0,
+            0.0,
+            -math.radians(orientation.yaw),
         )
 
         pose.position = ros_point
