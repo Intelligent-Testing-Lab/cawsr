@@ -24,6 +24,7 @@ import threading
 import rclpy
 import time
 import logging
+import math
 
 
 logger = logging.getLogger("scenario-runner")
@@ -196,6 +197,18 @@ class AutowareAgent(AutonomousAgent):
             goal_pose = self._convert_to_waypoint(
                 self.goal_pose_world
             ).autoware_from_world_coords()
+
+            if len(self._global_plan_world_coord) >= 2:
+                prev = self._global_plan_world_coord[-2]
+                curr = self.goal_pose_world
+                dx = curr[0].location.x - prev[0].location.x
+                dy = curr[0].location.y - prev[0].location.y
+                approach_yaw = math.atan2(dy, dx)
+                half_yaw = -approach_yaw / 2.0
+                goal_pose.orientation.z = math.sin(half_yaw)
+                goal_pose.orientation.w = math.cos(half_yaw)
+                goal_pose.orientation.x = 0.0
+                goal_pose.orientation.y = 0.0
 
             for waypoint in self.waypoints_world:
                 waypoints.append(
