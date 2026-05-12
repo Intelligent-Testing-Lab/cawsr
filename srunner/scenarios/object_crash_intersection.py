@@ -16,20 +16,26 @@ import py_trees
 import carla
 
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (ActorDestroy,
-                                                                      HandBrakeVehicle,
-                                                                      KeepVelocity,
-                                                                      ActorTransformSetter,
-                                                                      MovePedestrianWithEgo)
+from srunner.scenariomanager.scenarioatomics.atomic_behaviors import (
+    ActorDestroy,
+    HandBrakeVehicle,
+    KeepVelocity,
+    ActorTransformSetter,
+    MovePedestrianWithEgo,
+)
 from srunner.scenariomanager.scenarioatomics.atomic_criteria import CollisionTest
-from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (InTriggerDistanceToLocation,
-                                                                               InTimeToArrivalToLocation,
-                                                                               DriveDistance)
+from srunner.scenariomanager.scenarioatomics.atomic_trigger_conditions import (
+    InTriggerDistanceToLocation,
+    InTimeToArrivalToLocation,
+    DriveDistance,
+)
 from srunner.scenarios.basic_scenario import BasicScenario
-from srunner.tools.scenario_helper import (generate_target_waypoint,
-                                           generate_target_waypoint_in_route,
-                                           get_same_dir_lanes,
-                                           get_opposite_dir_lanes)
+from srunner.tools.scenario_helper import (
+    generate_target_waypoint,
+    generate_target_waypoint_in_route,
+    get_same_dir_lanes,
+    get_opposite_dir_lanes,
+)
 
 from srunner.tools.background_manager import LeaveCrossingSpace
 
@@ -42,21 +48,22 @@ def get_sidewalk_transform(waypoint, offset):
     """
 
     new_rotation = waypoint.transform.rotation
-    new_rotation.yaw += offset['yaw']
+    new_rotation.yaw += offset["yaw"]
 
     if waypoint.lane_type == carla.LaneType.Sidewalk:
         new_location = waypoint.transform.location
     else:
         right_vector = waypoint.transform.get_right_vector()
-        offset_location = carla.Location(offset["k"] * right_vector.x, offset["k"] * right_vector.y)
+        offset_location = carla.Location(
+            offset["k"] * right_vector.x, offset["k"] * right_vector.y
+        )
         new_location = waypoint.transform.location + offset_location
-    new_location.z += offset['z']
+    new_location.z += offset["z"]
 
     return carla.Transform(new_location, new_rotation)
 
 
 class BaseVehicleTurning(BasicScenario):
-
     """
     This class holds everything required for a simple object crash
     with prior vehicle action involving a vehicle and a cyclist.
@@ -65,10 +72,20 @@ class BaseVehicleTurning(BasicScenario):
 
     This is a single ego vehicle scenario
     """
+
     _subtype = None
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60, name="BaseVehicleTurning"):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+        name="BaseVehicleTurning",
+    ):
         """
         Setup all relevant parameters and create scenario
         """
@@ -87,7 +104,9 @@ class BaseVehicleTurning(BasicScenario):
 
         self._collision_wp = None
         self._adversary_speed = 1.8  # Speed of the adversary [m/s]
-        self._reaction_time = 1.8  # Time the agent has to react to avoid the collision [s]
+        self._reaction_time = (
+            1.8  # Time the agent has to react to avoid the collision [s]
+        )
         self._min_trigger_dist = 6.0  # Min distance to the collision location that triggers the adversary [m]
         self._ego_end_distance = 40
 
@@ -95,21 +114,31 @@ class BaseVehicleTurning(BasicScenario):
 
         self.timeout = timeout
         super(BaseVehicleTurning, self).__init__(
-            name, ego_vehicles, config, world, debug_mode, criteria_enable=criteria_enable)
+            name,
+            ego_vehicles,
+            config,
+            world,
+            debug_mode,
+            criteria_enable=criteria_enable,
+        )
 
     def _get_target_waypoint(self):
         """
         Gets the first waypoint after the junction.
         This method depends on the subtype of VehicleTurning scenario
         """
-        if self._subtype == 'right':
+        if self._subtype == "right":
             return generate_target_waypoint(self._reference_waypoint, 1)
-        elif self._subtype == 'left':
+        elif self._subtype == "left":
             return generate_target_waypoint(self._reference_waypoint, -1)
-        elif self._subtype == 'route':
-            return generate_target_waypoint_in_route(self._reference_waypoint, self._ego_route)
+        elif self._subtype == "route":
+            return generate_target_waypoint_in_route(
+                self._reference_waypoint, self._ego_route
+            )
         else:
-            raise ValueError("Trying to run a VehicleTurning scenario with a wrong subtype")
+            raise ValueError(
+                "Trying to run a VehicleTurning scenario with a wrong subtype"
+            )
 
     def _initialize_actors(self, config):
         """
@@ -122,7 +151,10 @@ class BaseVehicleTurning(BasicScenario):
             parking_location = None
 
             # Move to the front
-            waypoint = waypoint.next(move_dist)[0]
+            next_wps = waypoint.next(move_dist)
+            if len(next_wps) == 0:
+                raise ValueError("Failed to find a spawn location: reached end of road")
+            waypoint = next_wps[0]
             self._collision_wp = waypoint
 
             # Move to the right
@@ -136,8 +168,12 @@ class BaseVehicleTurning(BasicScenario):
                     parking_location = sidewalk_waypoint.transform.location
 
             # Get the adversary transform and spawn it
-            self._adversary_transform = get_sidewalk_transform(sidewalk_waypoint, self._offset)
-            adversary = CarlaDataProvider.request_new_actor('vehicle.diamondback.century', self._adversary_transform)
+            self._adversary_transform = get_sidewalk_transform(
+                sidewalk_waypoint, self._offset
+            )
+            adversary = CarlaDataProvider.request_new_actor(
+                "vehicle.diamondback.century", self._adversary_transform
+            )
             if adversary is None:
                 self._number_of_attempts -= 1
                 move_dist = self._retry_dist
@@ -168,16 +204,26 @@ class BaseVehicleTurning(BasicScenario):
         """
         sequence = py_trees.composites.Sequence(name="CrossingActorIntersection")
         collision_location = self._collision_wp.transform.location
-        collision_distance = collision_location.distance(self._adversary_transform.location)
+        collision_distance = collision_location.distance(
+            self._adversary_transform.location
+        )
         collision_duration = collision_distance / self._adversary_speed
 
         # Adversary trigger behavior
         trigger_adversary = py_trees.composites.Parallel(
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE, name="TriggerAdversaryStart")
-        trigger_adversary.add_child(InTimeToArrivalToLocation(
-            self.ego_vehicles[0], self._reaction_time, collision_location))
-        trigger_adversary.add_child(InTriggerDistanceToLocation(
-            self.ego_vehicles[0], collision_location, self._min_trigger_dist))
+            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE,
+            name="TriggerAdversaryStart",
+        )
+        trigger_adversary.add_child(
+            InTimeToArrivalToLocation(
+                self.ego_vehicles[0], self._reaction_time, collision_location
+            )
+        )
+        trigger_adversary.add_child(
+            InTriggerDistanceToLocation(
+                self.ego_vehicles[0], collision_location, self._min_trigger_dist
+            )
+        )
 
         sequence.add_child(trigger_adversary)
         sequence.add_child(HandBrakeVehicle(self.other_actors[0], False))
@@ -187,14 +233,24 @@ class BaseVehicleTurning(BasicScenario):
         speed_distance = 2.0 * collision_distance
         if self.route_mode:
             sequence.add_child(LeaveCrossingSpace(self._collision_wp))
-        sequence.add_child(KeepVelocity(
-            self.other_actors[0], self._adversary_speed, True,
-            speed_duration, speed_distance, name="AdversaryCrossing")
+        sequence.add_child(
+            KeepVelocity(
+                self.other_actors[0],
+                self._adversary_speed,
+                True,
+                speed_duration,
+                speed_distance,
+                name="AdversaryCrossing",
+            )
         )
 
         # Remove everything
         sequence.add_child(ActorDestroy(self.other_actors[0], name="DestroyAdversary"))
-        sequence.add_child(DriveDistance(self.ego_vehicles[0], self._ego_end_distance, name="EndCondition"))
+        sequence.add_child(
+            DriveDistance(
+                self.ego_vehicles[0], self._ego_end_distance, name="EndCondition"
+            )
+        )
 
         return sequence
 
@@ -218,14 +274,30 @@ class VehicleTurningRight(BaseVehicleTurning):
     the adversary is placed at the right side after the junction
     """
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+    ):
         """
         Setup all relevant parameters and create scenario
         """
-        self._subtype = 'right'
+        self._subtype = "right"
         super(VehicleTurningRight, self).__init__(
-            world, ego_vehicles, config, randomize, debug_mode, criteria_enable, timeout, "VehicleTurningRight")
+            world,
+            ego_vehicles,
+            config,
+            randomize,
+            debug_mode,
+            criteria_enable,
+            timeout,
+            "VehicleTurningRight",
+        )
 
 
 class VehicleTurningLeft(BaseVehicleTurning):
@@ -234,14 +306,30 @@ class VehicleTurningLeft(BaseVehicleTurning):
     the adversary is placed at the left side after the junction
     """
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+    ):
         """
         Setup all relevant parameters and create scenario
         """
-        self._subtype = 'left'
+        self._subtype = "left"
         super(VehicleTurningLeft, self).__init__(
-            world, ego_vehicles, config, randomize, debug_mode, criteria_enable, timeout, "VehicleTurningLeft")
+            world,
+            ego_vehicles,
+            config,
+            randomize,
+            debug_mode,
+            criteria_enable,
+            timeout,
+            "VehicleTurningLeft",
+        )
 
 
 class VehicleTurningRoute(BaseVehicleTurning):
@@ -250,14 +338,30 @@ class VehicleTurningRoute(BaseVehicleTurning):
     the adversary is placed using the route path
     """
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+    ):
         """
         Setup all relevant parameters and create scenario
         """
-        self._subtype = 'route'
+        self._subtype = "route"
         super(VehicleTurningRoute, self).__init__(
-            world, ego_vehicles, config, randomize, debug_mode, criteria_enable, timeout, "VehicleTurningRoute")
+            world,
+            ego_vehicles,
+            config,
+            randomize,
+            debug_mode,
+            criteria_enable,
+            timeout,
+            "VehicleTurningRoute",
+        )
 
     def _create_test_criteria(self):
         """
@@ -267,7 +371,6 @@ class VehicleTurningRoute(BaseVehicleTurning):
 
 
 class VehicleTurningRoutePedestrian(BasicScenario):
-
     """
     This class holds everything required for a simple object crash
     with prior vehicle action involving a vehicle and a cyclist.
@@ -276,10 +379,20 @@ class VehicleTurningRoutePedestrian(BasicScenario):
 
     This is a single ego vehicle scenario
     """
+
     _subtype = None
 
-    def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=60, name="VehicleTurningRoutePedestrian"):
+    def __init__(
+        self,
+        world,
+        ego_vehicles,
+        config,
+        randomize=False,
+        debug_mode=False,
+        criteria_enable=True,
+        timeout=60,
+        name="VehicleTurningRoutePedestrian",
+    ):
         """
         Setup all relevant parameters and create scenario
         """
@@ -291,14 +404,23 @@ class VehicleTurningRoutePedestrian(BasicScenario):
 
         self._collision_wp = None
         self._adversary_speed = 1.8  # Speed of the adversary [m/s]
-        self._reaction_time = 2.2  # Time the agent has to react to avoid the collision [s]
+        self._reaction_time = (
+            2.2  # Time the agent has to react to avoid the collision [s]
+        )
         self._min_trigger_dist = 6.0  # Min distance to the collision location that triggers the adversary [m]
         self._ego_end_distance = 40
 
         self._offset = {"yaw": 270, "z": 1.2, "k": 1.5}
 
         self.timeout = timeout
-        super().__init__(name, ego_vehicles, config, world, debug_mode, criteria_enable=criteria_enable)
+        super().__init__(
+            name,
+            ego_vehicles,
+            config,
+            world,
+            debug_mode,
+            criteria_enable=criteria_enable,
+        )
 
     def _initialize_actors(self, config):
         """
@@ -306,8 +428,12 @@ class VehicleTurningRoutePedestrian(BasicScenario):
         """
         # Get the waypoint right after the junction
         parking_location = None
-        waypoint = generate_target_waypoint_in_route(self._reference_waypoint, self._ego_route)
-        self._collision_wp = waypoint.next(0.5)[0]  # Some wps are still part of the junction
+        waypoint = generate_target_waypoint_in_route(
+            self._reference_waypoint, self._ego_route
+        )
+        self._collision_wp = waypoint.next(0.5)[
+            0
+        ]  # Some wps are still part of the junction
 
         # Get the right waypoint at the sidewalk
         same_dir_wps = get_same_dir_lanes(self._collision_wp)
@@ -334,7 +460,7 @@ class VehicleTurningRoutePedestrian(BasicScenario):
                     parking_location = left_wp.transform.location
         else:
             # Without opposite lane
-            self._offset['yaw'] = 90
+            self._offset["yaw"] = 90
             left_wp = same_dir_wps[-1]
             while left_wp.lane_type != carla.LaneType.Sidewalk:
                 side_wp = left_wp.get_left_lane()
@@ -344,7 +470,9 @@ class VehicleTurningRoutePedestrian(BasicScenario):
                 if left_wp.lane_type == carla.LaneType.Parking:
                     parking_location = left_wp.transform.location
 
-        self._adversary_distance = right_wp.transform.location.distance(left_wp.transform.location)
+        self._adversary_distance = right_wp.transform.location.distance(
+            left_wp.transform.location
+        )
 
         entry_vec = self._reference_waypoint.transform.get_forward_vector()
         exit_vec = waypoint.transform.get_forward_vector()
@@ -353,7 +481,9 @@ class VehicleTurningRoutePedestrian(BasicScenario):
 
         # Get the adversary transform and spawn it
         self._spawn_transform = get_sidewalk_transform(spawn_wp, self._offset)
-        adversary = CarlaDataProvider.request_new_actor('walker.*', self._spawn_transform)
+        adversary = CarlaDataProvider.request_new_actor(
+            "walker.*", self._spawn_transform
+        )
         if adversary is None:
             raise ValueError("Couldn't spawn adversary")
 
@@ -366,20 +496,29 @@ class VehicleTurningRoutePedestrian(BasicScenario):
         self.other_actors.append(adversary)
 
     def _create_behavior(self):
-        """
-        """
+        """ """
         sequence = py_trees.composites.Sequence(name="VehicleTurningRoutePedestrian")
-        sequence.add_child(ActorTransformSetter(self.other_actors[0], self._spawn_transform, True))
+        sequence.add_child(
+            ActorTransformSetter(self.other_actors[0], self._spawn_transform, True)
+        )
 
         collision_location = self._collision_wp.transform.location
 
         # Adversary trigger behavior
         trigger_adversary = py_trees.composites.Parallel(
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE, name="TriggerAdversaryStart")
-        trigger_adversary.add_child(InTimeToArrivalToLocation(
-            self.ego_vehicles[0], self._reaction_time, collision_location))
-        trigger_adversary.add_child(InTriggerDistanceToLocation(
-            self.ego_vehicles[0], collision_location, self._min_trigger_dist))
+            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE,
+            name="TriggerAdversaryStart",
+        )
+        trigger_adversary.add_child(
+            InTimeToArrivalToLocation(
+                self.ego_vehicles[0], self._reaction_time, collision_location
+            )
+        )
+        trigger_adversary.add_child(
+            InTriggerDistanceToLocation(
+                self.ego_vehicles[0], collision_location, self._min_trigger_dist
+            )
+        )
 
         sequence.add_child(trigger_adversary)
         if self.route_mode:
@@ -388,14 +527,24 @@ class VehicleTurningRoutePedestrian(BasicScenario):
         # Move the adversary.
         speed_distance = self._adversary_distance
         speed_duration = self._adversary_distance / self._adversary_speed
-        sequence.add_child(KeepVelocity(
-            self.other_actors[0], self._adversary_speed, True,
-            speed_duration, speed_distance, name="AdversaryCrossing")
+        sequence.add_child(
+            KeepVelocity(
+                self.other_actors[0],
+                self._adversary_speed,
+                True,
+                speed_duration,
+                speed_distance,
+                name="AdversaryCrossing",
+            )
         )
 
         # Remove everything
         sequence.add_child(ActorDestroy(self.other_actors[0], name="DestroyAdversary"))
-        sequence.add_child(DriveDistance(self.ego_vehicles[0], self._ego_end_distance, name="EndCondition"))
+        sequence.add_child(
+            DriveDistance(
+                self.ego_vehicles[0], self._ego_end_distance, name="EndCondition"
+            )
+        )
 
         return sequence
 
@@ -435,9 +584,12 @@ class VehicleTurningRoutePedestrian(BasicScenario):
             return trigger_tree
 
         parallel = py_trees.composites.Parallel(
-            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE, name="ScenarioTrigger")
+            policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE, name="ScenarioTrigger"
+        )
 
-        parallel.add_child(MovePedestrianWithEgo(self.ego_vehicles[0], self.other_actors[0], 100))
+        parallel.add_child(
+            MovePedestrianWithEgo(self.ego_vehicles[0], self.other_actors[0], 100)
+        )
 
         parallel.add_child(trigger_tree)
         return parallel

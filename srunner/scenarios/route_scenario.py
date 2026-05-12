@@ -292,13 +292,12 @@ class RouteScenario(BasicScenario):
                     world.tick()
 
             except Exception as e:
-                if not debug:
-                    print(
-                        "Skipping scenario '{}' due to setup error: {}".format(
-                            scenario_config.type, e
-                        )
+                print(
+                    "WARNING: Skipping scenario '{}' (type: {}) due to setup error: {}".format(
+                        scenario_config.name, scenario_config.type, e
                     )
-                else:
+                )
+                if debug:
                     traceback.print_exc()
                 continue
 
@@ -306,11 +305,13 @@ class RouteScenario(BasicScenario):
 
         for scenario_config in scenario_definitions:
             trigger = scenario_config.trigger_points[0]
-            self.trigger_markers.append({
-                "name": scenario_config.name,
-                "location": trigger.location + carla.Location(z=1.0),
-                "route_var_name": scenario_config.route_var_name,
-            })
+            self.trigger_markers.append(
+                {
+                    "name": scenario_config.name,
+                    "location": trigger.location + carla.Location(z=1.0),
+                    "route_var_name": scenario_config.route_var_name,
+                }
+            )
 
     # pylint: enable=no-self-use
     def _initialize_actors(self, config):
