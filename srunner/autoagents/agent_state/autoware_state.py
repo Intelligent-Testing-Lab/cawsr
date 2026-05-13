@@ -49,6 +49,7 @@ class AutowareState(state.AgentState):
         self.sent_route: bool = False
         self.sent_engage: bool = False
         self.bridge_ready: bool = False
+        self.route_failed_permanently: bool = False
 
         # ADS state
         self.motion_state: int = 0

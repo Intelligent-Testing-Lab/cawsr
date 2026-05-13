@@ -169,7 +169,14 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
     MIN_TIMEOUT = 300
     TIMEOUT_ROUTE_PERC = 10
 
-    def __init__(self, ego_vehicle, route, debug=False, name="RouteTimeoutBehavior"):
+    def __init__(
+        self,
+        ego_vehicle,
+        route,
+        min_timeout=None,
+        debug=False,
+        name="RouteTimeoutBehavior",
+    ):
         """
         Setup timeout
         """
@@ -180,7 +187,9 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
         self._debug = debug
 
         self._start_time = None
-        self._timeout_value = self.MIN_TIMEOUT
+        self._timeout_value = (
+            min_timeout if min_timeout is not None else self.MIN_TIMEOUT
+        )
         self.timeout = False
 
         # Route variables

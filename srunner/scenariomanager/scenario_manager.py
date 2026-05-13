@@ -12,7 +12,6 @@ It must not be modified and is for reference only!
 """
 
 from __future__ import print_function
-import math
 import time
 
 import py_trees
@@ -199,6 +198,15 @@ class ScenarioManager(object):
 
             if self._agent is not None:
                 self._agent(timestamp)  # pylint: disable=not-callable
+                if hasattr(self._agent, "_agent") and hasattr(
+                    self._agent._agent, "route_failed_permanently"
+                ):
+                    if self._agent._agent.route_failed_permanently:
+                        print(
+                            "ScenarioManager: Route setting failed permanently, aborting scenario"
+                        )
+                        self._running = False
+                        return
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6

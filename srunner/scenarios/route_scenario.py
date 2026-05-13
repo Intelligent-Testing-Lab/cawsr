@@ -71,6 +71,7 @@ class RouteScenario(BasicScenario):
         debug_mode=False,
         criteria_enable=True,
         timeout=300,
+        route_timeout=300,
         ego_vehicle=None,
         route=None,
     ):
@@ -79,6 +80,7 @@ class RouteScenario(BasicScenario):
         """
 
         self.config = config
+        self._route_timeout = route_timeout
         self.route = self._get_route(config) if not route else route
 
         sampled_scenario_definitions = self._filter_scenarios(config.scenario_configs)
@@ -447,7 +449,9 @@ class RouteScenario(BasicScenario):
         """
         Create the timeout behavior
         """
-        return RouteTimeoutBehavior(self.ego_vehicles[0], self.route)
+        return RouteTimeoutBehavior(
+            self.ego_vehicles[0], self.route, min_timeout=self._route_timeout
+        )
 
     def _initialize_environment(self, world):
         """

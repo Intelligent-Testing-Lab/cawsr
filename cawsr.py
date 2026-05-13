@@ -251,8 +251,17 @@ class AWScenarioRunner(object):
                 self.aw_agent.run_step()
             if self.aw_agent.autoware_state.route_set():
                 break
+            if self.aw_agent.route_failed_permanently:
+                break
         else:
-            logger.info("Agent failed to initialise route")
+            logger.info("Agent failed to initialise route - skipping scenario")
+            self._cleanup()
+            MetricsCollector.reset()
+            result_dict = result_.get()
+            result_dict["status"] = False
+            result_dict["driving_score"] = 0.0
+            result_.put(result_dict)
+            return
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -269,6 +278,7 @@ class AWScenarioRunner(object):
                 debug_mode=self.DEBUG,
                 ego_vehicle=ego._actor,
                 route=route,
+                route_timeout=self._conf.get("route_timeout", 300),
             )
         except Exception:
             logger.info("Could not load Route Scenario")
@@ -306,7 +316,13 @@ class AWScenarioRunner(object):
             f"{self.results_manager.last_scenario}/{scenario_name}.json",
         )
         logger.info("Calculating driving score...")
-        driving_score = self._calculate_driving_score(criteria)
+
+        if self.aw_agent.route_failed_permanently:
+            driving_score = 0.0
+            result = False
+            logger.info("Route setting failed permanently - driving score set to 0.0")
+        else:
+            driving_score = self._calculate_driving_score(criteria)
 
         result_dict = result_.get()
         result_dict["status"] = result

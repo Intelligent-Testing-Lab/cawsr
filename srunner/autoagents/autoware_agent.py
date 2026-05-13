@@ -39,7 +39,7 @@ def _silent_spin(executor):
 
 
 class AutowareAgent(AutonomousAgent):
-    MAX_ROUTE_RETRIES = 3
+    MAX_ROUTE_RETRIES = 10
 
     timestamp = None
     agent_set_route = False
@@ -137,6 +137,11 @@ class AutowareAgent(AutonomousAgent):
             logger.error(
                 f"Route setting failed after {self.MAX_ROUTE_RETRIES} attempts."
             )
+            self.autoware_state.route_failed_permanently = True
+
+    @property
+    def route_failed_permanently(self):
+        return self.autoware_state.route_failed_permanently
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
