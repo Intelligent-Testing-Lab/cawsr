@@ -305,7 +305,11 @@ class AWScenarioRunner(object):
             )
             result = False
 
-        self.carla_client.stop_recorder()
+        try:
+            self.carla_client.stop_recorder()
+            CARLAManager.fix_recording_permissions()
+        except Exception:
+            pass
 
         # stop the MetricsCollector thread
         MetricsCollector.reset()

@@ -637,13 +637,24 @@ def filter_junction_wp_direction(reference_wp, wp_list, direction="opposite"):
     """
     Given a list of entry / exit wps of a junction, filters them according to a specific direction,
     returning all waypoint part of lanes that are at 'direction' with respect to the reference.
-    This might fail for complex junctions, as only the wp yaws is checked, not their relative positions
+    Uses position-based angle to handle complex junction geometries where yaw-only fails.
     """
 
     filtered_wps = []
+    ref_loc = reference_wp.transform.location
     reference_yaw = reference_wp.transform.rotation.yaw
+
     for wp in wp_list:
-        diff = (wp.transform.rotation.yaw - reference_yaw) % 360
+        wp_loc = wp.transform.location
+        # Compute geometric angle from reference position to entry wp position
+        dx = wp_loc.x - ref_loc.x
+        dy = wp_loc.y - ref_loc.y
+        pos_angle = (math.degrees(math.atan2(dy, dx)) + 90) % 360
+        # Fall back to yaw-based if positions are coincident
+        if dx == 0 and dy == 0:
+            pos_angle = wp.transform.rotation.yaw
+
+        diff = (pos_angle - reference_yaw) % 360
         if diff > 330.0:
             wp_direction = "ref"
         elif diff > 225.0:
