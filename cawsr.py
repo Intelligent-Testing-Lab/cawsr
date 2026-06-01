@@ -229,30 +229,66 @@ class AWScenarioRunner(object):
         # uses the same tick pattern as the scenario_manager main loop
         logger.info("Initialising agent route...")
         budget = self._conf["initialisation_budget"]
-        for tick in range(1, budget + 1):
-            _tick_carla_start = time.perf_counter_ns() / 1e6
-            world = CarlaDataProvider.get_world()
-            if world:
-                world.tick()
-                for _ in range(5):
-                    time.sleep(0)
-            MetricsCollector.update_key(
-                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
-            )
-            timestamp = None
-            if world:
-                snapshot = world.get_snapshot()
-                if snapshot:
-                    timestamp = snapshot.timestamp
-            if timestamp:
-                self.aw_agent._carla_timestamp = timestamp
-                GameTime.on_carla_tick(timestamp)
-                CarlaDataProvider.on_carla_tick()
-                self.aw_agent.run_step()
-            if self.aw_agent.autoware_state.route_set():
+        max_route_attempts = 3
+        route_ready = False
+
+        for attempt in range(1, max_route_attempts + 1):
+            if attempt > 1:
+                logger.info(
+                    f"Retrying agent route setup ({attempt}/{max_route_attempts})"
+                )
+                self.aw_agent.agent_set_route = False
+                self.aw_agent.sent_route = False
+                self.aw_agent.autoware_state.sent_route = False
+                self.aw_agent.route_node.request_clear_route()
+
+            for tick in range(1, budget + 1):
+                _tick_carla_start = time.perf_counter_ns() / 1e6
+                world = CarlaDataProvider.get_world()
+                if world:
+                    world.tick()
+                    for _ in range(5):
+                        time.sleep(0)
+                MetricsCollector.update_key(
+                    "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
+                )
+                timestamp = None
+                if world:
+                    snapshot = world.get_snapshot()
+                    if snapshot:
+                        timestamp = snapshot.timestamp
+                if timestamp:
+                    self.aw_agent._carla_timestamp = timestamp
+                    GameTime.on_carla_tick(timestamp)
+                    CarlaDataProvider.on_carla_tick()
+                    self.aw_agent.run_step()
+                if self.aw_agent.autoware_state.route_set():
+                    route_ready = True
+                    break
+
+            if route_ready:
                 break
-        else:
-            logger.info("Agent failed to initialise route")
+
+            logger.info(f"Agent failed to initialise route on attempt {attempt}")
+
+        if not route_ready:
+            logger.error(
+                "Agent failed to initialise route after 3 attempts; skipping scenario."
+            )
+            result_dict = result_.get()
+            result_dict["status"] = False
+            result_dict["driving_score"] = 0.0
+
+            if algorithm_mode:
+                algorithm._update_generator(seed)  # type: ignore
+                definition = algorithm._scenario_callback(  # type: ignore
+                    current_definiton, 0.0
+                )
+                result_dict["definition"] = definition
+
+            result_.put(result_dict)
+            MetricsCollector.reset()
+            return
 
         logger.info("Loading Traffic Manager...")
         tm_port = int(self._carla.TRAFFIC_MANAGER.PORT)  # type: ignore
@@ -267,6 +303,7 @@ class AWScenarioRunner(object):
                 world=self.carla_world,
                 config=route_config,
                 debug_mode=self.DEBUG,
+                timeout=self._conf.get("route_timeout", None),
                 ego_vehicle=ego._actor,
                 route=route,
             )

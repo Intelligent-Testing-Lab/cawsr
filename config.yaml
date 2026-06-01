@@ -12,6 +12,7 @@ cawsr:
       #active: true # part of scenario definition
 
   initialisation_budget: 500 # ticks
+  route_timeout: 300 # seconds
   agent: srunner/autoagents/autoware_agent
   mode: 'benchmark' # benchmark or algorithm
 

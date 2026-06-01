@@ -140,3 +140,25 @@ class CARLAManager(object):
             CARLAManager.container_id = result.stdout.strip()
         else:
             CARLAManager.start_carla()
+
+    @staticmethod
+    def fix_recording_permissions():
+        """Fix permissions on recording files created by the root CARLA container
+        so they are readable by the non-root CAWSR user (UID 1000).
+        Runs chmod inside the CARLA container via docker exec.
+        """
+        if CARLAManager.container_id:
+            env = os.environ.copy()
+            result = subprocess.run(
+                f"docker exec {CARLAManager.container_id} chmod -R 777 /home/carla/recordings",
+                shell=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            if result.returncode == 0:
+                logger.info("Fixed recording permissions inside CARLA container")
+            else:
+                logger.error(
+                    f"Failed to fix recording permissions: {result.stderr.strip()}"
+                )

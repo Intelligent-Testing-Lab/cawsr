@@ -86,7 +86,7 @@ class RouteScenario(BasicScenario):
         if not ego_vehicle:
             ego_vehicle = self._spawn_ego_vehicle()
 
-        self.timeout = self._estimate_route_timeout()
+        self.timeout = timeout or self._estimate_route_timeout()
 
         if debug_mode:
             self._draw_waypoints(
@@ -455,7 +455,9 @@ class RouteScenario(BasicScenario):
         """
         Create the timeout behavior
         """
-        return RouteTimeoutBehavior(self.ego_vehicles[0], self.route)
+        return RouteTimeoutBehavior(
+            self.ego_vehicles[0], self.route, min_timeout=self.timeout
+        )
 
     def _initialize_environment(self, world):
         """
