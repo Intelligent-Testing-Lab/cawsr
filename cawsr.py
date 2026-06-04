@@ -372,8 +372,9 @@ class AWScenarioRunner(object):
                 logger.info("Clearing process pipe...")
             except multiprocessing.queues.Empty:
                 logger.info("Process pipe is empty")
-            logger.info("Stopping process...")
             result_.put(result_dict)
+            logger.info("Stopping process...")
+            time.sleep(1)
             os._exit(0)  # force exit
 
     def _tick_carla(self) -> None:

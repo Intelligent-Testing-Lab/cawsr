@@ -7,6 +7,7 @@
 
 import subprocess
 import os
+import time
 import logging
 
 from srunner.scenarioconfigs.carla_config import CARLA
@@ -148,6 +149,7 @@ class CARLAManager(object):
         if CARLAManager.container_id is not None:
             # stop existing CARLA container and create a new one
             CARLAManager.stop_carla()
+            time.sleep(5)
             CARLAManager.start_carla()
         else:
             CARLAManager.start_carla()
