@@ -594,10 +594,6 @@ class AWScenarioRunner(object):
             )
             result = {"status": False, "driving_score": None}
 
-        self.results_manager.cleanup_xml()
-
-        time.sleep(1)
-
         # if the process exits (CARLA crash for example), these are none
         # fetch execution status of the scenario (failure or success)
         status = result.get("status", None)
@@ -607,6 +603,12 @@ class AWScenarioRunner(object):
         logger.info(
             f"Scenario iteration {run} ended with status {'SUCCESS' if status else 'FAILURE'}"
         )
+
+        # only cleanup if scenario finished successfully
+        if not result["status"] and result["driving_score"] is None:
+            self.results_manager.cleanup_xml()
+
+        time.sleep(1)
 
         return result
 
