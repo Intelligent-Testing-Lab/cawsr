@@ -20,6 +20,11 @@ class CARLAManager(object):
     container_id = None
     port = 2000  # default
     fidelity = "Low"  # default
+
+    # tracks if CARLA process is alive
+    CARLA_STATE = None
+    CARLA_PID = None
+
     recording_dir = ""
     run_command = [
         f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v {recording_dir}:/home/carla/recordings:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port=2000 -quality-level=Low"
@@ -44,9 +49,10 @@ class CARLAManager(object):
 
     @staticmethod
     def start_carla():
-        # need a way to verify CARLA has launched
+        # need a way to verify CARLA has launched already
         if CARLAManager.container_id is None:
             env = os.environ.copy()
+
             result = subprocess.run(
                 CARLAManager.run_command,
                 shell=True,
@@ -78,6 +84,20 @@ class CARLAManager(object):
                 f"Killed CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
             )
             logger.info(f"Kill stdout: {result.stdout.strip()}")
+
+            # remove the container
+            result = subprocess.run(
+                f"docker container rm {CARLAManager.container_id}",
+                shell=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            logger.info(
+                f"Cleaned up CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
+            )
+            logger.info(f"Cleanup stdout: {result.stdout.strip()}")
+
             CARLAManager.container_id = None
 
     @staticmethod
@@ -126,17 +146,8 @@ class CARLAManager(object):
     @staticmethod
     def restart_carla():
         if CARLAManager.container_id is not None:
-            env = os.environ.copy()
-            result = subprocess.run(
-                f"docker container restart {CARLAManager.container_id}",
-                shell=True,
-                text=True,
-                capture_output=True,
-                env=env,
-            )
-            logger.info(
-                f"Restarted CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
-            )
-            CARLAManager.container_id = result.stdout.strip()
+            # stop existing CARLA container and create a new one
+            CARLAManager.stop_carla()
+            CARLAManager.start_carla()
         else:
             CARLAManager.start_carla()
