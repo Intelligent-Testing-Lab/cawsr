@@ -367,9 +367,6 @@ class AWScenarioRunner(object):
             traceback.print_exc()
 
         finally:
-            # Drain the unconsumed sentinel from the queue if the process never
-            # called result_.get() on the success path (i.e. any failure path).
-            # This prevents two items sitting on the queue for the parent to read.
             try:
                 result_.get_nowait()
             except multiprocessing.queues.Empty:
@@ -577,7 +574,7 @@ class AWScenarioRunner(object):
 
         logger.info(f"Starting {scenario_name} process.")
         scenario_process.start()
-        scenario_process.join(timeout=self._conf.get("scenario_timeout", 600))
+        scenario_process.join(timeout=self._conf.get("scenario_timeout", 5))
 
         if scenario_process.is_alive():
             logger.error("Scenario process timed out, killing...")
@@ -590,6 +587,7 @@ class AWScenarioRunner(object):
         # a result on the queue (e.g. a CARLA crash before run_scenario's finally ran)
         try:
             result = scenario_result.get_nowait()
+            logger.info(f"Subprocess returned: {result}")
         except multiprocessing.queues.Empty:
             logger.error(
                 "Scenario process died without returning a result, using fallback."
