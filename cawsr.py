@@ -465,7 +465,6 @@ class AWScenarioRunner(object):
             )
 
     def run_benchmark(self) -> None:
-        """Executes CAWSR in benchmark mode. Scenarios are loaded from the target directory, and either executed in sequence or randomly sampled based on a seed."""
         target_dir = pathlib.Path(self._conf["benchmark"]["scenarios"])
         scenarios = [scenario for scenario in target_dir.glob("*.json")]
 
@@ -474,37 +473,39 @@ class AWScenarioRunner(object):
             retry_attempts = 2
             attempts = 0
 
+            if self._conf["benchmark"]["random_sampling"]:
+                scenario = random.choice(scenarios)
+                scenarios.remove(scenario)
+            else:
+                scenario = scenarios[i]
+
+            self._load_scenario(
+                scenario_name=scenario.stem,
+                path=str(scenario.absolute()),
+                run=i,
+                save_def=True,
+            )
+
             while attempts < retry_attempts:
-                logger.info(f"Running scenario {i + 1}/{runs}")
-
-                if self._conf["benchmark"]["random_sampling"]:
-                    scenario = random.choice(scenarios)
-                    scenarios.remove(
-                        scenario
-                    )  # each scenario can only be executed once
-                else:
-                    scenario = scenarios[i]
-
-                self._load_scenario(
-                    scenario_name=scenario.stem,
-                    path=str(scenario.absolute()),
-                    run=i,
-                    save_def=True,
+                logger.info(
+                    f"Running scenario {i + 1}/{runs} (attempt {attempts + 1}/{retry_attempts})"
                 )
 
                 CARLAManager._set_recording_dir(self.results_manager.recording_path)
                 logger.info("Starting CARLA container....")
                 CARLAManager.restart_carla()
-                time.sleep(10)  # allow CARLA to load
+
+                # Wait for CARLA to be ready, with a configurable timeout
+                carla_startup_wait = self._conf.get("carla_startup_wait", 20)
+                logger.info(f"Waiting {carla_startup_wait}s for CARLA to be ready...")
+                time.sleep(carla_startup_wait)
 
                 env_config = EnvironmentParser.parse_scenario_env(
                     self.results_manager.fetch_scenario_xml()
                 )
                 route_config = RouteParser.parse_routes_file(
                     self.results_manager.last_scenario, env_config
-                )[
-                    0
-                ]  # route id. Multiple routes currently aren't supported, so use first route
+                )[0]
 
                 result = self._cawsr_process(
                     route_config=route_config,
@@ -514,11 +515,14 @@ class AWScenarioRunner(object):
                     algorithm_mode=False,
                 )
 
-                # scenario failed, run it again.
                 if not result["status"] and result["driving_score"] is None:
                     attempts += 1
+                    if attempts < retry_attempts:
+                        logger.warning(
+                            f"Scenario {scenario.stem} failed with no result "
+                            f"(attempt {attempts}/{retry_attempts}), retrying..."
+                        )
                 else:
-                    # successful execution, move onto the next
                     break
 
     def _cawsr_process(
