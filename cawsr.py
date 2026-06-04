@@ -607,8 +607,8 @@ class AWScenarioRunner(object):
             f"Scenario iteration {run} ended with status {'SUCCESS' if status else 'FAILURE'}"
         )
 
-        # only cleanup if scenario finished successfully
-        if not result["status"] and result["driving_score"] is None:
+        # only cleanup if scenario finished successfully - driving score has been set
+        if result["driving_score"] is not None:
             logger.info("Cleaning up scenario artifacts...")
             self.results_manager.cleanup_xml()
 
