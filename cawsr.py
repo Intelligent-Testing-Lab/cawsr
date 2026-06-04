@@ -574,7 +574,7 @@ class AWScenarioRunner(object):
 
         logger.info(f"Starting {scenario_name} process.")
         scenario_process.start()
-        scenario_process.join(timeout=self._conf.get("scenario_timeout", 5))
+        scenario_process.join()
 
         if scenario_process.is_alive():
             logger.error("Scenario process timed out, killing...")
@@ -606,6 +606,7 @@ class AWScenarioRunner(object):
 
         # only cleanup if scenario finished successfully
         if not result["status"] and result["driving_score"] is None:
+            logger.info("Cleaning up scenario artifacts...")
             self.results_manager.cleanup_xml()
 
         time.sleep(1)
