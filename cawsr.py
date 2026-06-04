@@ -277,7 +277,7 @@ class AWScenarioRunner(object):
             )
             result_dict = result_.get()
             result_dict["status"] = False
-            result_dict["driving_score"] = 0.0
+            result_dict["driving_score"] = None
 
             if algorithm_mode:
                 algorithm._update_generator(seed)  # type: ignore
@@ -337,38 +337,36 @@ class AWScenarioRunner(object):
         # stop the MetricsCollector thread
         MetricsCollector.reset()
 
+        # Safe fallback defined before the try block
+        result_dict = {"status": False, "driving_score": None}
+
         try:
-            # analyse the scenario, throws exception if scenario didn't finish
             criteria = self._output_criteria(
-                self.scenario_manager.scenario.get_criteria(),  # type: ignore
+                self.scenario_manager.scenario.get_criteria(),
                 f"{self.results_manager.last_scenario}/{scenario_name}.json",
             )
             logger.info("Calculating driving score...")
-
             driving_score = self._calculate_driving_score(criteria)
-
             result_dict = result_.get()
             result_dict["driving_score"] = driving_score
             result_dict["status"] = result
             logger.info("Processed driving score...")
+            if algorithm_mode:
+                algorithm._update_generator(seed)  # type: ignore
 
+                try:
+                    definition = algorithm._scenario_callback(  # type: ignore
+                        current_definiton, result_dict["driving_score"]
+                    )
+                    result_dict["definition"] = definition
+                except Exception:
+                    logger.error(
+                        "Something went wrong while processing algorithm callback; is CARLA alive?"
+                    )
         except Exception:
             logger.info("Something went wrong, retrying scenario...")
-
-        # read the scenario definition
-        if algorithm_mode:
-            algorithm._update_generator(seed)  # type: ignore
-
-            try:
-                definition = algorithm._scenario_callback(  # type: ignore
-                    current_definiton, result_dict["driving_score"]
-                )
-                result_dict["definition"] = definition
-                result_.put(result_dict)
-            except Exception:
-                logger.error(
-                    "Something went wrong while processing algorithm callback; is CARLA alive?"
-                )
+        finally:
+            result_.put(result_dict)
 
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
@@ -581,8 +579,8 @@ class AWScenarioRunner(object):
 
         # if the process exits (CARLA crash for example), these are none
         # fetch execution status of the scenario (failure or success)
-        status = result.get(["status"], None)
-        driving_score = result.get(["driving_score"], None)
+        status = result.get("status", None)
+        driving_score = result.get("driving_score", None)
 
         logger.info(f"Scenario iteration {run} achieved a score of {driving_score}")
         logger.info(
