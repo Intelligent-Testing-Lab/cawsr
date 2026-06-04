@@ -53,8 +53,6 @@ This gap has created a significant bottleneck for the research community.
 Previously, researchers developing scenario generation algorithms mainly relied on combining Apollo with the LGSVL simulator [@9294422].
 However, LGSVL is now outdated, with official support ending in January 2022.
 This leaves many researchers without a suitable industry-grade "subject" for evaluating their algorithms.
-While recent tools like PCLA [@tehrani2025pcla] attempt to simplify deploying Autoware (and other ADS implementations) into CARLA, they focus primarily on simplifying the ADS implementations and abstracting the setup process across different CARLA versions.
-They lack the deep integration required between the agent and simulator to execute complex, route-based scenarios.
 
 `CAWSR` aims to bridge this gap by enabling the evaluation of Autoware in complex driving scenarios within CARLA.
 By building on the established CARLA platform, this work provides a modern replacement for the outdated Apollo/LGSVL workflow.
@@ -67,6 +65,31 @@ This facilitates a wide range of verification strategies based on common metrics
 Lastly, it is worth noting that simulators can often introduce unintended nondeterminism, which leads to inconsistent test results [@9793395; @osikowicz2025empirically].
 Therefore, `CAWSR` is designed to minimise such nondeterminism throughout the evaluation pipeline.
 
+# State of the Field
+
+Simulation-based testing of Autonomous Vehicles spans several tools and frameworks, each targeting different aspects of the evaluation pipeline. CAWSR occupies a unique niche at the intersection of industry-grade ADS integration, scenario-based testing, and modern simulator support.
+
+### Simulation Platforms
+
+CARLA [@carla_sim] has established itself as the standard open-source simulator for ADS research, offering a rich ecosystem of tools, high-fidelity sensor models, and an active community. Its closest historical competitor for industry-grade ADS testing was LGSVL [@9294422], a Unity-based simulator developed by LG Electronics that provided integration with Apollo. However, LGSVL's official support was discontinued in January 2022, leaving a significant gap for researchers who relied on it as the simulation backend for their testing pipelines.
+
+### Scenario Execution Engines
+
+Within the CARLA ecosystem, Scenario Runner (SR) [@carla_scenario_runner_2025] is the standard scenario execution engine, underpinning the CARLA Leaderboard[@carla_leaderboard] evaluation framework. SR is well-suited to evaluating black-box ML-based agents that expose only sensor inputs and control outputs. However, it is not designed to interface with full-stack, industry-grade ADS such as Autoware, which rely on complex middleware architectures (e.g., ROS2) for internal communication. CAWSR extends the SR execution model specifically to accommodate Autoware's architecture, enabling scenario-based testing and evaluation of module-based ADS, which SR does not support.
+
+### Autoware Integration Tools
+
+Three existing tools provide partial integration between Autoware and CARLA. The CARLA-Autoware Bridge [@carlaautowarebridge] handles low-level data translation between the simulator and Autoware's ROS2 interface, converting CARLA snapshots and sensor data into Autoware's coordinate system. PCLA [@tehrani2025pcla] takes a different approach, simplifying the deployment of multiple pretrained CARLA Leaderboard agents across CARLA versions, making it a valuable benchmarking utility for comparing ML agents. However, PCLA abstracts away ADS implementation details and does not provide the deep simulator-agent integration needed for route-based scenario execution, alongside limited support for module-based driving systems.
+
+Most recently, autoware_carla_leaderboard [@awcl_26], has been developed by the same group behind the CARLA-Autoware Bridge, introducing support for executing CARLA Leaderboard scenarios with Autoware Universe. This represents a concurrent development with overlapping goals. However, it focuses on execution of predefined scenario sets and does not provide a programmatic interface for algorithmic scenario generation, which is a primary design goal of CAWSR. Furthermore, as this tool was released after the initial development of CAWSR, the two works are best understood as complementary efforts addressing the same research gap independently. Neither tool exposes a programmatic interface for algorithmic scenario generation, a core requirement for systematic verification research.
+
+
+### Build vs. Contribute Justification
+
+<!-- I've decided not to mention Gembs tool in our justification. I feel its slightly unjust since we submitted significantly before their tool had been released. Thoughts? -->
+
+The existing landscape presents a clear rationale for CAWSR as a new tool rather than a contribution to an existing project. Extending SR to support Autoware would require fundamental architectural changes to its agent model, which is designed around the black-box paradigm. The CARLA-Autoware Bridge provides a necessary but insufficient building block that CAWSR builds on top of as a dependency. No existing tool unifies a maintained, modern simulator with an industry-grade ADS subject, supporting route-based scenario execution and a flexible interface for programmatic scenario generation. CAWSR is the first framework to integrate all four, enabling researchers to systematically evaluate Autoware against state-of-the-art scenario generation algorithms on a reproducible testing platform.
+
 # Research Impact
 
 `CAWSR` provides a significant research impact by bridging the gap between the widely-used CARLA simulator and the industry-grade Autoware ADS.
@@ -77,8 +100,6 @@ To ensure community readiness and ease of use, it is distributed as a Docker con
 
 Furthermore, by adopting CARLA Leaderboard metrics, `CAWSR` enables researchers to directly compare Autoware with other state-of-the-art driving agents in the CARLA environment.
 It provides an essential foundation for the systematic evaluation of various testing approaches for ADS.
-
-
 
 # Software Design
 <!-- I've renamed the "Tool Overview" section since it fits quite well here, and added a few justifications.-->
