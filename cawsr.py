@@ -331,34 +331,41 @@ class AWScenarioRunner(object):
                 "Could not load scenario. Please check if the agent class is loading correctly."
             )
             result = False
-
-        self.carla_client.stop_recorder()
+        finally:
+            self.carla_client.stop_recorder()
 
         # stop the MetricsCollector thread
         MetricsCollector.reset()
 
-        # analyse the scenario
-        criteria = self._output_criteria(
-            self.scenario_manager.scenario.get_criteria(),  # type: ignore
-            f"{self.results_manager.last_scenario}/{scenario_name}.json",
-        )
-        logger.info("Calculating driving score...")
-        driving_score = self._calculate_driving_score(criteria)
+        try:
+            # analyse the scenario, throws exception if scenario didn't finish
+            criteria = self._output_criteria(
+                self.scenario_manager.scenario.get_criteria(),  # type: ignore
+                f"{self.results_manager.last_scenario}/{scenario_name}.json",
+            )
+            logger.info("Calculating driving score...")
 
-        result_dict = result_.get()
-        result_dict["status"] = result
-        result_dict["driving_score"] = driving_score
+            result_dict = result_.get()
+            result_dict["driving_score"] = self._calculate_driving_score(criteria)
+            result_dict["status"] = result
+
+        except Exception:
+            logger.info("Something went wrong, retrying scenario...")
 
         # read the scenario definition
         if algorithm_mode:
             algorithm._update_generator(seed)  # type: ignore
 
-            definition = algorithm._scenario_callback(  # type: ignore
-                current_definiton, driving_score
-            )
-            result_dict["definition"] = definition
-
-        result_.put(result_dict)
+            try:
+                definition = algorithm._scenario_callback(  # type: ignore
+                    current_definiton, result_dict["driving_score"]
+                )
+                result_dict["definition"] = definition
+                result_.put(result_dict)
+            except Exception:
+                logger.error(
+                    "Something went wrong while processing algorithm callback; is CARLA alive?"
+                )
 
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
@@ -431,7 +438,7 @@ class AWScenarioRunner(object):
                 0
             ]  # route id. Multiple routes currently aren't supported, so use first route
 
-            json_definition = self._cawsr_process(
+            result = self._cawsr_process(
                 route_config=route_config,
                 env_config=env_config,
                 scenario_name=scenario.stem,
@@ -442,7 +449,7 @@ class AWScenarioRunner(object):
             )
 
             self.results_manager.parse_json(
-                json_definition,  # type: ignore
+                result["definition"],  # type: ignore
                 scenario.stem,
                 str(i),
                 save_def=True,
@@ -455,42 +462,56 @@ class AWScenarioRunner(object):
 
         runs = len(scenarios)
         for i in range(0, runs):
-            logger.info(f"Running scenario {i + 1}/{runs}")
+            retry_attempts = 2
+            attempts = 0
 
-            if self._conf["benchmark"]["random_sampling"]:
-                scenario = random.choice(scenarios)
-                scenarios.remove(scenario)  # each scenario can only be executed once
-            else:
-                scenario = scenarios[i]
+            while attempts < retry_attempts:
+                logger.info(f"Running scenario {i + 1}/{runs}")
 
-            self._load_scenario(
-                scenario_name=scenario.stem,
-                path=str(scenario.absolute()),
-                run=i,
-                save_def=True,
-            )
+                if self._conf["benchmark"]["random_sampling"]:
+                    scenario = random.choice(scenarios)
+                    scenarios.remove(
+                        scenario
+                    )  # each scenario can only be executed once
+                else:
+                    scenario = scenarios[i]
 
-            CARLAManager._set_recording_dir(self.results_manager.recording_path)
-            logger.info("Starting CARLA container....")
-            CARLAManager.restart_carla()
-            time.sleep(10)  # allow CARLA to load
+                self._load_scenario(
+                    scenario_name=scenario.stem,
+                    path=str(scenario.absolute()),
+                    run=i,
+                    save_def=True,
+                )
 
-            env_config = EnvironmentParser.parse_scenario_env(
-                self.results_manager.fetch_scenario_xml()
-            )
-            route_config = RouteParser.parse_routes_file(
-                self.results_manager.last_scenario, env_config
-            )[
-                0
-            ]  # route id. Multiple routes currently aren't supported, so use first route
+                CARLAManager._set_recording_dir(self.results_manager.recording_path)
+                logger.info("Starting CARLA container....")
+                CARLAManager.restart_carla()
+                time.sleep(10)  # allow CARLA to load
 
-            self._cawsr_process(
-                route_config=route_config,
-                env_config=env_config,
-                scenario_name=scenario.stem,
-                run=i + 1,
-                algorithm_mode=False,
-            )
+                env_config = EnvironmentParser.parse_scenario_env(
+                    self.results_manager.fetch_scenario_xml()
+                )
+                route_config = RouteParser.parse_routes_file(
+                    self.results_manager.last_scenario, env_config
+                )[
+                    0
+                ]  # route id. Multiple routes currently aren't supported, so use first route
+
+                result = self._cawsr_process(
+                    route_config=route_config,
+                    env_config=env_config,
+                    scenario_name=scenario.stem,
+                    run=i + 1,
+                    algorithm_mode=False,
+                )
+
+                # scenario failed, run it again.
+                if not result["status"] and result["driving_score"] is None:
+                    attempts += 1
+                else:
+                    attempts = (
+                        retry_attempts  # successful execution, move onto the next
+                    )
 
     def _cawsr_process(
         self,
@@ -501,7 +522,7 @@ class AWScenarioRunner(object):
         algorithm_mode: bool = False,
         current_definiton: Union[dict, None] = None,
         algorithm: Union[Callable, None] = None,
-    ) -> Optional[dict]:
+    ) -> dict:
         """Spawns a CAWSR process to execute a given, configured scenario.
         Handles setup, execution, and teardown of the scenario, and returns the scenario definition if in algorithm mode for use in the next iteration of the algorithm.
 
@@ -518,7 +539,7 @@ class AWScenarioRunner(object):
             Optional[dict]: The updated scenario definition if in algorithm mode, otherwise None.
         """
         scenario_result = multiprocessing.Queue()
-        scenario_result.put({"status": False, "criteria": {}})
+        scenario_result.put({"status": None, "driving_score": None, "criteria": {}})
 
         if algorithm_mode:
             seed = self._rng.integers(
@@ -555,18 +576,17 @@ class AWScenarioRunner(object):
 
         time.sleep(1)
 
+        # if the process exits (CARLA crash for example), these are none
         # fetch execution status of the scenario (failure or success)
-        status = result["status"]
-        driving_score = result["driving_score"]
+        status = result.get(["status"], None)
+        driving_score = result.get(["driving_score"], None)
 
         logger.info(f"Scenario iteration {run} achieved a score of {driving_score}")
         logger.info(
             f"Scenario iteration {run} ended with status {'SUCCESS' if status else 'FAILURE'}"
         )
 
-        # return new scenario definition if in alg mode
-        if algorithm_mode:
-            return result["definition"]
+        return result
 
     def _load_scenario(
         self,
