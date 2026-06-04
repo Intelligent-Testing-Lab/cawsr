@@ -345,9 +345,12 @@ class AWScenarioRunner(object):
             )
             logger.info("Calculating driving score...")
 
+            driving_score = self._calculate_driving_score(criteria)
+
             result_dict = result_.get()
-            result_dict["driving_score"] = self._calculate_driving_score(criteria)
+            result_dict["driving_score"] = driving_score
             result_dict["status"] = result
+            logger.info("Processed driving score...")
 
         except Exception:
             logger.info("Something went wrong, retrying scenario...")
@@ -509,9 +512,8 @@ class AWScenarioRunner(object):
                 if not result["status"] and result["driving_score"] is None:
                     attempts += 1
                 else:
-                    attempts = (
-                        retry_attempts  # successful execution, move onto the next
-                    )
+                    # successful execution, move onto the next
+                    break
 
     def _cawsr_process(
         self,
@@ -567,6 +569,7 @@ class AWScenarioRunner(object):
         scenario_process.start()
         scenario_process.join()
 
+        logger.info("Extracting results...")
         # fetch result and clean up
         result = scenario_result.get()
 
