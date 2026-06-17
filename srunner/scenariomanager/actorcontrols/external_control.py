@@ -17,7 +17,6 @@ from srunner.scenariomanager.actorcontrols.basic_control import BasicControl
 
 
 class ExternalControl(BasicControl):
-
     """
     Actor control class for actors, with externally implemented longitudinal and
     lateral controlers (e.g. Autoware).

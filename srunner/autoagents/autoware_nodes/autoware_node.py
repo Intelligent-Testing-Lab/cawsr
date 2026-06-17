@@ -7,7 +7,6 @@
 
 from typing import Optional
 
-from rclpy.node import Node
 from autoware_vehicle_msgs.msg import Engage
 from autoware_adapi_v1_msgs.srv import InitializeLocalization
 from autoware_adapi_v1_msgs.srv._initialize_localization import (
@@ -26,15 +25,16 @@ logger = logging.getLogger("scenario-runner")
 logger.propagate = False
 
 
-class AutowareNode():
+class AutowareNode:
     engage_topic = "/autoware/engage"
     localize_service = "/api/localization/initialize"
 
     def __init__(self, autoware_state_instance: autoware_state.AutowareState, node):
-
         self.node = node
 
-        self.engage_publisher = self.node.create_publisher(Engage, self.engage_topic, 10)
+        self.engage_publisher = self.node.create_publisher(
+            Engage, self.engage_topic, 10
+        )
 
         self.localize_client = self.node.create_client(
             InitializeLocalization, self.localize_service

@@ -26,3 +26,4 @@ class EnvironmentConfig(object):
         self.ego_spawn: carla.Transform | None = None
         self.sensor_config: list[DefaultSensor] = []
         self.route_id: int = 0
+        self.iteration: int = 0

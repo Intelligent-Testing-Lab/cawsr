@@ -17,6 +17,8 @@ from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
 from srunner.autoagents.autoware_carla_interface.carla_autoware import (
     InitializeInterface,
 )
+from srunner.scenariomanager.timer import GameTime
+from srunner.tools.CARLA_manager import CARLAManager
 
 import threading
 import rclpy
@@ -31,6 +33,7 @@ logger.propagate = False
 class AutowareAgent(AutonomousAgent):
     timestamp = None
     agent_set_route = False
+    scenario_loaded = False
     counter = 0
     last_tick = time.perf_counter_ns()
 
@@ -46,6 +49,7 @@ class AutowareAgent(AutonomousAgent):
         rclpy.init(args=None)
 
         self.config = config
+        self.tick_delta = CARLAManager.FIXED_DELTA_SECONDS
 
         # initialise autoware state object
         self.autoware_state = autoware_state.AutowareState("ego_vehicle", None)
@@ -56,6 +60,27 @@ class AutowareAgent(AutonomousAgent):
         self.carla_interface = InitializeInterface(self.config, self._node)
 
         self.state_node = state_node.StateNode(self.autoware_state, self._node_state)
+
+        try:
+            # run state node and cawsr bridge in separate executors
+            self._executors = [
+                rclpy.executors.SingleThreadedExecutor(),
+                rclpy.executors.SingleThreadedExecutor(),
+            ]
+
+            self._executors[0].add_node(self._node)
+            self._executors[1].add_node(self._node_state)
+
+            self._executor_threads = [
+                threading.Thread(target=self._executors[0].spin, daemon=True),
+                threading.Thread(target=self._executors[1].spin, daemon=True),
+            ]
+        except rclpy.executors.ExternalShutdownException:
+            logger.info("Node Executor shutdown externally...")
+
+        for thread in self._executor_threads:
+            thread.start()
+
         self.state_node.reset_autoware(self.config.town, self.config.ego_name)
 
         self.route_node = route_node.RouteNode(self.autoware_state, self._node_state)
@@ -63,25 +88,7 @@ class AutowareAgent(AutonomousAgent):
             self.autoware_state, self._node_state
         )
 
-        # run state note and cawsr bridge in separate executors
-        self._executors = [
-            rclpy.executors.SingleThreadedExecutor(),
-            rclpy.executors.SingleThreadedExecutor(),
-        ]
-
-        self._executors[0].add_node(self._node)
-        self._executors[1].add_node(self._node_state)
-
-        self._executor_threads = [
-            threading.Thread(target=self._executors[0].spin, daemon=True),
-            threading.Thread(target=self._executors[1].spin, daemon=True),
-        ]
-
-        for thread in self._executor_threads:
-            thread.start()
-
         self.sent_route = False
-        self.initialised = False
 
         self.carla_interface.load_world()
         self.carla_interface.run_bridge()
@@ -92,7 +99,6 @@ class AutowareAgent(AutonomousAgent):
         self.goal_pose_world = self._global_plan_world_coord[-1]
         self.waypoints_world = self._global_plan_world_coord[:-1]
 
-        # autoware cannot handle many waypoints, becomes unreliable
         n_waypoints = len(self.waypoints_world)
         segment_size = int(n_waypoints / 3)
 
@@ -115,10 +121,17 @@ class AutowareAgent(AutonomousAgent):
             node=self._node,
         )
 
-    def destroy(self) -> None:
+    def cleanup(self) -> None:
+        self.destroy(cleanup=True)
+
+    def destroy(self, cleanup=False) -> None:
         """Cleanup"""
         logger.info("Sending shutdown signal to autoware...")
-        self.state_node.reset_autoware(self.config.town, self.config.ego_name)
+        if not cleanup:
+            self.state_node.reset_autoware(self.config.town, self.config.ego_name)
+        else:
+            self.state_node.shutdown_autoware()
+
         logger.info("Waiting for shutdown. Starting Node cleanup")
         time.sleep(1)  # sleep for 1 second for sanity
         try:
@@ -130,17 +143,17 @@ class AutowareAgent(AutonomousAgent):
         except RuntimeError:
             logger.info("Failed to clean up executor thread...")
 
-    def cleanup(self) -> None:
-        self.destroy()
+    def run_step(self) -> None:
+        """Tick method containing all logic based on autoware state"""
+        self.counter += 1
+        if self.counter % int(1 / self.tick_delta) == 0:
+            logger.info(
+                f"Ticked 1 second game-time, Current time: {GameTime.get_time():.2f}s, Current tick: {self.counter}. Ratio of 1s:{time.perf_counter_ns() - self.last_tick}s (Sim vs Wall)"
+            )
 
-    def run_step_init(self) -> bool:
-        """Route Initialisation loop
+            self.last_tick = time.perf_counter_ns()
 
-        Ticks CARLA and Autoware, allowing the agent to localise and plan the route.
-        Operates on a fixed tick budget to ensure determinism. If the agent goes over the budget, it is treated as a failure.
-        """
-
-        self.carla_interface.tick_bridge()
+        self.carla_interface.tick_bridge(self._carla_timestamp)
 
         if not self.agent_set_route:
             self.set_route()
@@ -163,29 +176,9 @@ class AutowareAgent(AutonomousAgent):
             self.route_node.publish_route(goal_pose, waypoints)
             self.sent_route = True
 
-        # check if the current route is set and we are able to send engage
-        if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
-            return True
-
-        return False
-
-    def run_step(self) -> None:
-        """Tick method containing all logic based on autoware state"""
-        self.counter += 1
-        if self.counter % 20 == 0:
-            logger.info(
-                f"Ticked 1 second game-time, actual tick is {(time.perf_counter_ns() - self.last_tick) / 1e6}ms"
-            )
-            self.last_tick = time.perf_counter_ns()
-
-        # if not self.initialised:
-        #    self.initialised = self.run_step_init()
-        #
-        #    if self.initialised:
-        #        logger.info("Set agent route!")
-
-        # check if the current route is set and we can publish engage
-        if self.autoware_state.route_set() and not self.autoware_state.sent_engage:
+        if (
+            self.scenario_loaded
+            and self.autoware_state.route_set()
+            and not self.autoware_state.sent_engage
+        ):
             self.autoware_node.publish_engage(True)
-
-        self.carla_interface.tick_bridge()

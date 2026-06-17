@@ -1,5 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+For development and contributing docs see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+
 CAWSR: ScenarioRunner for CARLA with support for Autoware
 ========================
 
@@ -7,9 +9,9 @@ CAWSR (Carla Autoware Scenario Runner) is a scenario execution engine built for 
 
 Prerequisites
 ---------------------------
-Both CARLA and Autoware require a high-spec computer with a high-end Nvidia GPU. It is also possible to run a [**distributed**]() setup with multiple machines to help ease the workload, or run the entire stack locally. Currently, only Linux is supported (guide was written on Ubuntu 24.04).
+Both CARLA and Autoware require a high-spec computer with a high-end Nvidia GPU. It is also possible to run a [**distributed**](#distributed) setup with multiple machines to help ease the workload, or run the entire stack locally. Currently, only Linux is supported (guide was written on Ubuntu 24.04).
 
-Ensure the target machine(s) have the [Docker Engine]() and [Nvidia Container toolkit]() installed to enable gpu accelerated workflows in Docker.
+Ensure the target machine(s) have the [Docker Engine](https://docs.docker.com/engine/install/) and [Nvidia Container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed to enable gpu accelerated workflows in Docker.
 
 CAWSR Setup
 ---------------------------
@@ -45,7 +47,8 @@ Running CAWSR
 
 CAWSR can both be ran `locally` or `distributed`. Due to the high-spec requirements, it is recommended to run distributed if you do not meet the following minimum specs:
 - At least **10GB** VRAM and a modern GPU (2080 ti or newer)
-    - We currently supports 20 and 30 series GPUs. Compatibility with the 40 series is current WIP.     
+    - We currently supports 20 and 30 series GPUs. Compatibility with the 40 series is current WIP.
+
 - At least **32GB** RAM
 - A modern Intel or AMD CPU with at least 8 cores.
 
@@ -117,6 +120,11 @@ docker_compose.yml
 ```
 All folders are mounted as Docker volumes into the CAWSR container, so any changes persist between host and container.
 
+## Autoware Warmup
+
+Before using CAWSR, Autoware must build various `TensorRT` engines for inference. Engine builds are not cross-compatible across various GPU compute capabilities (see [here](https://developer.nvidia.com/cuda/gpus)), so they must be rebuilt per machine. This process usually only takes a few minutes on modern hardware, and starts after the initial launch of autoware.
+
+
 ## Configuring CAWSR
 
 CAWSR is designed to be highly configurable and supports easy swapping of config files.
@@ -167,10 +175,10 @@ We use a custom implementation of a scenario definition in JSON. We have include
 Domain Model:
 ![Domain Model](./docs/resources/scenario_domain.png)
 
-Contributing
-------------
+Contributing & Development
+--------------------------
 
-Please take a look at our [Contribution guidelines]().
+Please take a look at our [Contribution guidelines](CONTRIBUTING.md). To setup a development container, follow our [development guidelines](docs/DEVELOPMENT.md)
 
 License
 -------

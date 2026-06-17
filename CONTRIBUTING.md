@@ -2,6 +2,8 @@
 
 Thank you for your interest in this project! We welcome contributions from the community.
 
+To setup the development environment, please refer to the [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) file.
+
 ## How to Contribute
 1.  **Fork the repository** on GitHub.
 2.  **Create a new branch** for your feature or bug fix.

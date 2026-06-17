@@ -11,7 +11,6 @@ from enum import Enum
 
 
 class TrafficEventType(Enum):
-
     """
     This enum represents different traffic events that occur during driving.
     """
@@ -36,7 +35,6 @@ class TrafficEventType(Enum):
 
 
 class TrafficEvent(object):
-
     """
     TrafficEvent definition
     """
@@ -46,7 +44,7 @@ class TrafficEvent(object):
         Initialize object
 
         :param event_type: TrafficEventType defining the type of traffic event
-        :param frame: frame in which the event happened 
+        :param frame: frame in which the event happened
         :param message: optional message to inform users of the event
         :param dictionary: optional dictionary with arbitrary keys and values
         """

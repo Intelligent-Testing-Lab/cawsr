@@ -26,7 +26,6 @@ from srunner.scenariomanager.timer import GameTime
 
 
 class SimpleVehicleControl(BasicControl):
-
     """
     Controller class for vehicles derived from BasicControl.
 
@@ -92,45 +91,64 @@ class SimpleVehicleControl(BasicControl):
         self._last_update = None
         self._consider_traffic_lights = False
         self._consider_obstacles = False
-        self._proximity_threshold = float('inf')
+        self._proximity_threshold = float("inf")
         self._waypoint_reached_threshold = 4.0
         self._max_deceleration = None
         self._max_acceleration = None
 
         self._obstacle_sensor = None
-        self._obstacle_distance = float('inf')
+        self._obstacle_distance = float("inf")
         self._obstacle_actor = None
 
         self._visualizer = None
 
         self._brake_lights_active = False
 
-        if args and 'consider_obstacles' in args and strtobool(args['consider_obstacles']):
-            self._consider_obstacles = strtobool(args['consider_obstacles'])
-            bp = CarlaDataProvider.get_world().get_blueprint_library().find('sensor.other.obstacle')
-            bp.set_attribute('distance', '250')
-            if args and 'proximity_threshold' in args:
-                self._proximity_threshold = float(args['proximity_threshold'])
-                bp.set_attribute('distance', str(max(float(args['proximity_threshold']), 250)))
-            bp.set_attribute('hit_radius', '1')
-            bp.set_attribute('only_dynamics', 'True')
+        if (
+            args
+            and "consider_obstacles" in args
+            and strtobool(args["consider_obstacles"])
+        ):
+            self._consider_obstacles = strtobool(args["consider_obstacles"])
+            bp = (
+                CarlaDataProvider.get_world()
+                .get_blueprint_library()
+                .find("sensor.other.obstacle")
+            )
+            bp.set_attribute("distance", "250")
+            if args and "proximity_threshold" in args:
+                self._proximity_threshold = float(args["proximity_threshold"])
+                bp.set_attribute(
+                    "distance", str(max(float(args["proximity_threshold"]), 250))
+                )
+            bp.set_attribute("hit_radius", "1")
+            bp.set_attribute("only_dynamics", "True")
             self._obstacle_sensor = CarlaDataProvider.get_world().spawn_actor(
-                bp, carla.Transform(carla.Location(x=self._actor.bounding_box.extent.x, z=1.0)), attach_to=self._actor)
+                bp,
+                carla.Transform(
+                    carla.Location(x=self._actor.bounding_box.extent.x, z=1.0)
+                ),
+                attach_to=self._actor,
+            )
             self._obstacle_sensor.listen(lambda event: self._on_obstacle(event))  # pylint: disable=unnecessary-lambda
 
-        if args and 'consider_trafficlights' in args and strtobool(args['consider_trafficlights']):
-            self._consider_traffic_lights = strtobool(args['consider_trafficlights'])
+        if (
+            args
+            and "consider_trafficlights" in args
+            and strtobool(args["consider_trafficlights"])
+        ):
+            self._consider_traffic_lights = strtobool(args["consider_trafficlights"])
 
-        if args and 'waypoint_reached_threshold' in args:
-            self._waypoint_reached_threshold = float(args['waypoint_reached_threshold'])
+        if args and "waypoint_reached_threshold" in args:
+            self._waypoint_reached_threshold = float(args["waypoint_reached_threshold"])
 
-        if args and 'max_deceleration' in args:
-            self._max_deceleration = float(args['max_deceleration'])
+        if args and "max_deceleration" in args:
+            self._max_deceleration = float(args["max_deceleration"])
 
-        if args and 'max_acceleration' in args:
-            self._max_acceleration = float(args['max_acceleration'])
+        if args and "max_acceleration" in args:
+            self._max_acceleration = float(args["max_acceleration"])
 
-        if args and 'attach_camera' in args and strtobool(args['attach_camera']):
+        if args and "attach_camera" in args and strtobool(args["attach_camera"]):
             self._visualizer = Visualizer(self._actor)
 
     def _on_obstacle(self, event):
@@ -190,9 +208,13 @@ class SimpleVehicleControl(BasicControl):
 
             map_wp = None
             if not self._generated_waypoint_list:
-                map_wp = CarlaDataProvider.get_map().get_waypoint(CarlaDataProvider.get_location(self._actor))
+                map_wp = CarlaDataProvider.get_map().get_waypoint(
+                    CarlaDataProvider.get_location(self._actor)
+                )
             else:
-                map_wp = CarlaDataProvider.get_map().get_waypoint(self._generated_waypoint_list[-1].location)
+                map_wp = CarlaDataProvider.get_map().get_waypoint(
+                    self._generated_waypoint_list[-1].location
+                )
             while len(self._generated_waypoint_list) < 50:
                 map_wps = map_wp.next(2.0)
                 if map_wps:
@@ -202,25 +224,38 @@ class SimpleVehicleControl(BasicControl):
                     break
 
             # Remove all waypoints that are too close to the vehicle
-            while (self._generated_waypoint_list and
-                   self._generated_waypoint_list[0].location.distance(self._actor.get_location()) < 0.5):
+            while (
+                self._generated_waypoint_list
+                and self._generated_waypoint_list[0].location.distance(
+                    self._actor.get_location()
+                )
+                < 0.5
+            ):
                 self._generated_waypoint_list = self._generated_waypoint_list[1:]
 
-            direction_norm = self._set_new_velocity(self._offset_waypoint(self._generated_waypoint_list[0]))
+            direction_norm = self._set_new_velocity(
+                self._offset_waypoint(self._generated_waypoint_list[0])
+            )
             if direction_norm < 2.0:
                 self._generated_waypoint_list = self._generated_waypoint_list[1:]
         else:
             # When changing from "free" driving without pre-defined waypoints to a defined route with waypoints
             # it may happen that the first few waypoints are too close to the ego vehicle for obtaining a
             # reasonable control command. Therefore, we drop these waypoints first.
-            while self._waypoints and self._waypoints[0].location.distance(self._actor.get_location()) < 0.5:
+            while (
+                self._waypoints
+                and self._waypoints[0].location.distance(self._actor.get_location())
+                < 0.5
+            ):
                 self._waypoints = self._waypoints[1:]
 
             self._reached_goal = False
             if not self._waypoints:
                 self._reached_goal = True
             else:
-                direction_norm = self._set_new_velocity(self._offset_waypoint(self._waypoints[0]))
+                direction_norm = self._set_new_velocity(
+                    self._offset_waypoint(self._waypoints[0])
+                )
                 if direction_norm < self._waypoint_reached_threshold:
                     self._waypoints = self._waypoints[1:]
                     if not self._waypoints:
@@ -241,8 +276,9 @@ class SimpleVehicleControl(BasicControl):
             offset_location = transform.location
         else:
             right_vector = transform.get_right_vector()
-            offset_location = transform.location + carla.Location(x=self._offset*right_vector.x,
-                                                                  y=self._offset*right_vector.y)
+            offset_location = transform.location + carla.Location(
+                x=self._offset * right_vector.x, y=self._offset * right_vector.y
+            )
 
         return offset_location
 
@@ -272,7 +308,9 @@ class SimpleVehicleControl(BasicControl):
         if not self._last_update:
             self._last_update = current_time
 
-        current_speed = math.sqrt(self._actor.get_velocity().x**2 + self._actor.get_velocity().y**2)
+        current_speed = math.sqrt(
+            self._actor.get_velocity().x ** 2 + self._actor.get_velocity().y ** 2
+        )
 
         if self._consider_obstacles:
             # If distance is less than the proximity threshold, adapt velocity
@@ -280,16 +318,26 @@ class SimpleVehicleControl(BasicControl):
                 distance = max(self._obstacle_distance, 0)
                 if distance > 0:
                     current_speed_other = math.sqrt(
-                        self._obstacle_actor.get_velocity().x**2 + self._obstacle_actor.get_velocity().y**2)
+                        self._obstacle_actor.get_velocity().x ** 2
+                        + self._obstacle_actor.get_velocity().y ** 2
+                    )
                     if current_speed_other < current_speed:
-                        acceleration = -0.5 * (current_speed - current_speed_other)**2 / distance
-                        target_speed = max(acceleration * (current_time - self._last_update) + current_speed, 0)
+                        acceleration = (
+                            -0.5 * (current_speed - current_speed_other) ** 2 / distance
+                        )
+                        target_speed = max(
+                            acceleration * (current_time - self._last_update)
+                            + current_speed,
+                            0,
+                        )
                 else:
                     target_speed = 0
 
         if self._consider_traffic_lights:
-            if (self._actor.is_at_traffic_light() and
-                    self._actor.get_traffic_light_state() == carla.TrafficLightState.Red):
+            if (
+                self._actor.is_at_traffic_light()
+                and self._actor.get_traffic_light_state() == carla.TrafficLightState.Red
+            ):
                 target_speed = 0
 
         if target_speed < current_speed:
@@ -299,8 +347,11 @@ class SimpleVehicleControl(BasicControl):
                 light_state |= carla.VehicleLightState.Brake
                 self._actor.set_light_state(carla.VehicleLightState(light_state))
             if self._max_deceleration is not None:
-                target_speed = max(target_speed, current_speed - (current_time -
-                                                                  self._last_update) * self._max_deceleration)
+                target_speed = max(
+                    target_speed,
+                    current_speed
+                    - (current_time - self._last_update) * self._max_deceleration,
+                )
         else:
             if self._brake_lights_active:
                 self._brake_lights_active = False
@@ -308,8 +359,11 @@ class SimpleVehicleControl(BasicControl):
                 light_state &= ~carla.VehicleLightState.Brake
                 self._actor.set_light_state(carla.VehicleLightState(light_state))
             if self._max_acceleration is not None:
-                tmp_speed = min(target_speed, current_speed + (current_time -
-                                                               self._last_update) * self._max_acceleration)
+                tmp_speed = min(
+                    target_speed,
+                    current_speed
+                    + (current_time - self._last_update) * self._max_acceleration,
+                )
                 # If the tmp_speed is < 0.5 the vehicle may not properly accelerate.
                 # Therefore, we bump the speed to 0.5 m/s if target_speed allows.
                 target_speed = max(tmp_speed, min(0.5, target_speed))
@@ -330,7 +384,11 @@ class SimpleVehicleControl(BasicControl):
         if self._waypoints:
             delta_yaw = math.degrees(math.atan2(direction.y, direction.x)) - current_yaw
         else:
-            new_yaw = CarlaDataProvider.get_map().get_waypoint(next_location).transform.rotation.yaw
+            new_yaw = (
+                CarlaDataProvider.get_map()
+                .get_waypoint(next_location)
+                .transform.rotation.yaw
+            )
             delta_yaw = new_yaw - current_yaw
 
         if math.fabs(delta_yaw) > 360:

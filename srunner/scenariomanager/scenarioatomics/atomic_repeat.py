@@ -11,14 +11,12 @@ class Decorator(behaviour.Behaviour):
         TypeError: if the child is not an instance of :class:`~py_trees.behaviour.Behaviour`
     """
 
-    def __init__(
-            self,
-            child: behaviour.Behaviour,
-            name
-    ):
+    def __init__(self, child: behaviour.Behaviour, name):
         # Checks
         if not isinstance(child, behaviour.Behaviour):
-            raise TypeError("A decorator's child must be an instance of py_trees.behaviours.Behaviour")
+            raise TypeError(
+                "A decorator's child must be an instance of py_trees.behaviours.Behaviour"
+            )
         # Initialise
         super().__init__(name=name)
         self.children.append(child)
@@ -44,7 +42,8 @@ class Decorator(behaviour.Behaviour):
         new_status = self.update()
         if new_status not in list(common.Status):
             self.logger.error(
-                "A behaviour returned an invalid status, setting to INVALID [%s][%s]" % (new_status, self.name)
+                "A behaviour returned an invalid status, setting to INVALID [%s][%s]"
+                % (new_status, self.name)
             )
             new_status = common.Status.INVALID
         if new_status != common.Status.RUNNING:
@@ -100,7 +99,9 @@ class SuccessIsRunning(Decorator):
             :class:`~py_trees.common.Status`: the behaviour's new status :class:`~py_trees.common.Status`
         """
         if self.decorated.status == common.Status.SUCCESS:
-            self.feedback_message = "success is running [%s]" % self.decorated.feedback_message
+            self.feedback_message = (
+                "success is running [%s]" % self.decorated.feedback_message
+            )
             if self.repaet_num < self.period:
                 return common.Status.SUCCESS
             self.repaet_num += 1

@@ -7,6 +7,7 @@
 
 import subprocess
 import os
+import time
 import logging
 
 from srunner.scenarioconfigs.carla_config import CARLA
@@ -20,8 +21,14 @@ class CARLAManager(object):
     container_id = None
     port = 2000  # default
     fidelity = "Low"  # default
+
+    # tracks if CARLA process is alive
+    CARLA_STATE = None
+    CARLA_PID = None
+
+    recording_dir = ""
     run_command = [
-        "docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port=2000 -quality-level=Low"
+        f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v {recording_dir}:/home/carla/recordings:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port=2000 -quality-level=Low"
     ]
 
     @staticmethod
@@ -31,14 +38,22 @@ class CARLAManager(object):
         CARLAManager.FIXED_DELTA_SECONDS = config.FIXED_DELTA_SECONDS
 
         CARLAManager.run_command = [
-            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
+            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v {CARLAManager.recording_dir}:/home/carla/recordings:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
+        ]
+
+    @staticmethod
+    def _set_recording_dir(recording_dir: str) -> None:
+        CARLAManager.recording_dir = recording_dir
+        CARLAManager.run_command = [
+            f"docker run -dt --gpus all --net=host -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v {CARLAManager.recording_dir}:/home/carla/recordings:rw -e DISPLAY=$DISPLAY -e NVIDIA_DRIVER_CAPABILITIES=all -e XDG_RUNTIME_DIR=/tmp ghcr.io/intelligent-testing-lab/carla:0.9.15 ./CarlaUE4.sh -carla-rpc-port={CARLAManager.port} -quality-level={CARLAManager.fidelity}"
         ]
 
     @staticmethod
     def start_carla():
-        # need a way to verify CARLA has launched
+        # need a way to verify CARLA has launched already
         if CARLAManager.container_id is None:
             env = os.environ.copy()
+
             result = subprocess.run(
                 CARLAManager.run_command,
                 shell=True,
@@ -47,6 +62,10 @@ class CARLAManager(object):
                 env=env,
             )
             logger.info(f"Started CARLA container {result.stdout.strip()}")
+
+            if result.stderr:
+                logger.error(f"Error starting CARLA container: {result.stderr.strip()}")
+
             CARLAManager.container_id = result.stdout.strip()
         else:
             CARLAManager.restart_carla()
@@ -66,6 +85,20 @@ class CARLAManager(object):
                 f"Killed CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
             )
             logger.info(f"Kill stdout: {result.stdout.strip()}")
+
+            # remove the container
+            result = subprocess.run(
+                f"docker container rm {CARLAManager.container_id}",
+                shell=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            logger.info(
+                f"Cleaned up CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
+            )
+            logger.info(f"Cleanup stdout: {result.stdout.strip()}")
+
             CARLAManager.container_id = None
 
     @staticmethod
@@ -114,17 +147,31 @@ class CARLAManager(object):
     @staticmethod
     def restart_carla():
         if CARLAManager.container_id is not None:
+            # stop existing CARLA container and create a new one
+            CARLAManager.stop_carla()
+            time.sleep(5)
+            CARLAManager.start_carla()
+        else:
+            CARLAManager.start_carla()
+
+    @staticmethod
+    def fix_recording_permissions():
+        """Fix permissions on recording files created by the root CARLA container
+        so they are readable by the non-root CAWSR user (UID 1000).
+        Runs chmod inside the CARLA container via docker exec.
+        """
+        if CARLAManager.container_id:
             env = os.environ.copy()
             result = subprocess.run(
-                f"docker container restart {CARLAManager.container_id}",
+                f"docker exec {CARLAManager.container_id} chmod -R 777 /home/carla/recordings",
                 shell=True,
                 text=True,
                 capture_output=True,
                 env=env,
             )
-            logger.info(
-                f"Restarted CARLA container {CARLAManager.container_id} with exit code {result.returncode}"
-            )
-            CARLAManager.container_id = result.stdout.strip()
-        else:
-            CARLAManager.start_carla()
+            if result.returncode == 0:
+                logger.info("Fixed recording permissions inside CARLA container")
+            else:
+                logger.error(
+                    f"Failed to fix recording permissions: {result.stderr.strip()}"
+                )
