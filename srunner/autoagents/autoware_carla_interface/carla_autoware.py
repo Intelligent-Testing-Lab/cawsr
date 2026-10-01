@@ -34,17 +34,15 @@ class SensorLoop(object):
         self.sensor = None
         self.ego_actor = None
         self.running = False
-        self.timestamp_last_run = 0.0
         self.timeout = 20.0
 
     def _stop_loop(self):
         self.running = False
 
     def _tick_sensor(self, timestamp):
-        if self.timestamp_last_run < timestamp.elapsed_seconds and self.running:
-            self.timestamp_last_run = timestamp.elapsed_seconds
+        if self.running:
             try:
-                ego_action = self.sensor()
+                ego_action = self.sensor(timestamp)
             except SensorReceivedNoData as e:
                 raise RuntimeError(e)
             self.ego_actor.apply_control(ego_action)
@@ -52,7 +50,7 @@ class SensorLoop(object):
 
 class InitializeInterface(object):
     def __init__(self, config: EnvironmentConfig, node):
-        self.interface = carla_ros2_interface(node)
+        self.interface = carla_ros2_interface(node, config)
         self.world = None
         self.sensor_wrapper = None
         self.ego_actor = None
@@ -76,13 +74,13 @@ class InitializeInterface(object):
         self.bridge_loop.start_game_time = GameTime.get_time()
         self.bridge_loop.running = True
 
-    def tick_bridge(self):
-        timestamp = None
-        world = CarlaDataProvider.get_world()
-        if world:
-            snapshot = world.get_snapshot()
-            if snapshot:
-                timestamp = snapshot.timestamp
+    def tick_bridge(self, timestamp=None):
+        if timestamp is None:
+            world = CarlaDataProvider.get_world()
+            if world:
+                snapshot = world.get_snapshot()
+                if snapshot:
+                    timestamp = snapshot.timestamp
         if timestamp:
             self.prev_tick_wall_time = time.time()
             self.bridge_loop._tick_sensor(timestamp)

@@ -17,7 +17,6 @@ from srunner.scenariomanager.actorcontrols.basic_control import BasicControl
 
 
 class PedestrianControl(BasicControl):
-
     """
     Controller class for pedestrians derived from BasicControl.
 
@@ -27,7 +26,9 @@ class PedestrianControl(BasicControl):
 
     def __init__(self, actor, args=None):
         if not isinstance(actor, carla.Walker):
-            raise RuntimeError("PedestrianControl: The to be controlled actor is not a pedestrian")
+            raise RuntimeError(
+                "PedestrianControl: The to be controlled actor is not a pedestrian"
+            )
 
         super(PedestrianControl, self).__init__(actor)
 
@@ -73,5 +74,7 @@ class PedestrianControl(BasicControl):
                 if not self._waypoints:
                     self._reached_goal = True
         else:
-            control.direction = self._actor.get_transform().rotation.get_forward_vector()
+            control.direction = (
+                self._actor.get_transform().rotation.get_forward_vector()
+            )
             self._actor.apply_control(control)

@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.sr/bin/env python
 
-import json
+from __future__ import annotations
+
 import math
+import queue
 
 # pylint: disable=import-error
 from autoware_vehicle_msgs.msg import ControlModeReport
@@ -26,8 +28,6 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import PoseWithCovarianceStamped
 import numpy
-import datetime
-import pathlib
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
@@ -40,6 +40,7 @@ from tier4_vehicle_msgs.msg import ActuationStatusStamped
 from transforms3d.euler import euler2quat
 
 from srunner.scenariomanager.timer import GameTime
+from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
 from srunner.autoagents.autoware_carla_interface.modules.carla_utils import (
     carla_location_to_ros_point,
 )
@@ -53,15 +54,20 @@ from srunner.autoagents.autoware_carla_interface.modules.carla_utils import (
 from srunner.autoagents.autoware_carla_interface.modules.carla_wrapper import (
     SensorInterface,
 )
+from srunner.tools.CARLA_manager import CARLAManager
+from srunner.scenarioconfigs.environment_configuration import EnvironmentConfig
+
+import rclpy
 
 
 class carla_ros2_interface(object):
-    def __init__(self, node):
+    def __init__(self, node: rclpy.node.Node, config: EnvironmentConfig):
         self.sensor_interface = SensorInterface()
+        self.config = config
         self.prev_timestamp = None
         self.prev_steer_output = 0.0
         self.tau = 0.2
-        self.timestamp = None
+        self.timestamp = 0.0
         self.ego_actor = None
         self.physics_control = None
         self.channels = 0
@@ -69,6 +75,7 @@ class carla_ros2_interface(object):
         self.id_to_camera_info_map = {}
         self.cv_bridge = CvBridge()
         self.first_ = True
+        self._pending_initialpose = None
         self.pub_lidar = {}
         self.sensor_frequencies = {
             "top": 11,
@@ -77,12 +84,14 @@ class carla_ros2_interface(object):
             "camera": 11,
             "imu": 50,
             "status": 50,
-            "pose": 2,
-        }
-        self.publish_prev_times = {
-            sensor: datetime.datetime.now() for sensor in self.sensor_frequencies
+            "pose": 20,
         }
 
+        self.publish_prev_times = {
+            sensor: -1000.0 for sensor in self.sensor_frequencies
+        }
+
+        self.delta = CARLAManager.FIXED_DELTA_SECONDS  # delta in seconds
         self.ros2_node = node
 
         self.clock_publisher = self.ros2_node.create_publisher(Clock, "/clock", 10)
@@ -90,11 +99,9 @@ class carla_ros2_interface(object):
         obj_clock.clock = Time(sec=int(0))
         self.clock_publisher.publish(obj_clock)
 
-        # load sensor config and create publishers
-        sensors_config = pathlib.Path(
-            "srunner/autoagents/autoware_carla_interface/objects/sensors.json"
-        )
-        self.sensors = json.load(open(sensors_config.absolute()))
+        self.sensors = {
+            "sensors": [sensor.sensor_dict() for sensor in self.config.sensor_config]
+        }
 
         self.sub_control = self.ros2_node.create_subscription(
             ActuationCommandStamped,
@@ -107,7 +114,9 @@ class carla_ros2_interface(object):
             PoseWithCovarianceStamped, "initialpose", self.initialpose_callback, 1
         )
 
-        self.current_control = carla.VehicleControl()
+        self._control_queue = queue.Queue(1)
+        self._control_queue.put_nowait((0, carla.VehicleControl()))
+        self._last_control = carla.VehicleControl()
 
         self.pub_pose_with_cov = self.ros2_node.create_publisher(
             PoseWithCovarianceStamped, "/sensing/gnss/pose_with_covariance", 1
@@ -137,6 +146,15 @@ class carla_ros2_interface(object):
                 self.pub_camera_info = self.ros2_node.create_publisher(
                     CameraInfo, "/sensing/camera/traffic_light/camera_info", 1
                 )
+
+                self.pub_camera_yolo_info = self.ros2_node.create_publisher(
+                    CameraInfo, "/sensing/camera/camera4/camera_info", 1
+                )
+
+                self.pub_camera_yolo = self.ros2_node.create_publisher(
+                    Image, "/sensing/camera/camera4/image_raw", 1
+                )
+
             elif sensor["type"] == "sensor.lidar.ray_cast":
                 if sensor["id"] in self.sensor_frequencies:
                     self.pub_lidar[sensor["id"]] = self.ros2_node.create_publisher(
@@ -158,36 +176,47 @@ class carla_ros2_interface(object):
                 )
                 pass
 
-    def __call__(self):
-        input_data = self.sensor_interface.get_data()
-        timestamp = GameTime.get_time()
+    def __call__(self, timestamp=None):
+        if timestamp is None:
+            timestamp = (
+                CarlaDataProvider.get_world().get_snapshot().timestamp.elapsed_seconds
+            )
+        elif hasattr(timestamp, "elapsed_seconds"):
+            timestamp = timestamp.elapsed_seconds
+
+        input_data = self.sensor_interface.get_data(expected_time=timestamp)
         control = self.run_step(input_data, timestamp)
         return control
 
     def checkFrequency(self, sensor):
-        time_delta = (
-            datetime.datetime.now() - self.publish_prev_times[sensor]
-        ).microseconds / 1000000.0
+        time_delta = GameTime.get_time() - self.publish_prev_times[sensor]
+        if time_delta <= 0.0:
+            return False
         if 1.0 / time_delta >= self.sensor_frequencies[sensor]:
             return True
         return False
 
-    def get_msg_header(self, frame_id):
+    def get_msg_header(self, frame_id, timestamp=None):
         """Obtain and modify ROS message header."""
         header = Header()
         header.frame_id = frame_id
-        seconds = int(self.timestamp)  # type: ignore
-        nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)  # type: ignore
+        ts = timestamp if timestamp is not None else self.timestamp
+        seconds = int(ts)
+        nanoseconds = int((ts - int(ts)) * 1000000000.0)
         header.stamp = Time(sec=seconds, nanosec=nanoseconds)
         return header
 
-    def lidar(self, carla_lidar_measurement, id_):
+    def lidar(self, carla_lidar_measurement, id_, timestamp=None):
         """Transform the received lidar measurement into a ROS point cloud message."""
+        if id_ not in self.publish_prev_times or id_ not in self.pub_lidar:
+            return
         if self.checkFrequency(id_):
             return
-        self.publish_prev_times[id_] = datetime.datetime.now()
+        self.publish_prev_times[id_] = GameTime.get_time()
 
-        header = self.get_msg_header(frame_id="velodyne_top_changed")
+        header = self.get_msg_header(
+            frame_id="velodyne_top_changed", timestamp=timestamp
+        )
         fields = [
             PointField(name="x", offset=0, datatype=PointField.FLOAT32, count=1),
             PointField(name="y", offset=4, datatype=PointField.FLOAT32, count=1),
@@ -249,18 +278,15 @@ class carla_ros2_interface(object):
         pose = data.pose.pose
         pose.position.z += 2.0
         carla_pose_transform = ros_pose_to_carla_transform(pose)
-        if self.ego_actor is not None:
-            self.ego_actor.set_transform(carla_pose_transform)
-        else:
-            print("Can't find Ego Vehicle")
+        self._pending_initialpose = carla_pose_transform
 
-    def pose(self):
+    def pose(self, timestamp=None):
         """Transform odometry data to Pose and publish Pose with Covariance message."""
         if self.checkFrequency("pose"):
             return
-        self.publish_prev_times["pose"] = datetime.datetime.now()
+        self.publish_prev_times["pose"] = GameTime.get_time()
 
-        header = self.get_msg_header(frame_id="map")
+        header = self.get_msg_header(frame_id="map", timestamp=timestamp)
         out_pose_with_cov = PoseWithCovarianceStamped()
         pose_carla = Pose()
         pose_carla.position = carla_location_to_ros_point(
@@ -327,7 +353,7 @@ class carla_ros2_interface(object):
         camera_info.p = [fx, 0.0, cx, 0.0, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0]
         self._camera_info = camera_info
 
-    def camera(self, carla_camera_data):
+    def camera(self, carla_camera_data, timestamp=None):
         """Transform the received carla camera data into a ROS image and info message and publish."""
         while self.first_:
             self._camera_info_ = self._build_camera_info(carla_camera_data)
@@ -335,7 +361,7 @@ class carla_ros2_interface(object):
 
         if self.checkFrequency("camera"):
             return
-        self.publish_prev_times["camera"] = datetime.datetime.now()
+        self.publish_prev_times["camera"] = GameTime.get_time()
 
         image_data_array = numpy.ndarray(
             shape=(carla_camera_data.height, carla_camera_data.width, 4),
@@ -345,21 +371,34 @@ class carla_ros2_interface(object):
         # cspell:ignore interp bgra
         img_msg = self.cv_bridge.cv2_to_imgmsg(image_data_array, encoding="bgra8")
         img_msg.header = self.get_msg_header(
-            frame_id="traffic_light_left_camera/camera_optical_link"
+            frame_id="traffic_light_left_camera/camera_optical_link",
+            timestamp=timestamp,
         )
         cam_info = self._camera_info
         cam_info.header = img_msg.header
         self.pub_camera_info.publish(cam_info)
         self.pub_camera.publish(img_msg)
 
-    def imu(self, carla_imu_measurement):
+        # build another message to publish for yolo
+        img_msg.header = self.get_msg_header(
+            frame_id="camera4/camera_optical_link", timestamp=timestamp
+        )
+
+        cam_info = self._camera_info
+        cam_info.header = img_msg.header
+        self.pub_camera_yolo_info.publish(cam_info)
+        self.pub_camera_yolo.publish(img_msg)
+
+    def imu(self, carla_imu_measurement, timestamp=None):
         """Transform a received imu measurement into a ROS Imu message and publish Imu message."""
         if self.checkFrequency("imu"):
             return
-        self.publish_prev_times["imu"] = datetime.datetime.now()
+        self.publish_prev_times["imu"] = GameTime.get_time()
 
         imu_msg = Imu()
-        imu_msg.header = self.get_msg_header(frame_id="tamagawa/imu_link_changed")
+        imu_msg.header = self.get_msg_header(
+            frame_id="tamagawa/imu_link_changed", timestamp=timestamp
+        )
         imu_msg.angular_velocity.x = -carla_imu_measurement.gyroscope.x
         imu_msg.angular_velocity.y = carla_imu_measurement.gyroscope.y
         imu_msg.angular_velocity.z = -carla_imu_measurement.gyroscope.z
@@ -382,17 +421,19 @@ class carla_ros2_interface(object):
 
     def first_order_steering(self, steer_input):
         """First order steering model."""
-        steer_output = 0.0
+        timestamp = self.timestamp
         if self.prev_timestamp is None:
-            self.prev_timestamp = self.timestamp
+            self.prev_timestamp = timestamp
 
-        dt = self.timestamp - self.prev_timestamp  # type: ignore
-        if dt > 0.0:
-            steer_output = self.prev_steer_output + (
-                steer_input - self.prev_steer_output
-            ) * (dt / (self.tau + dt))
+        dt = timestamp - self.prev_timestamp  # type: ignore
+        if dt <= 0.0:
+            return self.prev_steer_output
+
+        steer_output = self.prev_steer_output + (
+            steer_input - self.prev_steer_output
+        ) * (dt / (self.tau + dt))
         self.prev_steer_output = steer_output
-        self.prev_timestamp = self.timestamp
+        self.prev_timestamp = timestamp
         return steer_output
 
     def control_callback(self, in_cmd):
@@ -409,14 +450,19 @@ class carla_ros2_interface(object):
             self.first_order_steering(-in_cmd.actuation.steer_cmd) * max_steer_ratio
         )
         out_cmd.brake = in_cmd.actuation.brake_cmd
-        self.current_control = out_cmd
+
+        try:
+            self._control_queue.put_nowait((self.timestamp, out_cmd))
+            self._last_control = out_cmd
+        except queue.Full:
+            pass
 
     def ego_status(self):
         """Publish ego vehicle status."""
         if self.checkFrequency("status"):
             return
 
-        self.publish_prev_times["status"] = datetime.datetime.now()
+        self.publish_prev_times["status"] = GameTime.get_time()
 
         # convert velocity from cartesian to ego frame
         trans_mat = numpy.array(self.ego_actor.get_transform().get_matrix()).reshape(
@@ -474,6 +520,13 @@ class carla_ros2_interface(object):
     def run_step(self, input_data, timestamp):
         self.timestamp = timestamp
 
+        if self._pending_initialpose is not None:
+            if self.ego_actor is not None:
+                self.ego_actor.set_transform(self._pending_initialpose)
+            else:
+                print("Can't find Ego Vehicle")
+            self._pending_initialpose = None
+
         seconds = int(self.timestamp)
         nanoseconds = int((self.timestamp - int(self.timestamp)) * 1000000000.0)
         obj_clock = Clock()
@@ -483,19 +536,28 @@ class carla_ros2_interface(object):
         # publish data of all sensors
         for key, data in input_data.items():
             sensor_type = self.id_to_sensor_type_map[key]
+            sensor_timestamp = data[0]
+            sensor_data = data[1]
             if sensor_type == "sensor.camera.rgb":
-                self.camera(data[1])
+                self.camera(sensor_data, timestamp=sensor_timestamp)
             elif sensor_type == "sensor.other.gnss":
-                self.pose()
+                self.pose(timestamp=sensor_timestamp)
             elif sensor_type == "sensor.lidar.ray_cast":
-                self.lidar(data[1], key)
+                self.lidar(sensor_data, key, timestamp=sensor_timestamp)
             elif sensor_type == "sensor.other.imu":
-                self.imu(data[1])
+                self.imu(sensor_data, timestamp=sensor_timestamp)
             else:
-                self.ros2_node.get_logger().info("No Publisher for [{key}] Sensor")
+                self.ros2_node.get_logger().info(f"No Publisher for [{key}] Sensor")
 
         self.ego_status()
-        return self.current_control
+
+        try:
+            _, control = self._control_queue.get_nowait()
+            self._last_control = control
+        except queue.Empty:
+            control = self._last_control
+
+        return control
 
     def shutdown(self):
         self.ros2_node.destroy_node()

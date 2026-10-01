@@ -147,6 +147,9 @@ class RouteParser(object):
         """
         Check if the scenario is affecting the route.
         This is true if the trigger position is very close to any route point
+
+        TODO:
+            - Add logging to inform if a scenario is not part of the route (debug)
         """
 
         def is_trigger_close(trigger_transform, route_transform):

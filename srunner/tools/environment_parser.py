@@ -65,24 +65,25 @@ class EnvironmentParser(object):
                 continue
 
             spawn = sensor.find("spawn_point")
-
             sensor_obj = DefaultSensor()
 
             if sensor_type == "sensor.camera.rgb":
                 sensor_obj = CameraRGB()
-                sensor_obj.image_size_x = sensor.attrib.get("image_size_x", 0)
-                sensor_obj.image_size_y = sensor.attrib.get("image_size_y", 0)
-                sensor_obj.fov = sensor.attrib.get("fov", 0.0)
+                sensor_obj.image_size_x = int(sensor.attrib.get("image_size_x", 0))
+                sensor_obj.image_size_y = int(sensor.attrib.get("image_size_y", 0))
+                sensor_obj.fov = float(sensor.attrib.get("fov", 0.0))
 
             elif sensor_type == "sensor.lidar.ray_cast":
                 sensor_obj = LidarRayCast()
-                sensor_obj.range = sensor.attrib.get("range", 0)
-                sensor_obj.channels = sensor.attrib.get("channels", 0)
-                sensor_obj.points_per_second = sensor.attrib.get("points_per_second", 0)
-                sensor_obj.upper_fov = sensor.attrib.get("upper_fov", 0.0)
-                sensor_obj.lower_fov = sensor.attrib.get("lower_fov", 0.0)
-                sensor_obj.rotation_frequency = sensor.attrib.get(
-                    "rotation_frequency", 0
+                sensor_obj.range = int(sensor.attrib.get("range", 0))
+                sensor_obj.channels = int(sensor.attrib.get("channels", 0))
+                sensor_obj.points_per_second = int(
+                    sensor.attrib.get("points_per_second", 0)
+                )
+                sensor_obj.upper_fov = float(sensor.attrib.get("upper_fov", 0.0))
+                sensor_obj.lower_fov = float(sensor.attrib.get("lower_fov", 0.0))
+                sensor_obj.rotation_frequency = int(
+                    sensor.attrib.get("rotation_frequency", 0)
                 )
 
             sensor_obj.type = sensor_type
@@ -109,4 +110,7 @@ class EnvironmentParser(object):
 
             sensors.append(sensor_obj)
 
+        EnvironmentParser.logger.info(
+            {"sensors": [sensor.sensor_dict() for sensor in sensors]}
+        )
         config.sensor_config = sensors

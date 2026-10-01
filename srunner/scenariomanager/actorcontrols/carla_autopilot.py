@@ -14,12 +14,10 @@ Limitations:
 - No lateral maneuvers can be enforced
 """
 
-
 from srunner.scenariomanager.actorcontrols.basic_control import BasicControl
 
 
 class CarlaAutoPilotControl(BasicControl):
-
     """
     Controller class for vehicles derived from BasicControl.
 

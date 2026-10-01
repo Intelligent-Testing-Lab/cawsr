@@ -26,13 +26,13 @@ class AgentWrapper(object):
         """
         self._agent = agent
 
-    def __call__(
-        self,
-    ):
+    def __call__(self, timestamp=None):
         """
-        Pass the call directly to the agent
+        Pass the call directly to the agent.
+        If timestamp is provided, forward it to propagate the CARLA
+        snapshot through the chain so the agent does not re-acquire it.
         """
-        return self._agent()
+        return self._agent(timestamp)
 
     def setup_sensors(self, vehicle, debug_mode=False):
         """

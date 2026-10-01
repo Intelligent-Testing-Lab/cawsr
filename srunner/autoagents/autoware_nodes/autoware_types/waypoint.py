@@ -7,7 +7,6 @@
 
 import carla
 from srunner.scenariomanager.carla_data_provider import CarlaDataProvider
-from visualization_msgs.msg import Marker
 from tf_transformations import quaternion_from_euler
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Point
@@ -68,7 +67,6 @@ class Waypoint(object):
         self.pose = pose
 
         return pose
-
 
     def __str__(self) -> str:
         if self.pose:
