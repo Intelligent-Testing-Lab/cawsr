@@ -188,7 +188,7 @@ class RouteTimeoutBehavior(py_trees.behaviour.Behaviour):
 
         self._start_time = None
         self._timeout_value = (
-            min_timeout if min_timeout is not None else self.MIN_TIMEOUT
+            self.MIN_TIMEOUT if min_timeout is None else float(min_timeout)
         )
         self.timeout = False
 
