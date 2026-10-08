@@ -110,10 +110,11 @@ class ScenarioManager(object):
 
         if follow_ego:
             self.world_cam = CarlaDataProvider.get_world().get_spectator()
-            self._camera_offset = carla.Location(x=0, y=0, z=50)
+            self._camera_offset = carla.Location(x=0, y=0, z=70)
             self._camera_pitch = -90.0  # degrees
-            self._smooth_cam_loc = None
-            self._smooth_cam_yaw = None
+            self._cam_transform = None
+
+        self._draw_trigger_markers()
 
     def run_scenario(self):
         """
@@ -137,10 +138,6 @@ class ScenarioManager(object):
             world = CarlaDataProvider.get_world()
             if world:
                 world.tick()
-                # Yield the GIL several times so CARLA internal threads
-                # can push sensor callbacks into the data buffers.
-                for _ in range(5):
-                    time.sleep(0)
             MetricsCollector.update_key(
                 "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
             )
@@ -201,6 +198,15 @@ class ScenarioManager(object):
 
             if self._agent is not None:
                 self._agent(timestamp)  # pylint: disable=not-callable
+                if hasattr(self._agent, "_agent") and hasattr(
+                    self._agent._agent, "route_failed_permanently"
+                ):
+                    if self._agent._agent.route_failed_permanently:
+                        print(
+                            "ScenarioManager: Route setting failed permanently, aborting scenario"
+                        )
+                        self._running = False
+                        return
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6
@@ -212,35 +218,73 @@ class ScenarioManager(object):
 
             if self.follow_ego:
                 self._tick_spectator_cam(self.ego_vehicles[0])  # type: ignore
+                self._draw_control_hud(self.ego_vehicles[0])
 
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
 
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""
-        vehicle_transform = ego.get_transform()
-        target_loc = vehicle_transform.location + self._camera_offset
-        target_yaw = vehicle_transform.rotation.yaw
-
-        smoothing = 0.1
-
-        if self._smooth_cam_loc is None:
-            self._smooth_cam_loc = target_loc
-            self._smooth_cam_yaw = target_yaw
-        else:
-            self._smooth_cam_loc.x += (target_loc.x - self._smooth_cam_loc.x) * smoothing
-            self._smooth_cam_loc.y += (target_loc.y - self._smooth_cam_loc.y) * smoothing
-            self._smooth_cam_loc.z += (target_loc.z - self._smooth_cam_loc.z) * smoothing
-            dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
-            self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
-
-        delta_spec_trans = carla.Transform(
-            self._smooth_cam_loc,
-            carla.Rotation(
-                pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0
-            ),
+        ego_trans = ego.get_transform()
+        self._cam_transform = carla.Transform(
+            ego_trans.location + self._camera_offset,
+            carla.Rotation(pitch=self._camera_pitch, yaw=0.0, roll=0.0),
         )
-        self.world_cam.set_transform(delta_spec_trans)
+        self.world_cam.set_transform(self._cam_transform)
+
+    def _draw_trigger_markers(self) -> None:
+        if not hasattr(self.scenario, "trigger_markers"):
+            return
+        world = CarlaDataProvider.get_world()
+        if world is None:
+            return
+        half = carla.Location(1, 1, 1)
+        color = carla.Color(180, 130, 220)
+        for marker in self.scenario.trigger_markers:
+            center = marker["location"]
+            world.debug.draw_box(
+                carla.BoundingBox(center, half),
+                carla.Rotation(),
+                0.02,
+                color,
+                life_time=-1.0,
+                persistent_lines=True,
+            )
+            world.debug.draw_string(
+                marker["location"] + carla.Location(z=3),
+                marker["name"],
+                False,
+                color=carla.Color(255, 255, 255),
+                life_time=-1.0,
+                persistent_lines=True,
+            )
+
+    def _draw_control_hud(self, ego):
+        if self._cam_transform is None:
+            return
+        world = CarlaDataProvider.get_world()
+        if world is None:
+            return
+        ctrl = ego.get_control()
+        blackboard = py_trees.blackboard.Blackboard()
+        noise_t = blackboard.get("AV_noise_throttle") or 0.0
+        noise_s = blackboard.get("AV_noise_steer") or 0.0
+        line1 = f"ctrl  t={ctrl.throttle:.3f} s={ctrl.steer:.3f} b={ctrl.brake:.3f}"
+        line2 = f"noise t={noise_t:+.3f} s={noise_s:+.3f}"
+        text = line1 + "\n" + line2
+
+        cam = self._cam_transform
+        hud_loc = cam.location + cam.get_forward_vector() * 12.0
+        hud_loc += cam.get_right_vector() * (-8.0)
+        hud_loc += cam.get_up_vector() * 6.0
+        world.debug.draw_string(
+            hud_loc,
+            text,
+            False,
+            color=carla.Color(255, 255, 255),
+            life_time=0.05,
+            persistent_lines=False,
+        )
 
     def get_running_status(self):
         """

@@ -69,39 +69,24 @@ class RouteNode:
         logger.info(f"Service '{self.clear_route_service_name}' available.")
 
     def publish_route(self, goal: Pose, checkpoints: list[Pose]) -> None:
-        """Responsible for publishing the end goal point and the obligatory checkpoints to visist
-
-        Args:
-            goal (Pose): goal position
-            checkpoints (list[Pose]): checkpoints to visit before end goal
-        """
+        stamp = self.node.get_clock().now().to_msg()
 
         for checkpoint in checkpoints:
-            self._publish_checkpoint(checkpoint)
+            self._publish_checkpoint(checkpoint, stamp)
 
-        self._publish_goal(goal)
+        self._publish_goal(goal, stamp)
 
-    def _publish_goal(self, goal_point: Pose) -> None:
-        """publish the goal position
-
-        Args:
-            goal_point (Pose): end goal position
-        """
+    def _publish_goal(self, goal_point: Pose, stamp) -> None:
         goal = PoseStamped()
-        goal.header.stamp = self.node.get_clock().now().to_msg()
+        goal.header.stamp = stamp
         goal.header.frame_id = "map"
 
         goal.pose = goal_point
         self.goal_publisher.publish(goal)
 
-    def _publish_checkpoint(self, checkpoint: Pose) -> None:
-        """publish a single checkpoint position
-
-        Args:
-            checkpoint (Pose): checkpoint position
-        """
+    def _publish_checkpoint(self, checkpoint: Pose, stamp) -> None:
         checkpoint_msg = PoseStamped()
-        checkpoint_msg.header.stamp = self.node.get_clock().now().to_msg()
+        checkpoint_msg.header.stamp = stamp
         checkpoint_msg.header.frame_id = "map"
 
         checkpoint_msg.pose = checkpoint

@@ -11,8 +11,8 @@ cawsr:
       port: 8001
       #active: true # part of scenario definition
 
+  route_timeout: 300 # seconds, initial timeout for route completion behavior
   initialisation_budget: 500 # ticks
-  route_timeout: 300 # seconds
   agent: srunner/autoagents/autoware_agent
   mode: 'benchmark' # benchmark or algorithm
 

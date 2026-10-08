@@ -93,6 +93,8 @@ class AWScenarioRunner(object):
         # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
+        self.scenario_manager = None
+
         #  capture SIGINT for cleanup
         self._shutdown_requested = False
 
@@ -373,65 +375,11 @@ class AWScenarioRunner(object):
             except multiprocessing.queues.Empty:
                 logger.info("Process pipe is empty")
 
-        try:
-            self.carla_client.start_recorder(
-                "/home/carla/recordings/recording.log", True
-            )
-            self.scenario_manager.load_scenario(
-                scenario, self.aw_agent, follow_ego=True
-            )
-
-            self.scenario_manager.run_scenario()
-            result = True
-        except Exception:
-            traceback.print_exc()
-            logger.info(
-                "Could not load scenario. Please check if the agent class is loading correctly."
-            )
-            result = False
-        finally:
-            self.carla_client.stop_recorder()
-
-        # stop the MetricsCollector thread
-        MetricsCollector.reset()
-
-        try:
-            # analyse the scenario, throws exception if scenario didn't finish
-            criteria = self._output_criteria(
-                self.scenario_manager.scenario.get_criteria(),  # type: ignore
-                f"{self.results_manager.last_scenario}/{scenario_name}.json",
-            )
-            logger.info("Calculating driving score...")
-
-            result_dict = result_.get()
-            result_dict["driving_score"] = self._calculate_driving_score(criteria)
-            result_dict["status"] = result
-
-        except Exception:
-            logger.info("Something went wrong, retrying scenario...")
-
-        # read the scenario definition
-        if algorithm_mode:
-            algorithm._update_generator(seed)  # type: ignore
-
-            try:
-                definition = algorithm._scenario_callback(  # type: ignore
-                    current_definiton, result_dict["driving_score"]
-                )
-                result_dict["definition"] = definition
-                result_.put(result_dict)
-            except Exception:
-                logger.error(
-                    "Something went wrong while processing algorithm callback; is CARLA alive?"
-                )
-
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
         world = CarlaDataProvider.get_world()
         if world:
             world.tick()
-            for _ in range(5):
-                time.sleep(0)
 
             snapshot = world.get_snapshot()
             if snapshot:

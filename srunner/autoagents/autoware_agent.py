@@ -24,13 +24,23 @@ import threading
 import rclpy
 import time
 import logging
+import math
 
 
 logger = logging.getLogger("scenario-runner")
 logger.propagate = False
 
 
+def _silent_spin(executor):
+    try:
+        executor.spin()
+    except rclpy.executors.ExternalShutdownException:
+        pass
+
+
 class AutowareAgent(AutonomousAgent):
+    MAX_ROUTE_RETRIES = 10
+
     timestamp = None
     agent_set_route = False
     scenario_loaded = False
@@ -72,8 +82,12 @@ class AutowareAgent(AutonomousAgent):
             self._executors[1].add_node(self._node_state)
 
             self._executor_threads = [
-                threading.Thread(target=self._executors[0].spin, daemon=True),
-                threading.Thread(target=self._executors[1].spin, daemon=True),
+                threading.Thread(
+                    target=_silent_spin, args=(self._executors[0],), daemon=True
+                ),
+                threading.Thread(
+                    target=_silent_spin, args=(self._executors[1],), daemon=True
+                ),
             ]
         except rclpy.executors.ExternalShutdownException:
             logger.info("Node Executor shutdown externally...")
@@ -88,7 +102,8 @@ class AutowareAgent(AutonomousAgent):
             self.autoware_state, self._node_state
         )
 
-        self.sent_route = False
+        self._reset_route_state()
+        self._route_retry_count = 0
 
         self.carla_interface.load_world()
         self.carla_interface.run_bridge()
@@ -107,6 +122,26 @@ class AutowareAgent(AutonomousAgent):
 
         logger.info("Clearing route...")
         self.route_node.request_clear_route()
+
+    def _reset_route_state(self):
+        self.sent_route = False
+        self._route_was_calculating = False
+
+    def _retry_route(self):
+        if self._route_retry_count < self.MAX_ROUTE_RETRIES:
+            self._route_retry_count += 1
+            self._reset_route_state()
+            logger.info("Clearing route before retry...")
+            self.route_node.request_clear_route()
+        else:
+            logger.error(
+                f"Route setting failed after {self.MAX_ROUTE_RETRIES} attempts."
+            )
+            self.autoware_state.route_failed_permanently = True
+
+    @property
+    def route_failed_permanently(self):
+        return self.autoware_state.route_failed_permanently
 
     def _convert_to_waypoint(self, point):
         """Returns a waypoint
@@ -168,6 +203,18 @@ class AutowareAgent(AutonomousAgent):
                 self.goal_pose_world
             ).autoware_from_world_coords()
 
+            if len(self._global_plan_world_coord) >= 2:
+                prev = self._global_plan_world_coord[-2]
+                curr = self.goal_pose_world
+                dx = curr[0].location.x - prev[0].location.x
+                dy = curr[0].location.y - prev[0].location.y
+                approach_yaw = math.atan2(dy, dx)
+                half_yaw = -approach_yaw / 2.0
+                goal_pose.orientation.z = math.sin(half_yaw)
+                goal_pose.orientation.w = math.cos(half_yaw)
+                goal_pose.orientation.x = 0.0
+                goal_pose.orientation.y = 0.0
+
             for waypoint in self.waypoints_world:
                 waypoints.append(
                     self._convert_to_waypoint(waypoint).autoware_from_world_coords()
@@ -175,6 +222,22 @@ class AutowareAgent(AutonomousAgent):
 
             self.route_node.publish_route(goal_pose, waypoints)
             self.sent_route = True
+            logger.info("Route published to Autoware")
+
+        if self.sent_route:
+            if self.autoware_state.is_planning():
+                self._route_was_calculating = True
+
+            if self.autoware_state.route_set():
+                self._route_retry_count = 0
+                self._route_was_calculating = False
+
+            elif self.autoware_state.route_rejected(self._route_was_calculating):
+                logger.warning(
+                    "Route calculation failed: state transitioned 3->2. "
+                    f"Retry {self._route_retry_count + 1}/{self.MAX_ROUTE_RETRIES}"
+                )
+                self._retry_route()
 
         if (
             self.scenario_loaded
