@@ -8,6 +8,7 @@
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
+from autoware_adapi_v1_msgss.msg import OperationModeState
 from srunner.autoagents.agent_state import autoware_state
 import logging
 
@@ -22,6 +23,7 @@ class StateNode:
     route_state = "/planning/mission_planning/state"
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
+    operation_state = "/api/operation_mode/state"
 
     reset_topic = "/autoware/restart"
 
@@ -40,6 +42,10 @@ class StateNode:
             self.localize_state,
             self.localize_state_cb,
             10,
+        )
+
+        self.operation_state_subscriber = self.node.create_subscription(
+            OperationModeState, self.operation_state, self.operation_state_cb, 10
         )
 
         self.restart_autoware_pub = self.node.create_publisher(
@@ -79,6 +85,25 @@ class StateNode:
         """
         self.autoware_state.localize_state = localize_state_msg.state
         logger.info(f"Localization state: {self.autoware_state.localize_state}")
+
+    def operation_state_cb(
+        self,
+        operation_state_msg: OperationModeState,
+    ) -> None:
+        """Set the Operation mode state
+
+        Args:
+            operation_state_msg (OperationModeState): OperationMode state message from the AD-API
+        """
+
+        self.autoware_state.operation_mode = operation_state_msg.mode  # uint8
+        self.autoware_state.is_autoware_control = (
+            operation_state_msg.is_autoware_control_enabled
+        )
+        self.autoware_state.is_autonomous_available = (
+            operation_state_msg.is_autonomous_available
+        )
+        self.autoware_state.is_in_transition = operation_state_msg.is_in_transition
 
     def reset_autoware(self, carla_map: str, ego_name: str):
         """Publishes an empty message to reset autoware."""

@@ -62,3 +62,10 @@ class AutowareState(state.AgentState):
         self.goal_threshold: float = 0.5
 
         self.initial_distance: float = -1  # distance reading when ADS reaches goal
+
+        # operation modes
+        # no need to worry about local or remote operation modes, these are not applicable to simulation
+        self.operation_mode: int = 0
+        self.is_autoware_control: bool = False
+        self.is_autonomous_available: bool = False
+        self.is_in_transition: bool = False
