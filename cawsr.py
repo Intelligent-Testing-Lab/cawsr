@@ -373,11 +373,57 @@ class AWScenarioRunner(object):
             except multiprocessing.queues.Empty:
                 logger.info("Process pipe is empty")
 
-            result_.put(result_dict)
-            result_.close()
-            result_.join_thread()
-            logger.info("Stopping process...")
-            os._exit(0)
+        try:
+            self.carla_client.start_recorder(
+                "/home/carla/recordings/recording.log", True
+            )
+            self.scenario_manager.load_scenario(
+                scenario, self.aw_agent, follow_ego=True
+            )
+
+            self.scenario_manager.run_scenario()
+            result = True
+        except Exception:
+            traceback.print_exc()
+            logger.info(
+                "Could not load scenario. Please check if the agent class is loading correctly."
+            )
+            result = False
+        finally:
+            self.carla_client.stop_recorder()
+
+        # stop the MetricsCollector thread
+        MetricsCollector.reset()
+
+        try:
+            # analyse the scenario, throws exception if scenario didn't finish
+            criteria = self._output_criteria(
+                self.scenario_manager.scenario.get_criteria(),  # type: ignore
+                f"{self.results_manager.last_scenario}/{scenario_name}.json",
+            )
+            logger.info("Calculating driving score...")
+
+            result_dict = result_.get()
+            result_dict["driving_score"] = self._calculate_driving_score(criteria)
+            result_dict["status"] = result
+
+        except Exception:
+            logger.info("Something went wrong, retrying scenario...")
+
+        # read the scenario definition
+        if algorithm_mode:
+            algorithm._update_generator(seed)  # type: ignore
+
+            try:
+                definition = algorithm._scenario_callback(  # type: ignore
+                    current_definiton, result_dict["driving_score"]
+                )
+                result_dict["definition"] = definition
+                result_.put(result_dict)
+            except Exception:
+                logger.error(
+                    "Something went wrong while processing algorithm callback; is CARLA alive?"
+                )
 
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
@@ -490,9 +536,7 @@ class AWScenarioRunner(object):
             )
 
             while attempts < retry_attempts:
-                logger.info(
-                    f"Running scenario {i + 1}/{runs} (attempt {attempts + 1}/{retry_attempts})"
-                )
+                logger.info(f"Running scenario {i + 1}/{runs}")
 
                 CARLAManager._set_recording_dir(self.results_manager.recording_path)
                 logger.info("Starting CARLA container....")
