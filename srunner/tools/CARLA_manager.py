@@ -7,6 +7,7 @@
 
 import subprocess
 import os
+import time
 import logging
 
 from srunner.scenarioconfigs.carla_config import CARLA
@@ -148,6 +149,29 @@ class CARLAManager(object):
         if CARLAManager.container_id is not None:
             # stop existing CARLA container and create a new one
             CARLAManager.stop_carla()
+            time.sleep(5)
             CARLAManager.start_carla()
         else:
             CARLAManager.start_carla()
+
+    @staticmethod
+    def fix_recording_permissions():
+        """Fix permissions on recording files created by the root CARLA container
+        so they are readable by the non-root CAWSR user (UID 1000).
+        Runs chmod inside the CARLA container via docker exec.
+        """
+        if CARLAManager.container_id:
+            env = os.environ.copy()
+            result = subprocess.run(
+                f"docker exec {CARLAManager.container_id} chmod -R 777 /home/carla/recordings",
+                shell=True,
+                text=True,
+                capture_output=True,
+                env=env,
+            )
+            if result.returncode == 0:
+                logger.info("Fixed recording permissions inside CARLA container")
+            else:
+                logger.error(
+                    f"Failed to fix recording permissions: {result.stderr.strip()}"
+                )

@@ -25,8 +25,6 @@ from srunner.scenariomanager.timer import GameTime
 from srunner.scenariomanager.watchdog import Watchdog
 from srunner.tools.metrics_collector import MetricsCollector
 
-from srunner.tools.CARLA_manager import CARLAManager
-
 
 class ScenarioManager(object):
     """
@@ -114,6 +112,8 @@ class ScenarioManager(object):
             self.world_cam = CarlaDataProvider.get_world().get_spectator()
             self._camera_offset = carla.Location(x=0, y=0, z=50)
             self._camera_pitch = -90.0  # degrees
+            self._smooth_cam_loc = None
+            self._smooth_cam_yaw = None
 
     def run_scenario(self):
         """
@@ -129,8 +129,23 @@ class ScenarioManager(object):
 
         while self._running:
             _tick_start = time.perf_counter_ns() / 1e6
-            timestamp = None
+
+            # Advance CARLA to the next frame *before* agent processing
+            # so sensor callbacks deliver during the tick and data is
+            # immediately available for the agent on this same iteration.
+            _tick_carla_start = time.perf_counter_ns() / 1e6
             world = CarlaDataProvider.get_world()
+            if world:
+                world.tick()
+                # Yield the GIL several times so CARLA internal threads
+                # can push sensor callbacks into the data buffers.
+                for _ in range(5):
+                    time.sleep(0)
+            MetricsCollector.update_key(
+                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
+            )
+
+            timestamp = None
             if world:
                 snapshot = world.get_snapshot()
                 if snapshot:
@@ -185,7 +200,7 @@ class ScenarioManager(object):
                 CarlaDataProvider.on_carla_tick()
 
             if self._agent is not None:
-                self._agent()  # pylint: disable=not-callable
+                self._agent(timestamp)  # pylint: disable=not-callable
 
             # Tick scenario
             _scenario_tick_start = time.perf_counter_ns() / 1e6
@@ -201,26 +216,28 @@ class ScenarioManager(object):
             if self.scenario_tree.status != py_trees.common.Status.RUNNING:
                 self._running = False
 
-            end_tick = time.perf_counter_ns()
-
-            tick_diff = (start_tick - end_tick) / 1e9
-            if (start_tick - end_tick) < CARLAManager.FIXED_DELTA_SECONDS:
-                time.sleep(CARLAManager.FIXED_DELTA_SECONDS - tick_diff)
-            _tick_carla_start = time.perf_counter_ns() / 1e6
-            CarlaDataProvider.get_world().tick()
-            MetricsCollector.update_key(
-                "carla_time", (time.perf_counter_ns() / 1e6) - _tick_carla_start
-            )
-
     def _tick_spectator_cam(self, ego: carla.Actor) -> None:
         """Ticks the spectator camera for the chosen ego"""
         vehicle_transform = ego.get_transform()
-        delta_spec_loc = vehicle_transform.location + self._camera_offset
+        target_loc = vehicle_transform.location + self._camera_offset
+        target_yaw = vehicle_transform.rotation.yaw
+
+        smoothing = 0.1
+
+        if self._smooth_cam_loc is None:
+            self._smooth_cam_loc = target_loc
+            self._smooth_cam_yaw = target_yaw
+        else:
+            self._smooth_cam_loc.x += (target_loc.x - self._smooth_cam_loc.x) * smoothing
+            self._smooth_cam_loc.y += (target_loc.y - self._smooth_cam_loc.y) * smoothing
+            self._smooth_cam_loc.z += (target_loc.z - self._smooth_cam_loc.z) * smoothing
+            dyaw = (target_yaw - self._smooth_cam_yaw + 180.0) % 360.0 - 180.0
+            self._smooth_cam_yaw = (self._smooth_cam_yaw + dyaw * smoothing) % 360.0
 
         delta_spec_trans = carla.Transform(
-            delta_spec_loc,
+            self._smooth_cam_loc,
             carla.Rotation(
-                pitch=self._camera_pitch, yaw=vehicle_transform.rotation.yaw, roll=0
+                pitch=self._camera_pitch, yaw=self._smooth_cam_yaw, roll=0
             ),
         )
         self.world_cam.set_transform(delta_spec_trans)
