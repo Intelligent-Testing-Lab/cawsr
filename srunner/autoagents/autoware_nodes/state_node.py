@@ -8,15 +8,39 @@
 from tier4_planning_msgs.msg import RouteState
 from autoware_adapi_v1_msgs.msg import MotionState
 from autoware_adapi_v1_msgs.msg import LocalizationInitializationState
-from autoware_adapi_v1_msgss.msg import OperationModeState
+from autoware_adapi_v1_msgs.msg import OperationModeState
+from autoware_adapi_v1_msgs.msg import MrmState
 from srunner.autoagents.agent_state import autoware_state
 import logging
 
 from autoware_cawsr_msgs.msg import AutowareRestart, AutowareShutdown
 
-
 logger = logging.getLogger("scenario-runner")
 logger.propagate = False
+
+
+"""
+uint16 state:
+    NORMAL = 1
+    MRM_OPERATING = 2
+    MRM_SUCCEEDED = 3
+    MRM_FAILED = 4
+
+uint16 behaviour:
+    NONE = 1
+    EMERGENCY_STOP = 2
+    COMFORTABLE_STOP = 3
+    PULL_OVER = 4
+"""
+MRM_MAPPING = {
+    "behaviour": {
+        1: "NONE",
+        2: "EMERGENCY_STOP",
+        3: "COMFORTABLE_STOP",
+        4: "PULL_OVER",
+    },
+    "state": {1: "NORMAL", 2: "MRM_OPERATING", 3: "MRM_SUCCEEDED", 4: "MRM_FAILED"},
+}
 
 
 class StateNode:
@@ -24,6 +48,7 @@ class StateNode:
     motion_state = "/api/motion/state"
     localize_state = "/api/localization/initialization_state"
     operation_state = "/api/operation_mode/state"
+    mrm_state = "/api/fail_safe/mrm_state"
 
     reset_topic = "/autoware/restart"
 
@@ -46,6 +71,10 @@ class StateNode:
 
         self.operation_state_subscriber = self.node.create_subscription(
             OperationModeState, self.operation_state, self.operation_state_cb, 10
+        )
+
+        self.mrm_state_subscriber = self.node.create_subscription(
+            MrmState, self.mrm_state, self.mrm_state_cb, 10
         )
 
         self.restart_autoware_pub = self.node.create_publisher(
@@ -96,14 +125,64 @@ class StateNode:
             operation_state_msg (OperationModeState): OperationMode state message from the AD-API
         """
 
-        self.autoware_state.operation_mode = operation_state_msg.mode  # uint8
-        self.autoware_state.is_autoware_control = (
-            operation_state_msg.is_autoware_control_enabled
-        )
-        self.autoware_state.is_autonomous_available = (
-            operation_state_msg.is_autonomous_available
-        )
-        self.autoware_state.is_in_transition = operation_state_msg.is_in_transition
+        if self.autoware_state.operation_mode != operation_state_msg.mode:
+            self.autoware_state.operation_mode = operation_state_msg.mode  # uint8
+            logger.info(f"Operation Mode: {operation_state_msg.mode}")
+
+        if (
+            self.autoware_state.is_autoware_control
+            != operation_state_msg.is_autoware_control_enabled
+        ):
+            self.autoware_state.is_autoware_control = (
+                operation_state_msg.is_autoware_control_enabled
+            )
+            logger.info(
+                f"Autoware Control: {operation_state_msg.is_autoware_control_enabled}"
+            )
+
+        if (
+            self.autoware_state.is_autonomous_available
+            != operation_state_msg.is_autonomous_available
+        ):
+            self.autoware_state.is_autonomous_available = (
+                operation_state_msg.is_autonomous_available
+            )
+            logger.info(
+                f"Autonomous Available: {operation_state_msg.is_autonomous_available}"
+            )
+
+        if self.autoware_state.is_in_transition != operation_state_msg.is_in_transition:
+            self.autoware_state.is_in_transition = operation_state_msg.is_in_transition
+            logger.info(f"Transition: {operation_state_msg.is_in_transition}")
+
+    def mrm_state_cb(self, mrm_state_msg: MrmState) -> None:
+        """Records the current MRM state and behaviour of Autoware
+
+        uint16 state:
+            NORMAL = 1
+            MRM_OPERATING = 2
+            MRM_SUCCEEDED = 3
+            MRM_FAILED = 4
+
+        uint16 behaviour:
+            NONE = 1
+            EMERGENCY_STOP = 2
+            COMFORTABLE_STOP = 3
+            PULL_OVER = 4
+
+        Args:
+            mrm_state_msg (MrmState): MRM state and behaviour message in autoware
+        """
+
+        if self.autoware_state.mrm_behaviour != mrm_state_msg.behaviour:
+            self.autoware_state.mrm_behaviour = mrm_state_msg.behaviour
+            logger.info(
+                f"MRM Behaviour: {MRM_MAPPING['behaviour'][mrm_state_msg.behaviour]}"
+            )
+
+        if self.autoware_state.mrm_state != mrm_state_msg.state:
+            self.autoware_state.mrm_state = mrm_state_msg.state
+            logger.info(f"MRM State: {MRM_MAPPING['state'][mrm_state_msg.state]}")
 
     def reset_autoware(self, carla_map: str, ego_name: str):
         """Publishes an empty message to reset autoware."""

@@ -9,6 +9,12 @@ from srunner.autoagents.agent_state import state
 
 
 class AutowareState(state.AgentState):
+    state_mapping: dict = {
+        "": {  # topic
+            0: ""  # state mapping
+        }
+    }
+
     def __init__(self, name="", position=None):
         super().__init__(name, position)
 
@@ -69,3 +75,7 @@ class AutowareState(state.AgentState):
         self.is_autoware_control: bool = False
         self.is_autonomous_available: bool = False
         self.is_in_transition: bool = False
+
+        # MRM
+        self.mrm_state: int = 0
+        self.mrm_behaviour: int = 0
