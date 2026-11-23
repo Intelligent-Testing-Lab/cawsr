@@ -93,6 +93,8 @@ class AWScenarioRunner(object):
         # manages results directories
         self.results_manager = ScenarioDefinitionManager()
 
+        self.scenario_manager = None
+
         #  capture SIGINT for cleanup
         self._shutdown_requested = False
 
@@ -373,19 +375,11 @@ class AWScenarioRunner(object):
             except multiprocessing.queues.Empty:
                 logger.info("Process pipe is empty")
 
-            result_.put(result_dict)
-            result_.close()
-            result_.join_thread()
-            logger.info("Stopping process...")
-            os._exit(0)
-
     def _tick_carla(self) -> None:
         """Advances CARLA 1 tick into the future"""
         world = CarlaDataProvider.get_world()
         if world:
             world.tick()
-            for _ in range(5):
-                time.sleep(0)
 
             snapshot = world.get_snapshot()
             if snapshot:
@@ -490,9 +484,7 @@ class AWScenarioRunner(object):
             )
 
             while attempts < retry_attempts:
-                logger.info(
-                    f"Running scenario {i + 1}/{runs} (attempt {attempts + 1}/{retry_attempts})"
-                )
+                logger.info(f"Running scenario {i + 1}/{runs}")
 
                 CARLAManager._set_recording_dir(self.results_manager.recording_path)
                 logger.info("Starting CARLA container....")

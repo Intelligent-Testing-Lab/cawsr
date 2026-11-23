@@ -9,6 +9,12 @@ from srunner.autoagents.agent_state import state
 
 
 class AutowareState(state.AgentState):
+    state_mapping: dict = {
+        "": {  # topic
+            0: ""  # state mapping
+        }
+    }
+
     def __init__(self, name="", position=None):
         super().__init__(name, position)
 
@@ -41,11 +47,15 @@ class AutowareState(state.AgentState):
     def route_ready(self) -> bool:
         return self.sent_route and self.route_set()
 
+    def route_rejected(self, was_calculating: bool) -> bool:
+        return was_calculating and self.no_route() and not self.is_planning()
+
     def reset_state(self) -> None:
         # internal message states
         self.sent_route: bool = False
         self.sent_engage: bool = False
         self.bridge_ready: bool = False
+        self.route_failed_permanently: bool = False
 
         # ADS state
         self.motion_state: int = 0
@@ -58,3 +68,14 @@ class AutowareState(state.AgentState):
         self.goal_threshold: float = 0.5
 
         self.initial_distance: float = -1  # distance reading when ADS reaches goal
+
+        # operation modes
+        # no need to worry about local or remote operation modes, these are not applicable to simulation
+        self.operation_mode: int = 0
+        self.is_autoware_control: bool = False
+        self.is_autonomous_available: bool = False
+        self.is_in_transition: bool = False
+
+        # MRM
+        self.mrm_state: int = 0
+        self.mrm_behaviour: int = 0

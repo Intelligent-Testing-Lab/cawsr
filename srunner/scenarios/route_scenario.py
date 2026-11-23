@@ -71,6 +71,7 @@ class RouteScenario(BasicScenario):
         debug_mode=False,
         criteria_enable=True,
         timeout=300,
+        route_timeout=300,
         ego_vehicle=None,
         route=None,
     ):
@@ -79,6 +80,7 @@ class RouteScenario(BasicScenario):
         """
 
         self.config = config
+        self._route_timeout = route_timeout
         self.route = self._get_route(config) if not route else route
 
         sampled_scenario_definitions = self._filter_scenarios(config.scenario_configs)
@@ -269,28 +271,10 @@ class RouteScenario(BasicScenario):
         """
         all_scenario_classes = self.get_all_scenario_classes()
         self.list_scenarios = []
+        self.trigger_markers = []
         ego_data = ActorConfigurationData(
             ego_vehicle.type_id, ego_vehicle.get_transform(), "hero"
         )
-
-        if debug:
-            tmap = CarlaDataProvider.get_map()
-            for scenario_config in scenario_definitions:
-                scenario_loc = scenario_config.trigger_points[0].location
-                debug_loc = tmap.get_waypoint(
-                    scenario_loc
-                ).transform.location + carla.Location(z=0.2)
-                world.debug.draw_point(
-                    debug_loc, size=0.2, color=carla.Color(128, 0, 0), life_time=timeout
-                )
-                world.debug.draw_string(
-                    debug_loc,
-                    str(scenario_config.name),
-                    draw_shadow=False,
-                    color=carla.Color(0, 0, 128),
-                    life_time=timeout,
-                    persistent_lines=True,
-                )
 
         for scenario_number, scenario_config in enumerate(scenario_definitions):
             scenario_config.ego_vehicles = [ego_data]
@@ -310,17 +294,26 @@ class RouteScenario(BasicScenario):
                     world.tick()
 
             except Exception as e:
-                if not debug:
-                    print(
-                        "Skipping scenario '{}' due to setup error: {}".format(
-                            scenario_config.type, e
-                        )
+                print(
+                    "WARNING: Skipping scenario '{}' (type: {}) due to setup error: {}".format(
+                        scenario_config.name, scenario_config.type, e
                     )
-                else:
+                )
+                if debug:
                     traceback.print_exc()
                 continue
 
             self.list_scenarios.append(scenario_instance)
+
+        for scenario_config in scenario_definitions:
+            trigger = scenario_config.trigger_points[0]
+            self.trigger_markers.append(
+                {
+                    "name": scenario_config.name,
+                    "location": trigger.location + carla.Location(z=1.0),
+                    "route_var_name": scenario_config.route_var_name,
+                }
+            )
 
     # pylint: enable=no-self-use
     def _initialize_actors(self, config):
@@ -358,6 +351,7 @@ class RouteScenario(BasicScenario):
                     [
                         scenario.config.route_var_name,
                         scenario.config.trigger_points[0].location,
+                        scenario.config.name,
                     ]
                 )
 
@@ -456,7 +450,7 @@ class RouteScenario(BasicScenario):
         Create the timeout behavior
         """
         return RouteTimeoutBehavior(
-            self.ego_vehicles[0], self.route, min_timeout=self.timeout
+            self.ego_vehicles[0], self.route, min_timeout=self._route_timeout
         )
 
     def _initialize_environment(self, world):
